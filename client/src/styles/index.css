@@ -1,0 +1,306 @@
+/* =========================================================
+   TRISAK GROUP — Design tokens
+   Direction: industrial / technology / premium / clean
+   ========================================================= */
+:root {
+  /* Color */
+  --bg: #ffffff;
+  --bg-panel: #f4f5f8;
+  --bg-panel-raised: #e9ebf1;
+  --line: rgba(69, 73, 87, 0.12);
+  --line-strong: rgba(69, 73, 87, 0.24);
+  --text: #454957;
+  --text-muted: #6b6f7d;
+  --text-faint: #9497a3;
+  --accent-signal: #0d2997; /* navy: CTA / signature */
+  --accent-signal-dim: rgba(13, 41, 151, 0.08);
+  --accent-tech: #0d2997; /* navy: data / technology highlight */
+  --accent-tech-dim: rgba(13, 41, 151, 0.08);
+  --on-accent: #ffffff; /* text color placed on top of the navy accent */
+
+  /* Type */
+  --font-display: "Oswald", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", "Noto Sans Thai", -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Layout */
+  --page-max: 1240px;
+  --gutter: clamp(20px, 5vw, 64px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-tech);
+  outline-offset: 3px;
+}
+
+/* ---------- layout helpers ---------- */
+.container {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.page-shell {
+  padding-top: 72px; /* header height */
+  min-height: 100vh;
+}
+
+section {
+  position: relative;
+}
+
+/* ---------- typography ---------- */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-tech);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: var(--accent-tech);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+h1 {
+  font-size: clamp(2.6rem, 6vw, 5rem);
+  line-height: 1.02;
+}
+
+h2 {
+  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+  line-height: 1.08;
+}
+
+h3 {
+  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+  line-height: 1.2;
+}
+
+p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.lede {
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  color: var(--text-muted);
+  max-width: 42ch;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 14px 26px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.btn:hover {
+  border-color: var(--accent-tech);
+  color: var(--accent-tech);
+}
+
+.btn-primary {
+  background: var(--accent-signal);
+  border-color: var(--accent-signal);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: #15379e;
+  border-color: #15379e;
+  color: var(--on-accent);
+}
+
+.btn-arrow {
+  transition: transform 0.2s ease;
+}
+
+.btn:hover .btn-arrow {
+  transform: translateX(3px);
+}
+
+/* ---------- section scaffolding ---------- */
+.section {
+  padding: 96px 0;
+  border-top: 1px solid var(--line);
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 56px;
+  max-width: 640px;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+}
+
+/* ---------- signal line (signature motif) ---------- */
+.signal-line {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.signal-line path {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+.signal-line .signal-path-active {
+  stroke: var(--accent-tech);
+  stroke-dasharray: 6 8;
+  animation: signal-flow 3.2s linear infinite;
+}
+
+.signal-line circle {
+  fill: var(--bg);
+  stroke: var(--accent-tech);
+  stroke-width: 1.5;
+}
+
+.signal-line .signal-node-pulse {
+  animation: signal-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes signal-flow {
+  to {
+    stroke-dashoffset: -140;
+  }
+}
+
+@keyframes signal-pulse {
+  0%,
+  100% {
+    r: 4;
+    opacity: 1;
+  }
+  50% {
+    r: 6;
+    opacity: 0.6;
+  }
+}
+
+/* ---------- grids ---------- */
+.grid {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.grid-cell {
+  background: var(--bg);
+  padding: 40px 32px;
+}
+
+.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .cols-3,
+  .cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .cols-2,
+  .cols-3,
+  .cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- index number tag ---------- */
+.tag-index {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+}
