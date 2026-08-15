@@ -13,15 +13,37 @@ async function request(path, options = {}) {
   return res.json();
 }
 
-function authRequest(path, options = {}) {
+// Session tokens live only in the server's memory (see README) — a server
+// restart invalidates every token. When that happens, clear the stale
+// token and bounce to the login screen instead of leaving the admin UI
+// stuck showing a raw "Unauthorized" error.
+function handleUnauthorized() {
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  const { pathname } = window.location;
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    window.location.href = "/admin/login";
+  }
+}
+
+async function authRequest(path, options = {}) {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-  return request(path, {
+  const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
+      "Content-Type": "application/json",
       ...(options.headers || {}),
       Authorization: token ? `Bearer ${token}` : "",
     },
   });
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error("Session expired — signing you out.");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 function qs(params = {}) {
@@ -67,6 +89,8 @@ export const api = {
   adminLogout: async () => {
     try {
       await authRequest("/admin/logout", { method: "POST" });
+    } catch {
+      // ignore — we're clearing the token either way
     } finally {
       localStorage.removeItem(ADMIN_TOKEN_KEY);
     }
@@ -104,6 +128,10 @@ export const api = {
       headers: { Authorization: token ? `Bearer ${token}` : "" },
       body: formData,
     });
+    if (res.status === 401) {
+      handleUnauthorized();
+      throw new Error("Session expired — signing you out.");
+    }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || `Upload failed: ${res.status}`);

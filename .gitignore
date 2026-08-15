@@ -4,3 +4,4 @@ dist/
 *.log
 server/uploads/*
 !server/uploads/.gitkeep
+server/.sessions.json
