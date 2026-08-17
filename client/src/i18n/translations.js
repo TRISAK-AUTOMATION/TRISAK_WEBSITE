@@ -169,6 +169,8 @@ export const translations = {
       noSpecs: "No specifications listed yet.",
       noDocuments: "No documents available yet.",
       noRelated: "No related products yet.",
+      viewAll: "View all",
+      viewSeries: "View series",
       tabs: {
         overview: "Overview",
         specifications: "Specifications",
@@ -468,6 +470,8 @@ export const translations = {
       noSpecs: "ยังไม่มีข้อมูลสเปคสินค้า",
       noDocuments: "ยังไม่มีเอกสารให้ดาวน์โหลด",
       noRelated: "ยังไม่มีสินค้าที่เกี่ยวข้อง",
+      viewAll: "ดูทั้งหมด",
+      viewSeries: "ดูซีรีย์นี้",
       tabs: {
         overview: "ภาพรวม",
         specifications: "สเปคสินค้า",

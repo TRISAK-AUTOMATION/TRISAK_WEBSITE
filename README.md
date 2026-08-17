@@ -85,8 +85,8 @@ The catalog follows a 5-level drill-down: **Products Overview → Brand → Cate
 | Page | Route | Component |
 |---|---|---|
 | 01 Products Overview | `/products` | `pages/products/ProductsOverview.jsx` |
-| 02 Brand | `/products/:brandSlug` | `pages/products/BrandPage.jsx` |
-| 03 Category | `/products/:brandSlug/:categorySlug` | `pages/products/CategoryPage.jsx` |
+| 02 Brand | `/products/:brandSlug` | `pages/products/BrandPage.jsx` — auto-forwards into the brand's first category (see below) |
+| 03 Category | `/products/:brandSlug/:categorySlug` | `pages/products/CategoryPage.jsx` — sidebar of categories + series cards |
 | 04 Series | `/products/:brandSlug/:categorySlug/:seriesSlug` | `pages/products/SeriesPage.jsx` (via `BrandCategoryChild.jsx` resolver) |
 | 05 Product Detail | `/products/:brandSlug/:categorySlug/:seriesSlug/:productSlug` (or without the series segment) | `pages/products/ProductDetail.jsx` |
 
@@ -122,15 +122,15 @@ The catalog follows a 5-level drill-down: **Products Overview → Brand → Cate
 | PUT | `/api/admin/products/:id` | Update a product (replaces all child rows) |
 | DELETE | `/api/admin/products/:id` | Delete a product |
 
-All admin routes except `/login` require `Authorization: Bearer <token>`. Sessions are held in server memory and reset on restart — fine for a small internal tool, but swap for a real session store or JWT if this needs to scale or survive restarts.
+All admin routes except `/login` require `Authorization: Bearer <token>`. Sessions are mirrored to `server/.sessions.json` (gitignored) so they survive a dev-server restart (`npm run dev` uses `node --watch`, which restarts on every file save) — but there's still no multi-instance support. If you ever see an unexpected "Unauthorized" in the admin UI, it now auto-clears the stale token and redirects to `/admin/login` instead of getting stuck; just log in again.
 
 **Image uploads:** the admin form uploads files directly (drag-and-drop style click-to-upload) instead of asking for a URL. Files land in `server/uploads/` on disk and are served at `http://<host>:<port>/uploads/<filename>`. Accepted types: jpg, png, webp, gif, svg — max 5 MB. The `server/uploads/` folder is gitignored (except a `.gitkeep` placeholder) so uploaded files aren't committed to source control; back that folder up separately if you deploy this for real, since nothing else persists those files.
 
 **Admin UI:** `/admin/login` → `/admin/products` (list, edit, delete) → `/admin/products/new` or `/admin/products/:id/edit` (full form: basics, features, images, specs, documents, related products) → **`/admin/catalog`** (add new Brands, Categories, and Series — this is where you create a Series before it can be picked in the product form's Series dropdown). The admin UI is English-only by design (internal tool); the public-facing pages support the EN/TH toggle described below.
 
-## Header catalog dropdown
+## Category page layout (sidebar + series cards)
 
-The "Products" nav item is a mega-menu dropdown (desktop: hover/click panel; mobile: expandable list) showing all brands and categories for quick navigation, pulled live from `/api/brands` and `/api/categories`. Clicking a category takes you to `/products?category=<slug>`, which the Products Overview page reads on load to pre-filter the results.
+Clicking a "Browse by Brand" tile skips straight to that brand's first category — the Category page shows a left sidebar listing every category that has products under the current brand (click one to switch), and the main area shows a card per series (name, tagline, and up to 5 of its products as direct links, with a "View all" link to the full series page if there are more). Products that don't belong to any series get their own simple card in the same grid. This mirrors the reference layout you shared, restyled in the site's own white/navy theme instead of copying the source site's look.
 
 All seed content in the database comes from the structure given in the brief (brands: OMRON, YASKAWA, NITTO; categories: PLC & HMI, Inverter, Servo & Motion, Industrial Robot, Sensors, Safety, I/O & Industrial PC, Electrical Components, Enclosures; solutions: HMI & PLC, Drive & Motion, Robotic, Smart Factory), plus a demo OMRON / PLC & HMI / NX Series product line to exercise the full catalog flow end-to-end.
 
