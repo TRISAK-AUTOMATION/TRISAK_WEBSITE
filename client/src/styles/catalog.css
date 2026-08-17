@@ -501,6 +501,17 @@
   gap: 8px;
 }
 
+.admin-table input,
+.admin-table select {
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
 .admin-table__delete:hover {
   border-color: #d64545;
   color: #d64545;
