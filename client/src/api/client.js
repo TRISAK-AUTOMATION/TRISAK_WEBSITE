@@ -100,14 +100,23 @@ export const api = {
   adminGetBrands: () => authRequest("/admin/brands"),
   adminCreateBrand: (payload) =>
     authRequest("/admin/brands", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateBrand: (id, payload) =>
+    authRequest(`/admin/brands/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteBrand: (id) => authRequest(`/admin/brands/${id}`, { method: "DELETE" }),
 
   adminGetCategories: () => authRequest("/admin/categories"),
   adminCreateCategory: (payload) =>
     authRequest("/admin/categories", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateCategory: (id, payload) =>
+    authRequest(`/admin/categories/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteCategory: (id) => authRequest(`/admin/categories/${id}`, { method: "DELETE" }),
 
   adminGetSeriesList: () => authRequest("/admin/series"),
   adminCreateSeries: (payload) =>
     authRequest("/admin/series", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateSeries: (id, payload) =>
+    authRequest(`/admin/series/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteSeries: (id) => authRequest(`/admin/series/${id}`, { method: "DELETE" }),
 
   adminGetProducts: () => authRequest("/admin/products"),
   adminGetProduct: (id) => authRequest(`/admin/products/${id}`),

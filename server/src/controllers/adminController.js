@@ -42,6 +42,42 @@ export async function createBrand(req, res) {
   }
 }
 
+export async function updateBrand(req, res) {
+  const { id } = req.params;
+  const { name, slug, sortOrder = 0 } = req.body || {};
+  if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
+  try {
+    const { rows } = await pool.query(
+      "UPDATE brands SET name = $1, slug = $2, sort_order = $3 WHERE id = $4 RETURNING *",
+      [name, slug, sortOrder, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Brand not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function deleteBrand(req, res) {
+  const { id } = req.params;
+  try {
+    const { rows } = await pool.query(
+      "SELECT COUNT(*)::int AS count FROM products WHERE brand_id = $1",
+      [id]
+    );
+    if (rows[0].count > 0) {
+      return res.status(409).json({
+        error: `Can't delete — ${rows[0].count} product(s) still use this brand. Reassign or delete them first.`,
+      });
+    }
+    const result = await pool.query("DELETE FROM brands WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Brand not found" });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
 export async function listCategoriesAdmin(req, res) {
   const { rows } = await pool.query("SELECT * FROM categories ORDER BY sort_order");
   res.json(rows);
@@ -56,6 +92,42 @@ export async function createCategory(req, res) {
       [name, slug, sortOrder]
     );
     res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function updateCategory(req, res) {
+  const { id } = req.params;
+  const { name, slug, sortOrder = 0 } = req.body || {};
+  if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
+  try {
+    const { rows } = await pool.query(
+      "UPDATE categories SET name = $1, slug = $2, sort_order = $3 WHERE id = $4 RETURNING *",
+      [name, slug, sortOrder, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Category not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function deleteCategory(req, res) {
+  const { id } = req.params;
+  try {
+    const { rows } = await pool.query(
+      "SELECT COUNT(*)::int AS count FROM products WHERE category_id = $1",
+      [id]
+    );
+    if (rows[0].count > 0) {
+      return res.status(409).json({
+        error: `Can't delete — ${rows[0].count} product(s) still use this category. Reassign or delete them first.`,
+      });
+    }
+    const result = await pool.query("DELETE FROM categories WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Category not found" });
+    res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -85,6 +157,48 @@ export async function createSeries(req, res) {
       [name, slug, brandId, categoryId, tagline || null, description || null, sortOrder, isNew]
     );
     res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function updateSeries(req, res) {
+  const { id } = req.params;
+  const { name, slug, brandId, categoryId, tagline, description, sortOrder = 0, isNew = false } =
+    req.body || {};
+  if (!name || !slug || !brandId || !categoryId) {
+    return res.status(400).json({ error: "name, slug, brandId, categoryId are required" });
+  }
+  try {
+    const { rows } = await pool.query(
+      `UPDATE series SET
+        name = $1, slug = $2, brand_id = $3, category_id = $4,
+        tagline = $5, description = $6, sort_order = $7, is_new = $8
+       WHERE id = $9 RETURNING *`,
+      [name, slug, brandId, categoryId, tagline || null, description || null, sortOrder, isNew, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Series not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function deleteSeries(req, res) {
+  const { id } = req.params;
+  try {
+    const { rows } = await pool.query(
+      "SELECT COUNT(*)::int AS count FROM products WHERE series_id = $1",
+      [id]
+    );
+    if (rows[0].count > 0) {
+      return res.status(409).json({
+        error: `Can't delete — ${rows[0].count} product(s) still use this series. Reassign or delete them first.`,
+      });
+    }
+    const result = await pool.query("DELETE FROM series WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Series not found" });
+    res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

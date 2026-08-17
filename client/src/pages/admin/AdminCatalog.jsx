@@ -42,23 +42,23 @@ export default function AdminCatalog() {
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
 
       <div className="pill-row">
-        {TABS.map((t) => (
-          <button key={t} className={`pill ${tab === t ? "is-active" : ""}`} onClick={() => setTab(t)}>
-            {t === "brands" ? "Brands" : t === "categories" ? "Categories" : "Series"}
+        {TABS.map((tb) => (
+          <button key={tb} className={`pill ${tab === tb ? "is-active" : ""}`} onClick={() => setTab(tb)}>
+            {tb === "brands" ? "Brands" : tb === "categories" ? "Categories" : "Series"}
           </button>
         ))}
       </div>
 
-      {tab === "brands" && <BrandsTab brands={brands} onCreated={loadAll} setError={setError} />}
+      {tab === "brands" && <BrandsTab brands={brands} onChanged={loadAll} setError={setError} />}
       {tab === "categories" && (
-        <CategoriesTab categories={categories} onCreated={loadAll} setError={setError} />
+        <CategoriesTab categories={categories} onChanged={loadAll} setError={setError} />
       )}
       {tab === "series" && (
         <SeriesTab
           seriesList={seriesList}
           brands={brands}
           categories={categories}
-          onCreated={loadAll}
+          onChanged={loadAll}
           setError={setError}
         />
       )}
@@ -66,11 +66,17 @@ export default function AdminCatalog() {
   );
 }
 
-function BrandsTab({ brands, onCreated, setError }) {
+// =====================================================================
+// Brands
+// =====================================================================
+
+function BrandsTab({ brands, onChanged, setError }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", slug: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,11 +87,38 @@ function BrandsTab({ brands, onCreated, setError }) {
       setName("");
       setSlug("");
       setSlugTouched(false);
-      onCreated();
+      onChanged();
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (b) => {
+    setEditingId(b.id);
+    setEditForm({ name: b.name, slug: b.slug });
+  };
+
+  const saveEdit = async (id) => {
+    setError("");
+    try {
+      await api.adminUpdateBrand(id, { ...editForm, sortOrder: 0 });
+      setEditingId(null);
+      onChanged();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDelete = async (b) => {
+    if (!confirm(`Delete brand "${b.name}"?`)) return;
+    setError("");
+    try {
+      await api.adminDeleteBrand(b.id);
+      onChanged();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -98,18 +131,54 @@ function BrandsTab({ brands, onCreated, setError }) {
             <tr>
               <th>Name</th>
               <th>Slug</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {brands.map((b) => (
               <tr key={b.id}>
-                <td>{b.name}</td>
-                <td>{b.slug}</td>
+                {editingId === b.id ? (
+                  <>
+                    <td>
+                      <input
+                        value={editForm.name}
+                        onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={editForm.slug}
+                        onChange={(e) => setEditForm((f) => ({ ...f, slug: e.target.value }))}
+                      />
+                    </td>
+                    <td className="admin-table__actions">
+                      <button className="btn btn-primary" onClick={() => saveEdit(b.id)}>
+                        Save
+                      </button>
+                      <button className="btn" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{b.name}</td>
+                    <td>{b.slug}</td>
+                    <td className="admin-table__actions">
+                      <button className="btn" onClick={() => startEdit(b)}>
+                        Edit
+                      </button>
+                      <button className="btn admin-table__delete" onClick={() => handleDelete(b)}>
+                        Delete
+                      </button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
             {brands.length === 0 && (
               <tr>
-                <td colSpan={2} className="empty-state">
+                <td colSpan={3} className="empty-state">
                   No brands yet.
                 </td>
               </tr>
@@ -154,11 +223,17 @@ function BrandsTab({ brands, onCreated, setError }) {
   );
 }
 
-function CategoriesTab({ categories, onCreated, setError }) {
+// =====================================================================
+// Categories
+// =====================================================================
+
+function CategoriesTab({ categories, onChanged, setError }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", slug: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -169,11 +244,38 @@ function CategoriesTab({ categories, onCreated, setError }) {
       setName("");
       setSlug("");
       setSlugTouched(false);
-      onCreated();
+      onChanged();
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (c) => {
+    setEditingId(c.id);
+    setEditForm({ name: c.name, slug: c.slug });
+  };
+
+  const saveEdit = async (id) => {
+    setError("");
+    try {
+      await api.adminUpdateCategory(id, { ...editForm, sortOrder: 0 });
+      setEditingId(null);
+      onChanged();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDelete = async (c) => {
+    if (!confirm(`Delete category "${c.name}"?`)) return;
+    setError("");
+    try {
+      await api.adminDeleteCategory(c.id);
+      onChanged();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -186,18 +288,54 @@ function CategoriesTab({ categories, onCreated, setError }) {
             <tr>
               <th>Name</th>
               <th>Slug</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {categories.map((c) => (
               <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.slug}</td>
+                {editingId === c.id ? (
+                  <>
+                    <td>
+                      <input
+                        value={editForm.name}
+                        onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={editForm.slug}
+                        onChange={(e) => setEditForm((f) => ({ ...f, slug: e.target.value }))}
+                      />
+                    </td>
+                    <td className="admin-table__actions">
+                      <button className="btn btn-primary" onClick={() => saveEdit(c.id)}>
+                        Save
+                      </button>
+                      <button className="btn" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{c.name}</td>
+                    <td>{c.slug}</td>
+                    <td className="admin-table__actions">
+                      <button className="btn" onClick={() => startEdit(c)}>
+                        Edit
+                      </button>
+                      <button className="btn admin-table__delete" onClick={() => handleDelete(c)}>
+                        Delete
+                      </button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
             {categories.length === 0 && (
               <tr>
-                <td colSpan={2} className="empty-state">
+                <td colSpan={3} className="empty-state">
                   No categories yet.
                 </td>
               </tr>
@@ -242,7 +380,11 @@ function CategoriesTab({ categories, onCreated, setError }) {
   );
 }
 
-function SeriesTab({ seriesList, brands, categories, onCreated, setError }) {
+// =====================================================================
+// Series
+// =====================================================================
+
+function SeriesTab({ seriesList, brands, categories, onChanged, setError }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -252,6 +394,9 @@ function SeriesTab({ seriesList, brands, categories, onCreated, setError }) {
   const [description, setDescription] = useState("");
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -274,11 +419,51 @@ function SeriesTab({ seriesList, brands, categories, onCreated, setError }) {
       setTagline("");
       setDescription("");
       setIsNew(false);
-      onCreated();
+      onChanged();
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (s) => {
+    setEditingId(s.id);
+    setEditForm({
+      name: s.name,
+      slug: s.slug,
+      brandId: String(s.brand_id),
+      categoryId: String(s.category_id),
+      tagline: s.tagline || "",
+      description: s.description || "",
+      isNew: s.is_new,
+    });
+  };
+
+  const saveEdit = async (id) => {
+    setError("");
+    try {
+      await api.adminUpdateSeries(id, {
+        ...editForm,
+        brandId: Number(editForm.brandId),
+        categoryId: Number(editForm.categoryId),
+        sortOrder: 0,
+      });
+      setEditingId(null);
+      onChanged();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDelete = async (s) => {
+    if (!confirm(`Delete series "${s.name}"?`)) return;
+    setError("");
+    try {
+      await api.adminDeleteSeries(s.id);
+      onChanged();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -293,26 +478,107 @@ function SeriesTab({ seriesList, brands, categories, onCreated, setError }) {
               <th>Brand</th>
               <th>Category</th>
               <th>Slug</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {seriesList.map((s) => (
               <tr key={s.id}>
-                <td>{s.name}</td>
-                <td>{s.brand_name}</td>
-                <td>{s.category_name}</td>
-                <td>{s.slug}</td>
+                {editingId === s.id ? (
+                  <>
+                    <td>
+                      <input
+                        value={editForm.name}
+                        onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={editForm.brandId}
+                        onChange={(e) => setEditForm((f) => ({ ...f, brandId: e.target.value }))}
+                      >
+                        {brands.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={editForm.categoryId}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, categoryId: e.target.value }))
+                        }
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        value={editForm.slug}
+                        onChange={(e) => setEditForm((f) => ({ ...f, slug: e.target.value }))}
+                      />
+                    </td>
+                    <td className="admin-table__actions">
+                      <button className="btn btn-primary" onClick={() => saveEdit(s.id)}>
+                        Save
+                      </button>
+                      <button className="btn" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{s.name}</td>
+                    <td>{s.brand_name}</td>
+                    <td>{s.category_name}</td>
+                    <td>{s.slug}</td>
+                    <td className="admin-table__actions">
+                      <button className="btn" onClick={() => startEdit(s)}>
+                        Edit
+                      </button>
+                      <button className="btn admin-table__delete" onClick={() => handleDelete(s)}>
+                        Delete
+                      </button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
             {seriesList.length === 0 && (
               <tr>
-                <td colSpan={4} className="empty-state">
+                <td colSpan={5} className="empty-state">
                   No series yet.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+        {editingId && (
+          <div className="admin-form__row" style={{ marginTop: 16 }}>
+            <label className="contact-form__field">
+              <span>Tagline (editing "{editForm.name}")</span>
+              <input
+                value={editForm.tagline}
+                onChange={(e) => setEditForm((f) => ({ ...f, tagline: e.target.value }))}
+              />
+            </label>
+            <label className="admin-form__checkbox">
+              <input
+                type="checkbox"
+                checked={editForm.isNew}
+                onChange={(e) => setEditForm((f) => ({ ...f, isNew: e.target.checked }))}
+              />
+              <span>Mark as "NEW"</span>
+            </label>
+          </div>
+        )}
       </div>
 
       <form className="admin-form__section panel" onSubmit={handleSubmit}>

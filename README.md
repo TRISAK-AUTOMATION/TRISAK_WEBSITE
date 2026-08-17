@@ -115,6 +115,7 @@ The catalog follows a 5-level drill-down: **Products Overview → Brand → Cate
 | POST | `/api/admin/login` | `{ password }` → `{ token }`. Password comes from `ADMIN_PASSWORD` in `server/.env` |
 | POST | `/api/admin/logout` | Invalidate the current token |
 | GET/POST | `/api/admin/brands`, `/api/admin/categories`, `/api/admin/series` | Lightweight taxonomy management |
+| PUT/DELETE | `/api/admin/brands/:id`, `/api/admin/categories/:id`, `/api/admin/series/:id` | Edit or delete a brand/category/series. Delete is blocked with a 409 and a clear message if any product still references it. |
 | POST | `/api/admin/upload` | Upload a product image (`multipart/form-data`, field name `image`) → `{ url, filename }` |
 | GET | `/api/admin/products` | List all products (admin view) |
 | GET | `/api/admin/products/:id` | Full product record for editing |
