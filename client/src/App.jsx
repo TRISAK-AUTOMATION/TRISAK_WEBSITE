@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import AdminGuard from "./components/AdminGuard.jsx";
+import AdminLayout from "./components/AdminLayout.jsx";
 
 import Home from "./pages/Home.jsx";
 import History from "./pages/History.jsx";
@@ -16,9 +17,15 @@ import BrandCategoryChild from "./pages/products/BrandCategoryChild.jsx";
 import ProductDetail from "./pages/products/ProductDetail.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminProductForm from "./pages/admin/AdminProductForm.jsx";
-import AdminCatalog from "./pages/admin/AdminCatalog.jsx";
+import AdminBrandList from "./pages/admin/AdminBrandList.jsx";
+import AdminBrandForm from "./pages/admin/AdminBrandForm.jsx";
+import AdminCategoryList from "./pages/admin/AdminCategoryList.jsx";
+import AdminCategoryForm from "./pages/admin/AdminCategoryForm.jsx";
+import AdminSeriesList from "./pages/admin/AdminSeriesList.jsx";
+import AdminSeriesForm from "./pages/admin/AdminSeriesForm.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -59,37 +66,31 @@ export default function App() {
         {/* admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
-          path="/admin/products"
+          path="/admin"
           element={
             <AdminGuard>
-              <AdminProducts />
+              <AdminLayout />
             </AdminGuard>
           }
-        />
-        <Route
-          path="/admin/products/new"
-          element={
-            <AdminGuard>
-              <AdminProductForm />
-            </AdminGuard>
-          }
-        />
-        <Route
-          path="/admin/products/:id/edit"
-          element={
-            <AdminGuard>
-              <AdminProductForm />
-            </AdminGuard>
-          }
-        />
-        <Route
-          path="/admin/catalog"
-          element={
-            <AdminGuard>
-              <AdminCatalog />
-            </AdminGuard>
-          }
-        />
+        >
+          <Route index element={<AdminDashboard />} />
+
+          <Route path="brands" element={<AdminBrandList />} />
+          <Route path="brands/new" element={<AdminBrandForm />} />
+          <Route path="brands/:id/edit" element={<AdminBrandForm />} />
+
+          <Route path="categories" element={<AdminCategoryList />} />
+          <Route path="categories/new" element={<AdminCategoryForm />} />
+          <Route path="categories/:id/edit" element={<AdminCategoryForm />} />
+
+          <Route path="series" element={<AdminSeriesList />} />
+          <Route path="series/new" element={<AdminSeriesForm />} />
+          <Route path="series/:id/edit" element={<AdminSeriesForm />} />
+
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="products/new" element={<AdminProductForm />} />
+          <Route path="products/:id/edit" element={<AdminProductForm />} />
+        </Route>
       </Routes>
       {!isAdmin && <Footer />}
     </div>

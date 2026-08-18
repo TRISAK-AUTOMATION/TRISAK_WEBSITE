@@ -20,21 +20,80 @@ export async function logout(req, res) {
 }
 
 // ---------------- taxonomy (brand / category / series) ----------------
-// Lightweight CRUD so the admin isn't stuck if they need a new brand,
-// category, or series before they can add a product under it.
+// Full CRUD + status toggle + reorder, to back the dedicated admin list
+// and edit pages for each entity.
+
+async function reorderRow(table, id, direction, scopeColumns = []) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const currentRes = await client.query(`SELECT * FROM ${table} WHERE id = $1`, [id]);
+    if (!currentRes.rows.length) {
+      await client.query("ROLLBACK");
+      return "not-found";
+    }
+    const current = currentRes.rows[0];
+    const cmp = direction === "up" ? "<" : ">";
+    const order = direction === "up" ? "DESC" : "ASC";
+    const scopeConds = scopeColumns.map((col, i) => `${col} = $${i + 2}`).join(" AND ");
+    const scopeVals = scopeColumns.map((col) => current[col]);
+    const scopeSql = scopeConds ? ` AND ${scopeConds}` : "";
+    const neighborRes = await client.query(
+      `SELECT id, sort_order FROM ${table} WHERE sort_order ${cmp} $1${scopeSql} ORDER BY sort_order ${order} LIMIT 1`,
+      [current.sort_order, ...scopeVals]
+    );
+    if (!neighborRes.rows.length) {
+      await client.query("ROLLBACK");
+      return "edge"; // already first/last within its scope — nothing to swap with
+    }
+    const neighbor = neighborRes.rows[0];
+    await client.query(`UPDATE ${table} SET sort_order = $1, updated_at = now() WHERE id = $2`, [
+      neighbor.sort_order,
+      current.id,
+    ]);
+    await client.query(`UPDATE ${table} SET sort_order = $1, updated_at = now() WHERE id = $2`, [
+      current.sort_order,
+      neighbor.id,
+    ]);
+    await client.query("COMMIT");
+    return "ok";
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+function parseDirection(req, res) {
+  const { direction } = req.body || {};
+  if (direction !== "up" && direction !== "down") {
+    res.status(400).json({ error: "direction must be 'up' or 'down'" });
+    return null;
+  }
+  return direction;
+}
+
+// ---- brands ----
 
 export async function listBrandsAdmin(req, res) {
   const { rows } = await pool.query("SELECT * FROM brands ORDER BY sort_order");
   res.json(rows);
 }
 
+export async function getBrandAdmin(req, res) {
+  const { rows } = await pool.query("SELECT * FROM brands WHERE id = $1", [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: "Brand not found" });
+  res.json(rows[0]);
+}
+
 export async function createBrand(req, res) {
-  const { name, slug, sortOrder = 0 } = req.body || {};
+  const { name, slug, logoUrl, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
   try {
     const { rows } = await pool.query(
-      "INSERT INTO brands (name, slug, sort_order) VALUES ($1, $2, $3) RETURNING *",
-      [name, slug, sortOrder]
+      "INSERT INTO brands (name, slug, logo_url, is_active, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [name, slug, logoUrl || null, isActive, sortOrder]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -44,17 +103,42 @@ export async function createBrand(req, res) {
 
 export async function updateBrand(req, res) {
   const { id } = req.params;
-  const { name, slug, sortOrder = 0 } = req.body || {};
+  const { name, slug, logoUrl, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
   try {
     const { rows } = await pool.query(
-      "UPDATE brands SET name = $1, slug = $2, sort_order = $3 WHERE id = $4 RETURNING *",
-      [name, slug, sortOrder, id]
+      "UPDATE brands SET name = $1, slug = $2, logo_url = $3, is_active = $4, sort_order = $5, updated_at = now() WHERE id = $6 RETURNING *",
+      [name, slug, logoUrl || null, isActive, sortOrder, id]
     );
     if (!rows.length) return res.status(404).json({ error: "Brand not found" });
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+}
+
+export async function toggleBrandStatus(req, res) {
+  const { isActive } = req.body || {};
+  if (typeof isActive !== "boolean") {
+    return res.status(400).json({ error: "isActive (boolean) is required" });
+  }
+  const { rows } = await pool.query(
+    "UPDATE brands SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+    [isActive, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Brand not found" });
+  res.json(rows[0]);
+}
+
+export async function reorderBrand(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  try {
+    const result = await reorderRow("brands", req.params.id, direction, []);
+    if (result === "not-found") return res.status(404).json({ error: "Brand not found" });
+    res.json({ success: true, moved: result === "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 }
 
@@ -78,18 +162,26 @@ export async function deleteBrand(req, res) {
   }
 }
 
+// ---- categories ----
+
 export async function listCategoriesAdmin(req, res) {
   const { rows } = await pool.query("SELECT * FROM categories ORDER BY sort_order");
   res.json(rows);
 }
 
+export async function getCategoryAdmin(req, res) {
+  const { rows } = await pool.query("SELECT * FROM categories WHERE id = $1", [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: "Category not found" });
+  res.json(rows[0]);
+}
+
 export async function createCategory(req, res) {
-  const { name, slug, sortOrder = 0 } = req.body || {};
+  const { name, slug, imageUrl, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
   try {
     const { rows } = await pool.query(
-      "INSERT INTO categories (name, slug, sort_order) VALUES ($1, $2, $3) RETURNING *",
-      [name, slug, sortOrder]
+      "INSERT INTO categories (name, slug, image_url, is_active, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [name, slug, imageUrl || null, isActive, sortOrder]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -99,17 +191,42 @@ export async function createCategory(req, res) {
 
 export async function updateCategory(req, res) {
   const { id } = req.params;
-  const { name, slug, sortOrder = 0 } = req.body || {};
+  const { name, slug, imageUrl, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
   try {
     const { rows } = await pool.query(
-      "UPDATE categories SET name = $1, slug = $2, sort_order = $3 WHERE id = $4 RETURNING *",
-      [name, slug, sortOrder, id]
+      "UPDATE categories SET name = $1, slug = $2, image_url = $3, is_active = $4, sort_order = $5, updated_at = now() WHERE id = $6 RETURNING *",
+      [name, slug, imageUrl || null, isActive, sortOrder, id]
     );
     if (!rows.length) return res.status(404).json({ error: "Category not found" });
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+}
+
+export async function toggleCategoryStatus(req, res) {
+  const { isActive } = req.body || {};
+  if (typeof isActive !== "boolean") {
+    return res.status(400).json({ error: "isActive (boolean) is required" });
+  }
+  const { rows } = await pool.query(
+    "UPDATE categories SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+    [isActive, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Category not found" });
+  res.json(rows[0]);
+}
+
+export async function reorderCategory(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  try {
+    const result = await reorderRow("categories", req.params.id, direction, []);
+    if (result === "not-found") return res.status(404).json({ error: "Category not found" });
+    res.json({ success: true, moved: result === "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 }
 
@@ -133,6 +250,8 @@ export async function deleteCategory(req, res) {
   }
 }
 
+// ---- series ----
+
 export async function listSeriesAdmin(req, res) {
   const { rows } = await pool.query(
     `SELECT s.*, b.name AS brand_name, c.name AS category_name
@@ -144,17 +263,52 @@ export async function listSeriesAdmin(req, res) {
   res.json(rows);
 }
 
+export async function getSeriesAdmin(req, res) {
+  const { rows } = await pool.query(
+    `SELECT s.*, b.name AS brand_name, c.name AS category_name
+     FROM series s
+     JOIN brands b ON b.id = s.brand_id
+     JOIN categories c ON c.id = s.category_id
+     WHERE s.id = $1`,
+    [req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Series not found" });
+  res.json(rows[0]);
+}
+
 export async function createSeries(req, res) {
-  const { name, slug, brandId, categoryId, tagline, description, sortOrder = 0, isNew = false } =
-    req.body || {};
+  const {
+    name,
+    slug,
+    brandId,
+    categoryId,
+    tagline,
+    description,
+    imageUrl,
+    isNew = false,
+    isActive = true,
+    sortOrder = 0,
+  } = req.body || {};
   if (!name || !slug || !brandId || !categoryId) {
     return res.status(400).json({ error: "name, slug, brandId, categoryId are required" });
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO series (name, slug, brand_id, category_id, tagline, description, sort_order, is_new)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [name, slug, brandId, categoryId, tagline || null, description || null, sortOrder, isNew]
+      `INSERT INTO series
+        (name, slug, brand_id, category_id, tagline, description, image_url, is_new, is_active, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [
+        name,
+        slug,
+        brandId,
+        categoryId,
+        tagline || null,
+        description || null,
+        imageUrl || null,
+        isNew,
+        isActive,
+        sortOrder,
+      ]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -164,8 +318,18 @@ export async function createSeries(req, res) {
 
 export async function updateSeries(req, res) {
   const { id } = req.params;
-  const { name, slug, brandId, categoryId, tagline, description, sortOrder = 0, isNew = false } =
-    req.body || {};
+  const {
+    name,
+    slug,
+    brandId,
+    categoryId,
+    tagline,
+    description,
+    imageUrl,
+    isNew = false,
+    isActive = true,
+    sortOrder = 0,
+  } = req.body || {};
   if (!name || !slug || !brandId || !categoryId) {
     return res.status(400).json({ error: "name, slug, brandId, categoryId are required" });
   }
@@ -173,14 +337,52 @@ export async function updateSeries(req, res) {
     const { rows } = await pool.query(
       `UPDATE series SET
         name = $1, slug = $2, brand_id = $3, category_id = $4,
-        tagline = $5, description = $6, sort_order = $7, is_new = $8
-       WHERE id = $9 RETURNING *`,
-      [name, slug, brandId, categoryId, tagline || null, description || null, sortOrder, isNew, id]
+        tagline = $5, description = $6, image_url = $7, is_new = $8, is_active = $9, sort_order = $10,
+        updated_at = now()
+       WHERE id = $11 RETURNING *`,
+      [
+        name,
+        slug,
+        brandId,
+        categoryId,
+        tagline || null,
+        description || null,
+        imageUrl || null,
+        isNew,
+        isActive,
+        sortOrder,
+        id,
+      ]
     );
     if (!rows.length) return res.status(404).json({ error: "Series not found" });
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+}
+
+export async function toggleSeriesStatus(req, res) {
+  const { isActive } = req.body || {};
+  if (typeof isActive !== "boolean") {
+    return res.status(400).json({ error: "isActive (boolean) is required" });
+  }
+  const { rows } = await pool.query(
+    "UPDATE series SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+    [isActive, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Series not found" });
+  res.json(rows[0]);
+}
+
+export async function reorderSeries(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  try {
+    const result = await reorderRow("series", req.params.id, direction, ["brand_id", "category_id"]);
+    if (result === "not-found") return res.status(404).json({ error: "Series not found" });
+    res.json({ success: true, moved: result === "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 }
 

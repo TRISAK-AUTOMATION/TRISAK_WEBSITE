@@ -21,14 +21,19 @@ CREATE TABLE brands (
   name         VARCHAR(100) NOT NULL UNIQUE,
   slug         VARCHAR(100) NOT NULL UNIQUE,
   logo_url     VARCHAR(255),
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  is_active    BOOLEAN NOT NULL DEFAULT true,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE categories (
   id           SERIAL PRIMARY KEY,
   name         VARCHAR(100) NOT NULL UNIQUE,
   slug         VARCHAR(100) NOT NULL UNIQUE,
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  image_url    VARCHAR(255),
+  is_active    BOOLEAN NOT NULL DEFAULT true,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- A series belongs to one brand + one category (e.g. OMRON / PLC & HMI / "NX Series")
@@ -42,7 +47,9 @@ CREATE TABLE series (
   description  TEXT,
   image_url    VARCHAR(255),
   is_new       BOOLEAN NOT NULL DEFAULT false,
+  is_active    BOOLEAN NOT NULL DEFAULT true,
   sort_order   INTEGER NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (brand_id, category_id, slug)
 );
 
