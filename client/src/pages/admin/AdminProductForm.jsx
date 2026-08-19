@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 
 const emptyForm = {
   name: "",
@@ -146,24 +147,17 @@ export default function AdminProductForm() {
   };
 
   if (loading) {
-    return (
-      <section className="admin-shell">
-        <p className="empty-state">Loading…</p>
-      </section>
-    );
+    return <p className="empty-state">กำลังโหลด…</p>;
   }
 
   return (
-    <section className="admin-shell">
-      <div className="admin-shell__topbar">
-        <div>
-          <span className="eyebrow">TRISAK Admin</span>
-          <h1 style={{ fontSize: "1.8rem" }}>{isEdit ? "Edit Product" : "Add Product"}</h1>
-        </div>
-        <Link to="/admin/products" className="btn">
-          ← Back to list
-        </Link>
-      </div>
+    <>
+      <AdminBreadcrumb
+        items={[
+          { label: "รายการ", to: "/admin/products" },
+          { label: isEdit ? "แก้ไข" : "เพิ่ม" },
+        ]}
+      />
 
       <form className="admin-form" onSubmit={handleSubmit}>
         {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
@@ -222,7 +216,7 @@ export default function AdminProductForm() {
             <label className="contact-form__field">
               <span>
                 Series{" "}
-                <Link to="/admin/catalog" className="admin-form__inline-link">
+                <Link to="/admin/series/new" className="admin-form__inline-link">
                   (+ add new)
                 </Link>
               </span>
@@ -430,6 +424,6 @@ export default function AdminProductForm() {
           </Link>
         </div>
       </form>
-    </section>
+    </>
   );
 }

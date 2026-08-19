@@ -15,7 +15,7 @@ export default function AdminLogin() {
     setError("");
     try {
       await api.adminLogin(password);
-      const redirectTo = location.state?.from || "/admin/products";
+      const redirectTo = location.state?.from || "/admin";
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.message || "Login failed");

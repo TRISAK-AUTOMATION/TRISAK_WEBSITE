@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 export async function listBrands(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, slug, logo_url FROM brands ORDER BY sort_order"
+      "SELECT id, name, slug, logo_url FROM brands WHERE is_active = true ORDER BY sort_order"
     );
     res.json(rows);
   } catch (err) {
@@ -15,7 +15,7 @@ export async function listBrands(req, res) {
 export async function getBrand(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, slug, logo_url FROM brands WHERE slug = $1",
+      "SELECT id, name, slug, logo_url FROM brands WHERE slug = $1 AND is_active = true",
       [req.params.brandSlug]
     );
     if (!rows.length) return res.status(404).json({ error: "Brand not found" });
@@ -29,7 +29,7 @@ export async function getBrand(req, res) {
 export async function listCategories(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, slug FROM categories ORDER BY sort_order"
+      "SELECT id, name, slug, image_url FROM categories WHERE is_active = true ORDER BY sort_order"
     );
     res.json(rows);
   } catch (err) {
@@ -43,11 +43,11 @@ export async function listCategories(req, res) {
 export async function listCategoriesForBrand(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT DISTINCT c.id, c.name, c.slug, c.sort_order
+      `SELECT DISTINCT c.id, c.name, c.slug, c.image_url, c.sort_order
        FROM categories c
        JOIN products p ON p.category_id = c.id
        JOIN brands b ON b.id = p.brand_id
-       WHERE b.slug = $1
+       WHERE b.slug = $1 AND c.is_active = true AND b.is_active = true
        ORDER BY c.sort_order`,
       [req.params.brandSlug]
     );
@@ -61,7 +61,7 @@ export async function listCategoriesForBrand(req, res) {
 export async function getCategory(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, slug FROM categories WHERE slug = $1",
+      "SELECT id, name, slug, image_url FROM categories WHERE slug = $1 AND is_active = true",
       [req.params.categorySlug]
     );
     if (!rows.length) return res.status(404).json({ error: "Category not found" });
@@ -74,7 +74,7 @@ export async function getCategory(req, res) {
 
 export async function listSeries(req, res) {
   const { brand, category } = req.query;
-  const conditions = [];
+  const conditions = ["s.is_active = true"];
   const values = [];
 
   let query = `
@@ -95,7 +95,7 @@ export async function listSeries(req, res) {
     values.push(category);
     conditions.push(`c.slug = $${values.length}`);
   }
-  if (conditions.length) query += " WHERE " + conditions.join(" AND ");
+  query += " WHERE " + conditions.join(" AND ");
   query += " ORDER BY s.sort_order";
 
   try {
@@ -117,7 +117,7 @@ export async function getSeries(req, res) {
        FROM series s
        JOIN brands b ON b.id = s.brand_id
        JOIN categories c ON c.id = s.category_id
-       WHERE b.slug = $1 AND c.slug = $2 AND s.slug = $3`,
+       WHERE b.slug = $1 AND c.slug = $2 AND s.slug = $3 AND s.is_active = true`,
       [brandSlug, categorySlug, seriesSlug]
     );
     if (!rows.length) return res.status(404).json({ error: "Series not found" });
@@ -141,7 +141,7 @@ const PRODUCT_LIST_SELECT = `
 
 export async function listProducts(req, res) {
   const { brand, category, series, q } = req.query;
-  const conditions = [];
+  const conditions = ["b.is_active = true", "c.is_active = true", "(s.id IS NULL OR s.is_active = true)"];
   const values = [];
   let query = PRODUCT_LIST_SELECT;
 
@@ -161,7 +161,7 @@ export async function listProducts(req, res) {
     values.push(`%${q}%`);
     conditions.push(`(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length})`);
   }
-  if (conditions.length) query += " WHERE " + conditions.join(" AND ");
+  query += " WHERE " + conditions.join(" AND ");
   query += " ORDER BY p.sort_order, p.name";
 
   try {
@@ -176,7 +176,9 @@ export async function listProducts(req, res) {
 export async function getFeaturedProducts(req, res) {
   try {
     const { rows } = await pool.query(
-      `${PRODUCT_LIST_SELECT} ORDER BY p.is_new DESC, p.sort_order LIMIT 8`
+      `${PRODUCT_LIST_SELECT}
+       WHERE b.is_active = true AND c.is_active = true AND (s.id IS NULL OR s.is_active = true)
+       ORDER BY p.is_new DESC, p.sort_order LIMIT 8`
     );
     res.json(rows);
   } catch (err) {

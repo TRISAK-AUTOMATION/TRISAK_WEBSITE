@@ -114,8 +114,12 @@ The catalog follows a 5-level drill-down: **Products Overview → Brand → Cate
 |--------|------|---------|
 | POST | `/api/admin/login` | `{ password }` → `{ token }`. Password comes from `ADMIN_PASSWORD` in `server/.env` |
 | POST | `/api/admin/logout` | Invalidate the current token |
-| GET/POST | `/api/admin/brands`, `/api/admin/categories`, `/api/admin/series` | Lightweight taxonomy management |
-| PUT/DELETE | `/api/admin/brands/:id`, `/api/admin/categories/:id`, `/api/admin/series/:id` | Edit or delete a brand/category/series. Delete is blocked with a 409 and a clear message if any product still references it. |
+| GET | `/api/admin/brands`, `/api/admin/categories`, `/api/admin/series` | List all (active + inactive) |
+| GET | `/api/admin/brands/:id`, `/api/admin/categories/:id`, `/api/admin/series/:id` | Fetch one, for prefilling an edit form |
+| POST/PUT | same paths | Create / update. Series accepts `imageUrl`; all three accept `isActive` |
+| PATCH | `.../:id/status` | `{ isActive }` — quick on/off toggle (the green dot in the list page) |
+| POST | `.../:id/reorder` | `{ direction: "up" \| "down" }` — swaps `sort_order` with the neighboring row. Series reorders within its own brand+category; brands/categories reorder globally. No-ops quietly at the first/last position. |
+| DELETE | same paths | Blocked with a 409 and a clear message if any product still references it |
 | POST | `/api/admin/upload` | Upload a product image (`multipart/form-data`, field name `image`) → `{ url, filename }` |
 | GET | `/api/admin/products` | List all products (admin view) |
 | GET | `/api/admin/products/:id` | Full product record for editing |
@@ -127,7 +131,23 @@ All admin routes except `/login` require `Authorization: Bearer <token>`. Sessio
 
 **Image uploads:** the admin form uploads files directly (drag-and-drop style click-to-upload) instead of asking for a URL. Files land in `server/uploads/` on disk and are served at `http://<host>:<port>/uploads/<filename>`. Accepted types: jpg, png, webp, gif, svg — max 5 MB. The `server/uploads/` folder is gitignored (except a `.gitkeep` placeholder) so uploaded files aren't committed to source control; back that folder up separately if you deploy this for real, since nothing else persists those files.
 
-**Admin UI:** `/admin/login` → `/admin/products` (list, edit, delete) → `/admin/products/new` or `/admin/products/:id/edit` (full form: basics, features, images, specs, documents, related products) → **`/admin/catalog`** (add new Brands, Categories, and Series — this is where you create a Series before it can be picked in the product form's Series dropdown). The admin UI is English-only by design (internal tool); the public-facing pages support the EN/TH toggle described below.
+**"Active" status:** a brand/category/series toggled off (`is_active = false`) disappears from every public endpoint immediately — it just won't show anywhere on the live site — while staying visible (and re-enable-able) in the admin list. Products don't have their own status toggle; a product effectively disappears if its brand, category, or series is turned off.
+
+## Admin UI (CMS-style, matches the reference screenshots)
+
+`/admin/login` → `/admin` (dashboard with counts) → sidebar navigation:
+
+- **สินค้า (Product)**
+  - **แบรนด์ (Brand)** → `/admin/brands` — list with image thumbnail, sort arrows, status dot, edit/delete
+  - **หมวดหมู่ (Category)** → `/admin/categories` — same shape, plus a category image
+  - **ซีรีย์ (Series)** → `/admin/series` — same shape, plus Brand/Category columns; this is where you create a new Series (there's also a "+ add new" shortcut right next to the Series dropdown on the product form)
+  - **รายการ (List)** → `/admin/products` — the full product list
+
+Each list page has search, a "+ เพิ่ม" (Add) button, and a paginated table (`ลำดับ` order / `รูปภาพ` image / `ชื่อ` name / `จัดเรียง` reorder arrows / `อัพเดท` last-updated / `จัดการ` actions — green dot to toggle visibility, edit, delete).
+
+Each edit page has two tabs (**ข้อมูล** data / **อัพโหลด** upload-image), a sticky ยกเลิก/บันทึก (Cancel/Save) bar, and a right-hand sidebar panel for Language (display-only — see note below), Brand/Category selects (Series only), and the Status toggle.
+
+The admin UI is Thai-labeled and English-content by design — the *interface chrome* (buttons, table headers, breadcrumbs) matches the reference screenshots in Thai, but brand/category/series **names you type in are stored as a single value**, not per-language. The public site's own EN/TH toggle (see below) still works for all the static page copy; it just can't yet show a different catalog name per language. Ask if you'd like real bilingual name fields added (`name_th` / `name_en` columns) — that's a schema change I can do as a follow-up.
 
 ## Category page layout (sidebar + series cards)
 

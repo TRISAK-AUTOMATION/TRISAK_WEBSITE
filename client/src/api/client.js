@@ -98,24 +98,57 @@ export const api = {
   isAdminAuthenticated: () => Boolean(localStorage.getItem(ADMIN_TOKEN_KEY)),
 
   adminGetBrands: () => authRequest("/admin/brands"),
+  adminGetBrand: (id) => authRequest(`/admin/brands/${id}`),
   adminCreateBrand: (payload) =>
     authRequest("/admin/brands", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateBrand: (id, payload) =>
     authRequest(`/admin/brands/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleBrandStatus: (id, isActive) =>
+    authRequest(`/admin/brands/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminReorderBrand: (id, direction) =>
+    authRequest(`/admin/brands/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
   adminDeleteBrand: (id) => authRequest(`/admin/brands/${id}`, { method: "DELETE" }),
 
   adminGetCategories: () => authRequest("/admin/categories"),
+  adminGetCategory: (id) => authRequest(`/admin/categories/${id}`),
   adminCreateCategory: (payload) =>
     authRequest("/admin/categories", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateCategory: (id, payload) =>
     authRequest(`/admin/categories/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleCategoryStatus: (id, isActive) =>
+    authRequest(`/admin/categories/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminReorderCategory: (id, direction) =>
+    authRequest(`/admin/categories/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
   adminDeleteCategory: (id) => authRequest(`/admin/categories/${id}`, { method: "DELETE" }),
 
   adminGetSeriesList: () => authRequest("/admin/series"),
+  adminGetSeries: (id) => authRequest(`/admin/series/${id}`),
   adminCreateSeries: (payload) =>
     authRequest("/admin/series", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateSeries: (id, payload) =>
     authRequest(`/admin/series/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleSeriesStatus: (id, isActive) =>
+    authRequest(`/admin/series/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminReorderSeries: (id, direction) =>
+    authRequest(`/admin/series/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
   adminDeleteSeries: (id) => authRequest(`/admin/series/${id}`, { method: "DELETE" }),
 
   adminGetProducts: () => authRequest("/admin/products"),

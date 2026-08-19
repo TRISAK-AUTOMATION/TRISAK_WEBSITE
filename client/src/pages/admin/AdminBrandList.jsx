@@ -5,8 +5,8 @@ import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 
 const PAGE_SIZE = 10;
 
-export default function AdminProducts() {
-  const [products, setProducts] = useState([]);
+export default function AdminBrandList() {
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -15,31 +15,52 @@ export default function AdminProducts() {
   const load = () => {
     setLoading(true);
     api
-      .adminGetProducts()
-      .then(setProducts)
-      .catch((err) => setError(err.message))
+      .adminGetBrands()
+      .then(setBrands)
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
-  const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = brands.filter((b) => b.name.toLowerCase().includes(search.toLowerCase()));
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const handleDelete = async (id, name) => {
-    if (!confirm(`ลบสินค้า "${name}"?`)) return;
+  const handleToggleStatus = async (b) => {
+    setError("");
     try {
-      await api.adminDeleteProduct(id);
+      await api.adminToggleBrandStatus(b.id, !b.is_active);
       load();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
+    }
+  };
+
+  const handleReorder = async (id, direction) => {
+    setError("");
+    try {
+      await api.adminReorderBrand(id, direction);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDelete = async (b) => {
+    if (!confirm(`ลบแบรนด์ "${b.name}"?`)) return;
+    setError("");
+    try {
+      await api.adminDeleteBrand(b.id);
+      load();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   return (
     <>
-      <AdminBreadcrumb items={[{ label: "รายการ" }]} />
+      <AdminBreadcrumb items={[{ label: "แบรนด์" }]} />
 
       <div className="admin-list-toolbar">
         <input
@@ -51,7 +72,7 @@ export default function AdminProducts() {
             setPage(1);
           }}
         />
-        <Link to="/admin/products/new" className="btn btn-primary">
+        <Link to="/admin/brands/new" className="btn btn-primary">
           + เพิ่ม
         </Link>
       </div>
@@ -65,7 +86,7 @@ export default function AdminProducts() {
               <th>ลำดับ</th>
               <th>รูปภาพ</th>
               <th>ชื่อ</th>
-              <th>แบรนด์ / หมวดหมู่ / ซีรีย์</th>
+              <th>จัดเรียง</th>
               <th>อัพเดท</th>
               <th>จัดการ</th>
             </tr>
@@ -81,39 +102,49 @@ export default function AdminProducts() {
             {!loading && pageItems.length === 0 && (
               <tr>
                 <td colSpan={6} className="empty-state">
-                  ยังไม่มีสินค้า — เพิ่มรายการแรกได้เลย
+                  ไม่มีข้อมูล
                 </td>
               </tr>
             )}
             {!loading &&
-              pageItems.map((p, i) => (
-                <tr key={p.id}>
+              pageItems.map((b, i) => (
+                <tr key={b.id}>
                   <td>{(page - 1) * PAGE_SIZE + i + 1}</td>
                   <td>
-                    {p.image_url ? (
-                      <img src={p.image_url} alt="" className="admin-list-thumb" />
+                    {b.logo_url ? (
+                      <img src={b.logo_url} alt="" className="admin-list-thumb" />
                     ) : (
                       <span className="admin-list-thumb admin-list-thumb--empty" />
                     )}
                   </td>
+                  <td>{b.name}</td>
                   <td>
-                    {p.name} {p.is_new && <span className="admin-badge-new">NEW</span>}
-                    <div className="admin-list-table__submeta">{p.model}</div>
-                  </td>
-                  <td className="admin-list-table__muted">
-                    {p.brand} / {p.category}
-                    {p.series ? ` / ${p.series}` : ""}
+                    <div className="admin-sort-arrows">
+                      <button onClick={() => handleReorder(b.id, "up")} aria-label="เลื่อนขึ้น">
+                        ↑
+                      </button>
+                      <button onClick={() => handleReorder(b.id, "down")} aria-label="เลื่อนลง">
+                        ↓
+                      </button>
+                    </div>
                   </td>
                   <td className="admin-list-table__date">
-                    {new Date(p.updated_at).toLocaleString("th-TH", {
+                    {new Date(b.updated_at).toLocaleString("th-TH", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
                   </td>
                   <td>
                     <div className="admin-row-actions">
+                      <button
+                        className={`admin-status-dot ${b.is_active ? "is-active" : ""}`}
+                        onClick={() => handleToggleStatus(b)}
+                        title={b.is_active ? "กำลังแสดงผล — คลิกเพื่อซ่อน" : "ซ่อนอยู่ — คลิกเพื่อแสดง"}
+                      >
+                        ✓
+                      </button>
                       <Link
-                        to={`/admin/products/${p.id}/edit`}
+                        to={`/admin/brands/${b.id}/edit`}
                         className="admin-icon-btn admin-icon-btn--edit"
                         title="แก้ไข"
                       >
@@ -121,7 +152,7 @@ export default function AdminProducts() {
                       </Link>
                       <button
                         className="admin-icon-btn admin-icon-btn--delete"
-                        onClick={() => handleDelete(p.id, p.name)}
+                        onClick={() => handleDelete(b)}
                         title="ลบ"
                       >
                         🗑
