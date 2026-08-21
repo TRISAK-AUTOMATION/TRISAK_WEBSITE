@@ -194,7 +194,7 @@ export async function getSeries(req, res) {
     const { rows } = await pool.query(
       `SELECT s.id, s.name, s.slug, s.tagline, s.description, s.image_url, s.is_new,
               b.slug AS brand_slug, b.name AS brand_name,
-              c.slug AS category_slug, c.name AS category_name
+              c.id AS category_id, c.slug AS category_slug, c.name AS category_name
        FROM series s
        JOIN brands b ON b.id = s.brand_id
        JOIN categories c ON c.id = s.category_id

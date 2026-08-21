@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { categoryLevelHref, categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
 
 const PREVIEW_LIMIT = 5;
 
@@ -97,8 +98,7 @@ export default function CategoryPage() {
     const chain = [...crumb.slice(1, -1).map((c) => c.id), sib.id];
     return `${basePath}/cat/${chain.join("/")}`;
   };
-  const crumbHref = (i) =>
-    i === 0 ? `/products/${brandSlug}/${crumb[0].slug}` : `${basePath}/cat/${crumb.slice(1, i + 1).map((c) => c.id).join("/")}`;
+  const crumbHref = (i) => categoryLevelHref(brandSlug, crumb, i);
 
   // group products under their series, so each series card can list its models
   const productsBySeries = {};
@@ -135,12 +135,23 @@ export default function CategoryPage() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container category-layout">
           <aside className="category-sidebar">
-            <div className="category-sidebar__heading">{t("products.categoriesTitle")}</div>
-            <nav className="category-sidebar__list">
+            <div className="category-sidebar__heading">{brand?.name}</div>
+            <nav className="category-sidebar__tree">
+              {crumb.slice(0, -1).map((c, i) => (
+                <Link
+                  key={c.id}
+                  to={categoryLevelHref(brandSlug, crumb, i)}
+                  className="category-sidebar__ancestor"
+                  style={{ paddingLeft: 20 + i * 18 }}
+                >
+                  {c.name}
+                </Link>
+              ))}
               {siblings.map((s) => (
                 <Link
                   key={s.id}
                   to={siblingHref(s)}
+                  style={{ paddingLeft: 20 + Math.max(crumb.length - 1, 0) * 18 }}
                   className={`category-sidebar__item ${s.id === category?.id ? "is-active" : ""}`}
                 >
                   {s.name}
