@@ -200,6 +200,18 @@
   letter-spacing: 0.05em;
 }
 
+.subcategory-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 28px;
+  transition: background 0.2s ease;
+}
+
+.subcategory-tile:hover {
+  background: var(--bg-panel);
+}
+
 /* =========================================================
    Series tile (Category page)
    ========================================================= */

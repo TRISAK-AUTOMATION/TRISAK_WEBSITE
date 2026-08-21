@@ -3,7 +3,31 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
+
+// Flattens the parent_id tree into a depth-ordered list (parents
+// immediately followed by their children, sorted by sort_order at each
+// level) so the table can render it with "- " / "-- " indentation like
+// the reference screenshot.
+function flattenTree(categories) {
+  const byParent = new Map();
+  for (const c of categories) {
+    const key = c.parent_id ?? "root";
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(c);
+  }
+  for (const list of byParent.values()) list.sort((a, b) => a.sort_order - b.sort_order);
+
+  const result = [];
+  function walk(parentKey, depth) {
+    for (const child of byParent.get(parentKey) || []) {
+      result.push({ ...child, depth });
+      walk(child.id, depth + 1);
+    }
+  }
+  walk("root", 0);
+  return result;
+}
 
 export default function AdminCategoryList() {
   const [categories, setCategories] = useState([]);
@@ -23,7 +47,8 @@ export default function AdminCategoryList() {
 
   useEffect(load, []);
 
-  const filtered = categories.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+  const tree = flattenTree(categories);
+  const filtered = tree.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -86,6 +111,7 @@ export default function AdminCategoryList() {
               <th>ลำดับ</th>
               <th>รูปภาพ</th>
               <th>ชื่อ</th>
+              <th>หมวดหมู่แม่</th>
               <th>จัดเรียง</th>
               <th>อัพเดท</th>
               <th>จัดการ</th>
@@ -94,14 +120,14 @@ export default function AdminCategoryList() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   กำลังโหลด…
                 </td>
               </tr>
             )}
             {!loading && pageItems.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   ไม่มีข้อมูล
                 </td>
               </tr>
@@ -117,7 +143,15 @@ export default function AdminCategoryList() {
                       <span className="admin-list-thumb admin-list-thumb--empty" />
                     )}
                   </td>
-                  <td>{c.name}</td>
+                  <td>
+                    <span className="admin-tree-indent">
+                      {c.depth > 0 ? "- ".repeat(c.depth) : ""}
+                      {c.name}
+                    </span>
+                  </td>
+                  <td className="admin-list-table__muted">
+                    {categories.find((p) => p.id === c.parent_id)?.name || "—"}
+                  </td>
                   <td>
                     <div className="admin-sort-arrows">
                       <button onClick={() => handleReorder(c.id, "up")} aria-label="เลื่อนขึ้น">

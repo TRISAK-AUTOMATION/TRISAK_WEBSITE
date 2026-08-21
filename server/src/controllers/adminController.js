@@ -35,7 +35,12 @@ async function reorderRow(table, id, direction, scopeColumns = []) {
     const current = currentRes.rows[0];
     const cmp = direction === "up" ? "<" : ">";
     const order = direction === "up" ? "DESC" : "ASC";
-    const scopeConds = scopeColumns.map((col, i) => `${col} = $${i + 2}`).join(" AND ");
+    // IS NOT DISTINCT FROM (rather than =) so a NULL scope value (e.g. a
+    // top-level category with parent_id = NULL) still matches correctly —
+    // plain "=" never matches NULL in SQL.
+    const scopeConds = scopeColumns
+      .map((col, i) => `${col} IS NOT DISTINCT FROM $${i + 2}`)
+      .join(" AND ");
     const scopeVals = scopeColumns.map((col) => current[col]);
     const scopeSql = scopeConds ? ` AND ${scopeConds}` : "";
     const neighborRes = await client.query(
@@ -77,14 +82,24 @@ function parseDirection(req, res) {
 // ---- brands ----
 
 export async function listBrandsAdmin(req, res) {
-  const { rows } = await pool.query("SELECT * FROM brands ORDER BY sort_order");
-  res.json(rows);
+  try {
+    const { rows } = await pool.query("SELECT * FROM brands ORDER BY sort_order");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load brands" });
+  }
 }
 
 export async function getBrandAdmin(req, res) {
-  const { rows } = await pool.query("SELECT * FROM brands WHERE id = $1", [req.params.id]);
-  if (!rows.length) return res.status(404).json({ error: "Brand not found" });
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query("SELECT * FROM brands WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Brand not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load brand" });
+  }
 }
 
 export async function createBrand(req, res) {
@@ -122,12 +137,17 @@ export async function toggleBrandStatus(req, res) {
   if (typeof isActive !== "boolean") {
     return res.status(400).json({ error: "isActive (boolean) is required" });
   }
-  const { rows } = await pool.query(
-    "UPDATE brands SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
-    [isActive, req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: "Brand not found" });
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      "UPDATE brands SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+      [isActive, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Brand not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update brand status" });
+  }
 }
 
 export async function reorderBrand(req, res) {
@@ -165,23 +185,49 @@ export async function deleteBrand(req, res) {
 // ---- categories ----
 
 export async function listCategoriesAdmin(req, res) {
-  const { rows } = await pool.query("SELECT * FROM categories ORDER BY sort_order");
-  res.json(rows);
+  try {
+    const { rows } = await pool.query("SELECT * FROM categories ORDER BY sort_order");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load categories" });
+  }
 }
 
 export async function getCategoryAdmin(req, res) {
-  const { rows } = await pool.query("SELECT * FROM categories WHERE id = $1", [req.params.id]);
-  if (!rows.length) return res.status(404).json({ error: "Category not found" });
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query("SELECT * FROM categories WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Category not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load category" });
+  }
+}
+
+// Recursively collect every descendant id of a category (used to stop a
+// category being set as its own descendant's parent, which would create
+// a cycle in the tree).
+async function getDescendantIds(categoryId) {
+  const { rows } = await pool.query(
+    `WITH RECURSIVE descendants AS (
+       SELECT id FROM categories WHERE parent_id = $1
+       UNION ALL
+       SELECT c.id FROM categories c JOIN descendants d ON c.parent_id = d.id
+     )
+     SELECT id FROM descendants`,
+    [categoryId]
+  );
+  return rows.map((r) => r.id);
 }
 
 export async function createCategory(req, res) {
-  const { name, slug, imageUrl, isActive = true, sortOrder = 0 } = req.body || {};
+  const { name, slug, imageUrl, parentId, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
   try {
     const { rows } = await pool.query(
-      "INSERT INTO categories (name, slug, image_url, is_active, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, slug, imageUrl || null, isActive, sortOrder]
+      "INSERT INTO categories (name, slug, image_url, parent_id, is_active, sort_order) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [name, slug, imageUrl || null, parentId || null, isActive, sortOrder]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -191,12 +237,25 @@ export async function createCategory(req, res) {
 
 export async function updateCategory(req, res) {
   const { id } = req.params;
-  const { name, slug, imageUrl, isActive = true, sortOrder = 0 } = req.body || {};
+  const { name, slug, imageUrl, parentId, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
+
   try {
+    if (parentId) {
+      if (Number(parentId) === Number(id)) {
+        return res.status(400).json({ error: "A category can't be its own parent" });
+      }
+      const descendantIds = await getDescendantIds(id);
+      if (descendantIds.includes(Number(parentId))) {
+        return res
+          .status(400)
+          .json({ error: "Can't set a subcategory of this category as its parent (would create a loop)" });
+      }
+    }
+
     const { rows } = await pool.query(
-      "UPDATE categories SET name = $1, slug = $2, image_url = $3, is_active = $4, sort_order = $5, updated_at = now() WHERE id = $6 RETURNING *",
-      [name, slug, imageUrl || null, isActive, sortOrder, id]
+      "UPDATE categories SET name = $1, slug = $2, image_url = $3, parent_id = $4, is_active = $5, sort_order = $6, updated_at = now() WHERE id = $7 RETURNING *",
+      [name, slug, imageUrl || null, parentId || null, isActive, sortOrder, id]
     );
     if (!rows.length) return res.status(404).json({ error: "Category not found" });
     res.json(rows[0]);
@@ -210,19 +269,26 @@ export async function toggleCategoryStatus(req, res) {
   if (typeof isActive !== "boolean") {
     return res.status(400).json({ error: "isActive (boolean) is required" });
   }
-  const { rows } = await pool.query(
-    "UPDATE categories SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
-    [isActive, req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: "Category not found" });
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      "UPDATE categories SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+      [isActive, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Category not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update category status" });
+  }
 }
 
 export async function reorderCategory(req, res) {
   const direction = parseDirection(req, res);
   if (!direction) return;
   try {
-    const result = await reorderRow("categories", req.params.id, direction, []);
+    // scoped to siblings under the same parent (including other
+    // top-level categories, where parent_id is NULL for all of them)
+    const result = await reorderRow("categories", req.params.id, direction, ["parent_id"]);
     if (result === "not-found") return res.status(404).json({ error: "Category not found" });
     res.json({ success: true, moved: result === "ok" });
   } catch (err) {
@@ -233,13 +299,18 @@ export async function reorderCategory(req, res) {
 export async function deleteCategory(req, res) {
   const { id } = req.params;
   try {
-    const { rows } = await pool.query(
-      "SELECT COUNT(*)::int AS count FROM products WHERE category_id = $1",
-      [id]
-    );
-    if (rows[0].count > 0) {
+    const [productCount, childCount] = await Promise.all([
+      pool.query("SELECT COUNT(*)::int AS count FROM products WHERE category_id = $1", [id]),
+      pool.query("SELECT COUNT(*)::int AS count FROM categories WHERE parent_id = $1", [id]),
+    ]);
+    if (productCount.rows[0].count > 0) {
       return res.status(409).json({
-        error: `Can't delete — ${rows[0].count} product(s) still use this category. Reassign or delete them first.`,
+        error: `Can't delete — ${productCount.rows[0].count} product(s) still use this category. Reassign or delete them first.`,
+      });
+    }
+    if (childCount.rows[0].count > 0) {
+      return res.status(409).json({
+        error: `Can't delete — ${childCount.rows[0].count} subcategory(ies) are still under this category. Delete or move them first.`,
       });
     }
     const result = await pool.query("DELETE FROM categories WHERE id = $1", [id]);
@@ -253,27 +324,37 @@ export async function deleteCategory(req, res) {
 // ---- series ----
 
 export async function listSeriesAdmin(req, res) {
-  const { rows } = await pool.query(
-    `SELECT s.*, b.name AS brand_name, c.name AS category_name
-     FROM series s
-     JOIN brands b ON b.id = s.brand_id
-     JOIN categories c ON c.id = s.category_id
-     ORDER BY s.sort_order`
-  );
-  res.json(rows);
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*, b.name AS brand_name, c.name AS category_name
+       FROM series s
+       JOIN brands b ON b.id = s.brand_id
+       JOIN categories c ON c.id = s.category_id
+       ORDER BY s.sort_order`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load series" });
+  }
 }
 
 export async function getSeriesAdmin(req, res) {
-  const { rows } = await pool.query(
-    `SELECT s.*, b.name AS brand_name, c.name AS category_name
-     FROM series s
-     JOIN brands b ON b.id = s.brand_id
-     JOIN categories c ON c.id = s.category_id
-     WHERE s.id = $1`,
-    [req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: "Series not found" });
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*, b.name AS brand_name, c.name AS category_name
+       FROM series s
+       JOIN brands b ON b.id = s.brand_id
+       JOIN categories c ON c.id = s.category_id
+       WHERE s.id = $1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Series not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load series" });
+  }
 }
 
 export async function createSeries(req, res) {
@@ -366,12 +447,17 @@ export async function toggleSeriesStatus(req, res) {
   if (typeof isActive !== "boolean") {
     return res.status(400).json({ error: "isActive (boolean) is required" });
   }
-  const { rows } = await pool.query(
-    "UPDATE series SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
-    [isActive, req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: "Series not found" });
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      "UPDATE series SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+      [isActive, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Series not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update series status" });
+  }
 }
 
 export async function reorderSeries(req, res) {
@@ -534,8 +620,9 @@ export async function createProduct(req, res) {
   const validationError = validateProductPayload(body);
   if (validationError) return res.status(400).json({ error: validationError });
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query("BEGIN");
     const { rows } = await client.query(
       `INSERT INTO products
@@ -562,11 +649,11 @@ export async function createProduct(req, res) {
     await client.query("COMMIT");
     res.status(201).json({ id: productId });
   } catch (err) {
-    await client.query("ROLLBACK");
+    if (client) await client.query("ROLLBACK");
     console.error(err);
     res.status(400).json({ error: err.message });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
@@ -576,8 +663,9 @@ export async function updateProduct(req, res) {
   const validationError = validateProductPayload(body);
   if (validationError) return res.status(400).json({ error: validationError });
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query("BEGIN");
     const result = await client.query(
       `UPDATE products SET
@@ -609,11 +697,11 @@ export async function updateProduct(req, res) {
     await client.query("COMMIT");
     res.json({ success: true });
   } catch (err) {
-    await client.query("ROLLBACK");
+    if (client) await client.query("ROLLBACK");
     console.error(err);
     res.status(400).json({ error: err.message });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 

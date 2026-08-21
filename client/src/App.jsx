@@ -55,6 +55,8 @@ export default function App() {
         <Route path="/products/:brandSlug" element={<BrandPage />} />
         {/* 03 — category page (scoped to brand) */}
         <Route path="/products/:brandSlug/:categorySlug" element={<CategoryPage />} />
+        {/* recursive subcategory drill-down (unlimited depth) */}
+        <Route path="/products/:brandSlug/:categorySlug/cat/*" element={<CategoryPage />} />
         {/* 04 — series page, OR a series-less product detail (resolved at runtime) */}
         <Route path="/products/:brandSlug/:categorySlug/:seriesSlug" element={<BrandCategoryChild />} />
         {/* 05 — product detail (product that belongs to a series) */}

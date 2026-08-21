@@ -149,9 +149,19 @@ Each edit page has two tabs (**ข้อมูล** data / **อัพโหล�
 
 The admin UI is Thai-labeled and English-content by design — the *interface chrome* (buttons, table headers, breadcrumbs) matches the reference screenshots in Thai, but brand/category/series **names you type in are stored as a single value**, not per-language. The public site's own EN/TH toggle (see below) still works for all the static page copy; it just can't yet show a different catalog name per language. Ask if you'd like real bilingual name fields added (`name_th` / `name_en` columns) — that's a schema change I can do as a follow-up.
 
-## Category page layout (sidebar + series cards)
+## Category page layout (sidebar + series cards + unlimited subcategory nesting)
 
-Clicking a "Browse by Brand" tile skips straight to that brand's first category — the Category page shows a left sidebar listing every category that has products under the current brand (click one to switch), and the main area shows a card per series (name, tagline, and up to 5 of its products as direct links, with a "View all" link to the full series page if there are more). Products that don't belong to any series get their own simple card in the same grid. This mirrors the reference layout you shared, restyled in the site's own white/navy theme instead of copying the source site's look.
+Clicking a "Browse by Brand" tile skips straight to that brand's first top-level category. The Category page shows a left sidebar listing sibling categories at the current level (click one to switch), and the main area shows:
+- **Subcategory tiles**, if the current category has any (click one to drill deeper — `หมวดหมู่ใหญ่ → หมวดหมู่ย่อย → ย่อยต่อ → ...`, to any depth)
+- **Series cards** and standalone products that are attached *directly* to the current category (name, tagline, up to 5 products as direct links, "View all" if there are more)
+
+Both can appear together — adding a subcategory to a category that already has products attached directly doesn't hide those products.
+
+Route: `/products/:brandSlug/:categorySlug` for the top level, then `/products/:brandSlug/:categorySlug/cat/<id>/<id>/...` as you drill down (the id chain has no fixed depth limit). Series and product detail pages are unaffected — they always link via the product's *own* category slug, whatever depth it's actually at, so nothing else in the catalog needed to change.
+
+**Admin:** the Category list (`/admin/categories`) shows the full tree with `- ` / `-- ` indentation per depth; the Category edit page has a "หมวดหมู่แม่" (Parent Category) dropdown — pick "— ไม่มี (หมวดหมู่ใหญ่) —" for a top-level category, or any existing category to nest under it. The dropdown won't offer a category's own descendants as a parent choice (and the API rejects it too, if you script around the UI), so you can't create a loop. Deleting a category that still has subcategories under it is blocked with a clear message, same as the existing "still has products" protection.
+
+If you're upgrading an existing database, run `migrations/002_add_category_parent.sql` (adds the one new column, keeps all your data).
 
 All seed content in the database comes from the structure given in the brief (brands: OMRON, YASKAWA, NITTO; categories: PLC & HMI, Inverter, Servo & Motion, Industrial Robot, Sensors, Safety, I/O & Industrial PC, Electrical Components, Enclosures; solutions: HMI & PLC, Drive & Motion, Robotic, Smart Factory), plus a demo OMRON / PLC & HMI / NX Series product line to exercise the full catalog flow end-to-end.
 
