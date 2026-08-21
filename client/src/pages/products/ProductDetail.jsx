@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
 
 const TABS = ["overview", "specifications", "documents", "related"];
 
@@ -11,6 +12,7 @@ export default function ProductDetail() {
   const { t } = useLanguage();
 
   const [product, setProduct] = useState(null);
+  const [categoryCrumb, setCategoryCrumb] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,11 @@ export default function ProductDetail() {
     setActiveImage(0);
     api
       .getProductBySlug(slug)
-      .then(setProduct)
+      .then(async (p) => {
+        const crumb = await api.getCategoryBreadcrumb(p.category_id);
+        setProduct(p);
+        setCategoryCrumb(crumb);
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
@@ -53,10 +59,7 @@ export default function ProductDetail() {
             { label: t("nav.home"), to: "/" },
             { label: t("nav.products"), to: "/products" },
             { label: product.brand, to: `/products/${product.brand_slug}` },
-            {
-              label: product.category,
-              to: `/products/${product.brand_slug}/${product.category_slug}`,
-            },
+            ...categoryBreadcrumbItems(product.brand_slug, categoryCrumb),
             ...(product.series
               ? [
                   {

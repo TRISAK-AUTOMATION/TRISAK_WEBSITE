@@ -4,12 +4,14 @@ import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
 import ProductCard from "../../components/ProductCard.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
 
 export default function SeriesPage() {
   const { brandSlug, categorySlug, seriesSlug } = useParams();
   const { t } = useLanguage();
 
   const [series, setSeries] = useState(null);
+  const [categoryCrumb, setCategoryCrumb] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -17,13 +19,16 @@ export default function SeriesPage() {
   useEffect(() => {
     setLoading(true);
     setNotFound(false);
-    Promise.all([
-      api.getSeries(brandSlug, categorySlug, seriesSlug),
-      api.getProducts({ brand: brandSlug, category: categorySlug, series: seriesSlug }),
-    ])
-      .then(([s, prods]) => {
+    api
+      .getSeries(brandSlug, categorySlug, seriesSlug)
+      .then(async (s) => {
+        const [prods, crumb] = await Promise.all([
+          api.getProducts({ brand: brandSlug, category: categorySlug, series: seriesSlug }),
+          api.getCategoryBreadcrumb(s.category_id),
+        ]);
         setSeries(s);
         setProducts(prods);
+        setCategoryCrumb(crumb);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -41,10 +46,7 @@ export default function SeriesPage() {
               { label: t("nav.home"), to: "/" },
               { label: t("nav.products"), to: "/products" },
               { label: series?.brand_name || brandSlug, to: `/products/${brandSlug}` },
-              {
-                label: series?.category_name || categorySlug,
-                to: `/products/${brandSlug}/${categorySlug}`,
-              },
+              ...categoryBreadcrumbItems(brandSlug, categoryCrumb),
               { label: series?.name || seriesSlug },
             ]}
           />
