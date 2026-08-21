@@ -62,6 +62,9 @@ export const api = {
 
   getCategories: () => request("/categories"),
   getCategory: (categorySlug) => request(`/categories/${categorySlug}`),
+  getCategoryById: (id) => request(`/categories/id/${id}`),
+  getCategoryChildren: (id, brandSlug) => request(`/categories/${id}/children${qs({ brand: brandSlug })}`),
+  getCategoryBreadcrumb: (id) => request(`/categories/${id}/breadcrumb`),
 
   getSeriesList: (params = {}) => request(`/series${qs(params)}`),
   getSeries: (brandSlug, categorySlug, seriesSlug) =>

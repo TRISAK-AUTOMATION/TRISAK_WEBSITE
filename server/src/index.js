@@ -11,6 +11,17 @@ import { uploadsDir } from "./middleware/upload.js";
 
 dotenv.config();
 
+// Last-resort safety net: Express 4 does NOT automatically catch errors
+// thrown inside async route handlers, so a missed try/catch anywhere can
+// otherwise fail completely silently (the request just hangs, and the
+// client sees a generic "Failed to fetch"). This won't send a proper
+// error response — every route handler is still expected to catch its
+// own errors — but it at least logs clearly so the problem is visible
+// instead of invisible.
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION — a route handler is missing a try/catch:", err);
+});
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 4000;

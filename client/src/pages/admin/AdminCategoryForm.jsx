@@ -12,6 +12,45 @@ function slugify(text) {
     .replace(/(^-|-$)/g, "");
 }
 
+// Depth-ordered flat list (for the "- " / "-- " indented dropdown), same
+// logic as the list page.
+function flattenTree(categories) {
+  const byParent = new Map();
+  for (const c of categories) {
+    const key = c.parent_id ?? "root";
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(c);
+  }
+  for (const list of byParent.values()) list.sort((a, b) => a.sort_order - b.sort_order);
+  const result = [];
+  function walk(parentKey, depth) {
+    for (const child of byParent.get(parentKey) || []) {
+      result.push({ ...child, depth });
+      walk(child.id, depth + 1);
+    }
+  }
+  walk("root", 0);
+  return result;
+}
+
+function getDescendantIds(categories, rootId) {
+  const ids = new Set();
+  const byParent = new Map();
+  for (const c of categories) {
+    const key = c.parent_id ?? "root";
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(c);
+  }
+  function walk(id) {
+    for (const child of byParent.get(id) || []) {
+      ids.add(child.id);
+      walk(child.id);
+    }
+  }
+  walk(rootId);
+  return ids;
+}
+
 export default function AdminCategoryForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -22,10 +61,16 @@ export default function AdminCategoryForm() {
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(isEdit);
   const [imageUrl, setImageUrl] = useState("");
+  const [parentId, setParentId] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.adminGetCategories().then(setAllCategories).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -35,6 +80,7 @@ export default function AdminCategoryForm() {
         setName(c.name);
         setSlug(c.slug);
         setImageUrl(c.image_url || "");
+        setParentId(c.parent_id ? String(c.parent_id) : "");
         setIsActive(c.is_active);
       })
       .catch((err) => setError(err.message))
@@ -46,7 +92,14 @@ export default function AdminCategoryForm() {
     setSaving(true);
     setError("");
     try {
-      const payload = { name, slug, imageUrl: imageUrl || null, isActive, sortOrder: 0 };
+      const payload = {
+        name,
+        slug,
+        imageUrl: imageUrl || null,
+        parentId: parentId ? Number(parentId) : null,
+        isActive,
+        sortOrder: 0,
+      };
       if (isEdit) {
         await api.adminUpdateCategory(id, payload);
       } else {
@@ -63,6 +116,13 @@ export default function AdminCategoryForm() {
   if (loading) {
     return <p className="empty-state">กำลังโหลด…</p>;
   }
+
+  // exclude itself and its own descendants from the parent picker, to
+  // avoid creating a cycle in the tree (the backend also rejects this,
+  // this is just so the UI doesn't offer an invalid choice in the first place)
+  const excludedIds = isEdit ? getDescendantIds(allCategories, Number(id)) : new Set();
+  if (isEdit) excludedIds.add(Number(id));
+  const parentOptions = flattenTree(allCategories).filter((c) => !excludedIds.has(c.id));
 
   return (
     <form onSubmit={handleSubmit}>
@@ -153,6 +213,19 @@ export default function AdminCategoryForm() {
             <span className="admin-edit-sidebar__label">ภาษา</span>
             <select disabled defaultValue="th">
               <option value="th">🇹🇭 ภาษาไทย</option>
+            </select>
+          </div>
+
+          <div className="panel admin-edit-sidebar__section">
+            <span className="admin-edit-sidebar__label">หมวดหมู่แม่</span>
+            <select value={parentId} onChange={(e) => setParentId(e.target.value)}>
+              <option value="">— ไม่มี (หมวดหมู่ใหญ่) —</option>
+              {parentOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.depth > 0 ? "- ".repeat(c.depth) : ""}
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
 

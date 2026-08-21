@@ -1,43 +1,104 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, NavLink, Navigate } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
+const PREVIEW_LIMIT = 5;
+
 export default function CategoryPage() {
-  const { brandSlug, categorySlug } = useParams();
+  const params = useParams();
+  const { brandSlug, categorySlug } = params;
+  // "/products/:brand/:categorySlug/cat/*" — splat is a "/"-joined chain
+  // of subcategory ids, e.g. "12/45". Empty/undefined at the top level.
+  const splat = params["*"] || "";
+  const idChain = splat.split("/").filter(Boolean).map(Number);
   const { t } = useLanguage();
 
   const [brand, setBrand] = useState(null);
-  const [category, setCategory] = useState(null);
-  const [sidebarCategories, setSidebarCategories] = useState([]);
+  const [category, setCategory] = useState(null); // current node
+  const [crumb, setCrumb] = useState([]); // [{id,name,slug}, ...] root..current
+  const [siblings, setSiblings] = useState([]); // same-level categories (sidebar)
+  const [children, setChildren] = useState([]); // subcategories of current node
   const [seriesList, setSeriesList] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setNotFound(false);
-    Promise.all([
-      api.getBrand(brandSlug),
-      api.getCategory(categorySlug),
-      api.getCategoriesForBrand(brandSlug),
-      api.getSeriesList({ brand: brandSlug, category: categorySlug }),
-      api.getProducts({ brand: brandSlug, category: categorySlug }),
-    ])
-      .then(([b, c, cats, series, prods]) => {
+
+    async function run() {
+      try {
+        const b = await api.getBrand(brandSlug);
+        if (cancelled) return;
+
+        let currentId;
+        if (idChain.length > 0) {
+          currentId = idChain[idChain.length - 1];
+        } else {
+          const topCat = await api.getCategory(categorySlug);
+          currentId = topCat.id;
+        }
+
+        const [cat, crumbChain, kids] = await Promise.all([
+          api.getCategoryById(currentId),
+          api.getCategoryBreadcrumb(currentId),
+          api.getCategoryChildren(currentId, brandSlug),
+        ]);
+        if (cancelled) return;
+
+        const sibs = cat.parent_id
+          ? await api.getCategoryChildren(cat.parent_id, brandSlug)
+          : await api.getCategoriesForBrand(brandSlug);
+        if (cancelled) return;
+
+        let series = [];
+        let prods = [];
+        [series, prods] = await Promise.all([
+          api.getSeriesList({ brand: brandSlug, categoryId: currentId }),
+          api.getProducts({ brand: brandSlug, categoryId: currentId }),
+        ]);
+        if (cancelled) return;
+
         setBrand(b);
-        setCategory(c);
-        setSidebarCategories(cats);
+        setCategory(cat);
+        setCrumb(crumbChain);
+        setChildren(kids);
+        setSiblings(sibs);
         setSeriesList(series);
         setProducts(prods);
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
-  }, [brandSlug, categorySlug]);
+      } catch {
+        if (!cancelled) setNotFound(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandSlug, categorySlug, splat]);
 
   if (notFound) return <Navigate to={`/products/${brandSlug}`} replace />;
+
+  const basePath = `/products/${brandSlug}/${categorySlug}`;
+  const isTop = crumb.length <= 1;
+
+  const childHref = (childId) => {
+    const chain = [...crumb.slice(1).map((c) => c.id), childId];
+    return `${basePath}/cat/${chain.join("/")}`;
+  };
+  const siblingHref = (sib) => {
+    if (isTop) return `/products/${brandSlug}/${sib.slug}`;
+    const chain = [...crumb.slice(1, -1).map((c) => c.id), sib.id];
+    return `${basePath}/cat/${chain.join("/")}`;
+  };
+  const crumbHref = (i) =>
+    i === 0 ? `/products/${brandSlug}/${crumb[0].slug}` : `${basePath}/cat/${crumb.slice(1, i + 1).map((c) => c.id).join("/")}`;
 
   // group products under their series, so each series card can list its models
   const productsBySeries = {};
@@ -60,7 +121,10 @@ export default function CategoryPage() {
               { label: t("nav.home"), to: "/" },
               { label: t("nav.products"), to: "/products" },
               { label: brand?.name || brandSlug, to: `/products/${brandSlug}` },
-              { label: category?.name || categorySlug },
+              ...crumb.map((c, i) => ({
+                label: c.name,
+                to: i === crumb.length - 1 ? undefined : crumbHref(i),
+              })),
             ]}
           />
           <span className="hero__meta">{brand?.name}</span>
@@ -73,16 +137,14 @@ export default function CategoryPage() {
           <aside className="category-sidebar">
             <div className="category-sidebar__heading">{t("products.categoriesTitle")}</div>
             <nav className="category-sidebar__list">
-              {sidebarCategories.map((c) => (
-                <NavLink
-                  key={c.slug}
-                  to={`/products/${brandSlug}/${c.slug}`}
-                  className={({ isActive }) =>
-                    `category-sidebar__item ${isActive ? "is-active" : ""}`
-                  }
+              {siblings.map((s) => (
+                <Link
+                  key={s.id}
+                  to={siblingHref(s)}
+                  className={`category-sidebar__item ${s.id === category?.id ? "is-active" : ""}`}
                 >
-                  {c.name}
-                </NavLink>
+                  {s.name}
+                </Link>
               ))}
             </nav>
           </aside>
@@ -90,7 +152,18 @@ export default function CategoryPage() {
           <div className="category-main">
             {loading && <p className="empty-state">{t("products.loadingProducts")}</p>}
 
-            {!loading && seriesList.length === 0 && unseriesedProducts.length === 0 && (
+            {!loading && children.length > 0 && (
+              <div className="grid cols-3" style={{ marginBottom: seriesList.length || unseriesedProducts.length ? 48 : 0 }}>
+                {children.map((child) => (
+                  <Link key={child.id} to={childHref(child.id)} className="grid-cell subcategory-tile">
+                    <h3>{child.name}</h3>
+                    <span className="btn-arrow">→</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {!loading && children.length === 0 && seriesList.length === 0 && unseriesedProducts.length === 0 && (
               <p className="empty-state">{t("products.emptyState")}</p>
             )}
 
@@ -102,7 +175,7 @@ export default function CategoryPage() {
                     series={s}
                     products={productsBySeries[s.slug] || []}
                     brandSlug={brandSlug}
-                    categorySlug={categorySlug}
+                    categorySlug={s.category_slug}
                     t={t}
                   />
                 ))}
@@ -139,8 +212,6 @@ export default function CategoryPage() {
     </>
   );
 }
-
-const PREVIEW_LIMIT = 5;
 
 function SeriesCard({ series, products, brandSlug, categorySlug, t }) {
   const seriesHref = `/products/${brandSlug}/${categorySlug}/${series.slug}`;
