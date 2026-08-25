@@ -18,6 +18,7 @@ import ProductDetail from "./pages/products/ProductDetail.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import AdminHomeEditor from "./pages/admin/AdminHomeEditor.jsx";
 import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminProductForm from "./pages/admin/AdminProductForm.jsx";
 import AdminBrandList from "./pages/admin/AdminBrandList.jsx";
@@ -76,6 +77,7 @@ export default function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="home" element={<AdminHomeEditor />} />
 
           <Route path="brands" element={<AdminBrandList />} />
           <Route path="brands/new" element={<AdminBrandForm />} />

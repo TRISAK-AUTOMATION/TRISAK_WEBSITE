@@ -118,6 +118,39 @@ CREATE TABLE industries (
   sort_order   INTEGER NOT NULL DEFAULT 0
 );
 
+-- Singleton table (always exactly one row) holding the editable text on
+-- the Home page — Hero, the 3 "Our Strength" blocks, and the closing
+-- CTA. Every field has an _en and _th variant so the site's EN/TH
+-- toggle keeps working once this is edited from the admin.
+CREATE TABLE home_content (
+  id                     SERIAL PRIMARY KEY,
+  hero_meta_en           VARCHAR(255),
+  hero_meta_th           VARCHAR(255),
+  hero_title_line1_en    VARCHAR(255),
+  hero_title_line1_th    VARCHAR(255),
+  hero_title_line2_en    VARCHAR(255),
+  hero_title_line2_th    VARCHAR(255),
+  hero_sub_en            TEXT,
+  hero_sub_th            TEXT,
+  strength1_title_en     VARCHAR(255),
+  strength1_title_th     VARCHAR(255),
+  strength1_body_en      TEXT,
+  strength1_body_th      TEXT,
+  strength2_title_en     VARCHAR(255),
+  strength2_title_th     VARCHAR(255),
+  strength2_body_en      TEXT,
+  strength2_body_th      TEXT,
+  strength3_title_en     VARCHAR(255),
+  strength3_title_th     VARCHAR(255),
+  strength3_body_en      TEXT,
+  strength3_body_th      TEXT,
+  cta_title_line1_en     VARCHAR(255),
+  cta_title_line1_th     VARCHAR(255),
+  cta_title_line2_en     VARCHAR(255),
+  cta_title_line2_th     VARCHAR(255),
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE contact_submissions (
   id             SERIAL PRIMARY KEY,
   name           VARCHAR(150) NOT NULL,
@@ -188,6 +221,38 @@ INSERT INTO industries (name, sort_order) VALUES
   ('Water & Wastewater', 6),
   ('Power & Electrical', 7),
   ('Building & Infrastructure', 8);
+
+INSERT INTO home_content (
+  hero_meta_en, hero_meta_th,
+  hero_title_line1_en, hero_title_line1_th,
+  hero_title_line2_en, hero_title_line2_th,
+  hero_sub_en, hero_sub_th,
+  strength1_title_en, strength1_title_th, strength1_body_en, strength1_body_th,
+  strength2_title_en, strength2_title_th, strength2_body_en, strength2_body_th,
+  strength3_title_en, strength3_title_th, strength3_body_en, strength3_body_th,
+  cta_title_line1_en, cta_title_line1_th,
+  cta_title_line2_en, cta_title_line2_th
+) VALUES (
+  'Authorized Automation Products & Engineering Solutions',
+  'ตัวแทนจำหน่ายสินค้าออโตเมชันและผู้ให้บริการโซลูชันวิศวกรรม',
+  'Industrial Automation &',
+  'ระบบอัตโนมัติทางอุตสาหกรรม &',
+  'Engineering Solutions',
+  'โซลูชันด้านวิศวกรรม',
+  'TRISAK GROUP supplies genuine automation products and delivers engineering solutions built to keep your production running.',
+  'TRISAK GROUP จำหน่ายสินค้าออโตเมชันของแท้ พร้อมให้บริการโซลูชันวิศวกรรมที่ออกแบบมาเพื่อให้สายการผลิตของคุณเดินเครื่องได้อย่างต่อเนื่อง',
+  'Authorized Distributor', 'ตัวแทนจำหน่ายที่ได้รับการแต่งตั้ง',
+  'Genuine automation products sourced directly from OMRON, YASKAWA, and NITTO.',
+  'สินค้าออโตเมชันของแท้ นำเข้าโดยตรงจาก OMRON, YASKAWA และ NITTO',
+  'Engineering Solution', 'โซลูชันด้านวิศวกรรม',
+  'Design, integration, and commissioning built around your process, not off a shelf.',
+  'ออกแบบ ติดตั้ง และปรับแต่งระบบให้เหมาะกับกระบวนการผลิตของคุณโดยเฉพาะ ไม่ใช่สินค้าสำเร็จรูป',
+  'Technical Support', 'ทีมสนับสนุนด้านเทคนิค',
+  'On-site and remote support from engineers who know the equipment first-hand.',
+  'ทีมวิศวกรที่รู้จักอุปกรณ์เป็นอย่างดี พร้อมให้บริการทั้งหน้างานและระยะไกล',
+  'Ready to Improve', 'พร้อมยกระดับ',
+  'Your Automation?', 'ระบบอัตโนมัติของคุณหรือยัง?'
+);
 
 -- ---- Demo product catalog: OMRON / PLC & HMI / NX Series ----
 INSERT INTO series (brand_id, category_id, name, slug, tagline, description, is_new, sort_order)

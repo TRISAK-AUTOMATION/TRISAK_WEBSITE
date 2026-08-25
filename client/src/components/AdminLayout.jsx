@@ -11,6 +11,12 @@ const NAV_SECTIONS = [
     end: true,
   },
   {
+    key: "home",
+    label: "หน้าแรก",
+    icon: "🏠",
+    to: "/admin/home",
+  },
+  {
     key: "product",
     label: "สินค้า",
     icon: "🛒",

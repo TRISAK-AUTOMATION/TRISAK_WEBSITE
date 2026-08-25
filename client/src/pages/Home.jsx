@@ -10,15 +10,33 @@ const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 export default function Home() {
   const { t, lang } = useLanguage();
   const [industries, setIndustries] = useState(null);
+  const [homeContent, setHomeContent] = useState(null);
 
   useEffect(() => {
     api
       .getIndustries()
       .then((data) => setIndustries(data?.length ? data : null))
       .catch(() => setIndustries(null));
+    api
+      .getHomeContent()
+      .then(setHomeContent)
+      .catch(() => setHomeContent(null));
   }, []);
 
-  const strengths = t("home.strengths");
+  // Reads `${field}_${lang}` from the admin-editable home_content row,
+  // falling back to the built-in translation if the DB row isn't
+  // loaded yet (or hasn't been edited from its seeded default).
+  const hc = (field, fallback) => {
+    if (!homeContent) return fallback;
+    const value = homeContent[`${field}_${lang}`];
+    return value || fallback;
+  };
+
+  const strengthsFallback = t("home.strengths");
+  const strengths = strengthsFallback.map((s, i) => ({
+    title: hc(`strength${i + 1}_title`, s.title),
+    body: hc(`strength${i + 1}_body`, s.body),
+  }));
   const pillars = t("home.pillars");
   const productTags = t("home.productTags");
   const fallbackIndustries = t("industries");
@@ -29,13 +47,13 @@ export default function Home() {
       <section className="hero">
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
-          <span className="hero__meta">{t("home.heroMeta")}</span>
+          <span className="hero__meta">{hc("hero_meta", t("home.heroMeta"))}</span>
           <h1>
-            {t("home.heroTitleLine1")}
+            {hc("hero_title_line1", t("home.heroTitleLine1"))}
             <br />
-            {t("home.heroTitleLine2")}
+            {hc("hero_title_line2", t("home.heroTitleLine2"))}
           </h1>
-          <p className="hero__sub">{t("home.heroSub")}</p>
+          <p className="hero__sub">{hc("hero_sub", t("home.heroSub"))}</p>
           <div className="hero__actions">
             <Link to="/products" className="btn btn-primary">
               {t("common.viewProducts")} <span className="btn-arrow">→</span>
@@ -56,7 +74,7 @@ export default function Home() {
           </div>
           <div className="grid cols-3">
             {strengths.map((s, i) => (
-              <div className="grid-cell strength-block" key={s.title}>
+              <div className="grid-cell strength-block" key={i}>
                 <span className="strength-block__index">0{i + 1}</span>
                 <h3>{s.title}</h3>
                 <p>{s.body}</p>
@@ -136,9 +154,9 @@ export default function Home() {
       <section className="cta-band">
         <div className="container cta-band__wrap">
           <h2>
-            {t("home.ctaTitleLine1")}
+            {hc("cta_title_line1", t("home.ctaTitleLine1"))}
             <br />
-            {t("home.ctaTitleLine2")}
+            {hc("cta_title_line2", t("home.ctaTitleLine2"))}
           </h2>
           <Link to="/contacts" className="btn btn-primary">
             {t("common.contactUs")} <span className="btn-arrow">→</span>

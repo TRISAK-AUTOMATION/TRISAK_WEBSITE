@@ -32,6 +32,7 @@ import {
   deleteProduct,
   uploadImage,
 } from "../controllers/adminController.js";
+import { updateHomeContent } from "../controllers/homeContentController.js";
 
 const router = Router();
 
@@ -42,6 +43,8 @@ router.post("/admin/login", login);
 router.use("/admin", requireAdmin);
 
 router.post("/admin/logout", logout);
+
+router.put("/admin/home-content", updateHomeContent);
 
 router.get("/admin/brands", listBrandsAdmin);
 router.get("/admin/brands/:id", getBrandAdmin);
