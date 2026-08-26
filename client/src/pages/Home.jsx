@@ -11,6 +11,7 @@ export default function Home() {
   const { t, lang } = useLanguage();
   const [industries, setIndustries] = useState(null);
   const [homeContent, setHomeContent] = useState(null);
+  const [brands, setBrands] = useState(null);
 
   useEffect(() => {
     api
@@ -21,6 +22,10 @@ export default function Home() {
       .getHomeContent()
       .then(setHomeContent)
       .catch(() => setHomeContent(null));
+    api
+      .getBrands()
+      .then((data) => setBrands(data?.length ? data : null))
+      .catch(() => setBrands(null));
   }, []);
 
   // Reads `${field}_${lang}` from the admin-editable home_content row,
@@ -105,9 +110,13 @@ export default function Home() {
         <div className="container">
           <SectionLabel index="02" eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
           <div className="brand-strip">
-            {BRANDS.map((b) => (
-              <span className="brand-strip__name" key={b}>
-                {b}
+            {(brands || BRANDS.map((name) => ({ id: name, name, logo_url: null }))).map((b) => (
+              <span className="brand-strip__item" key={b.id}>
+                {b.logo_url ? (
+                  <img className="brand-strip__logo" src={b.logo_url} alt={b.name} />
+                ) : (
+                  <span className="brand-strip__name">{b.name}</span>
+                )}
               </span>
             ))}
           </div>

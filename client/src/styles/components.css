@@ -175,6 +175,26 @@
   color: var(--text);
 }
 
+.brand-strip__item {
+  display: flex;
+  align-items: center;
+}
+
+.brand-strip__logo {
+  height: 34px;
+  max-width: 160px;
+  width: auto;
+  object-fit: contain;
+  /* Match the muted/monochrome treatment of the text fallback; logos
+     regain full color on hover so the strip still feels alive. */
+  filter: grayscale(1) opacity(0.55);
+  transition: filter 0.2s ease;
+}
+
+.brand-strip__logo:hover {
+  filter: grayscale(0) opacity(1);
+}
+
 .products-cta-row {
   display: flex;
   align-items: center;
