@@ -41,10 +41,22 @@ export default function Home() {
   const productTags = t("home.productTags");
   const fallbackIndustries = t("industries");
 
+  const heroBgImage = homeContent?.hero_bg_image || "";
+
   return (
     <>
       {/* 01 — HERO */}
-      <section className="hero">
+      <section className={`hero ${heroBgImage ? "hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <div
+              className="hero__bg-image"
+              style={{ backgroundImage: `url(${heroBgImage})` }}
+              aria-hidden="true"
+            />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
           <span className="hero__meta">{hc("hero_meta", t("home.heroMeta"))}</span>
@@ -68,7 +80,11 @@ export default function Home() {
       {/* 02 — OUR STRENGTH */}
       <section className="section strength-grid">
         <div className="container">
-          <SectionLabel index="01" eyebrow={t("home.strengthEyebrow")} title={t("home.strengthTitle")} />
+          <SectionLabel
+            index="01"
+            eyebrow={hc("strength_eyebrow", t("home.strengthEyebrow"))}
+            title={hc("strength_title", t("home.strengthTitle"))}
+          />
           <div className="strength-signal">
             <SignalLine nodes={3} orientation="horizontal" />
           </div>
