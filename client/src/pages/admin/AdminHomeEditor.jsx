@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import ImageUploadField from "../../components/ImageUploadField.jsx";
 
 const FIELD_SUFFIXES = [
   "hero_meta",
   "hero_title_line1",
   "hero_title_line2",
   "hero_sub",
+  "strength_eyebrow",
+  "strength_title",
   "strength1_title",
   "strength1_body",
   "strength2_title",
@@ -18,7 +21,7 @@ const FIELD_SUFFIXES = [
 ];
 
 function emptyForm() {
-  const form = {};
+  const form = { hero_bg_image: "" };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -136,6 +139,36 @@ export default function AdminHomeEditor() {
             <span>คำอธิบายใต้หัวข้อ</span>
             <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
           </label>
+          <label className="contact-form__field" style={{ marginTop: 20 }}>
+            <span>ภาพพื้นหลัง (แสดงด้านหลังข้อความหัวข้อ — ไม่บังคับ)</span>
+            <ImageUploadField
+              value={form.hero_bg_image}
+              onChange={(url) => {
+                setSuccess(false);
+                setForm((f) => ({ ...f, hero_bg_image: url }));
+              }}
+            />
+          </label>
+        </div>
+
+        <div className="admin-form__section panel">
+          <h3>หัวข้อส่วน "จุดแข็งของเรา"</h3>
+          <div className="admin-form__row">
+            <label className="contact-form__field">
+              <span>ข้อความเล็กเหนือหัวข้อ (Eyebrow)</span>
+              <input
+                value={value("strength_eyebrow")}
+                onChange={(e) => update("strength_eyebrow", e.target.value)}
+              />
+            </label>
+            <label className="contact-form__field">
+              <span>หัวข้อหลัก</span>
+              <input
+                value={value("strength_title")}
+                onChange={(e) => update("strength_title", e.target.value)}
+              />
+            </label>
+          </div>
         </div>
 
         {[1, 2, 3].map((n) => (

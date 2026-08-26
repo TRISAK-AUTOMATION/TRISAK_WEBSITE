@@ -11,6 +11,7 @@ export default function Home() {
   const { t, lang } = useLanguage();
   const [industries, setIndustries] = useState(null);
   const [homeContent, setHomeContent] = useState(null);
+  const [brands, setBrands] = useState(null);
 
   useEffect(() => {
     api
@@ -21,6 +22,10 @@ export default function Home() {
       .getHomeContent()
       .then(setHomeContent)
       .catch(() => setHomeContent(null));
+    api
+      .getBrands()
+      .then((data) => setBrands(data?.length ? data : null))
+      .catch(() => setBrands(null));
   }, []);
 
   // Reads `${field}_${lang}` from the admin-editable home_content row,
@@ -41,10 +46,22 @@ export default function Home() {
   const productTags = t("home.productTags");
   const fallbackIndustries = t("industries");
 
+  const heroBgImage = homeContent?.hero_bg_image || "";
+
   return (
     <>
       {/* 01 — HERO */}
-      <section className="hero">
+      <section className={`hero ${heroBgImage ? "hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <div
+              className="hero__bg-image"
+              style={{ backgroundImage: `url(${heroBgImage})` }}
+              aria-hidden="true"
+            />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
           <span className="hero__meta">{hc("hero_meta", t("home.heroMeta"))}</span>
@@ -68,7 +85,11 @@ export default function Home() {
       {/* 02 — OUR STRENGTH */}
       <section className="section strength-grid">
         <div className="container">
-          <SectionLabel index="01" eyebrow={t("home.strengthEyebrow")} title={t("home.strengthTitle")} />
+          <SectionLabel
+            index="01"
+            eyebrow={hc("strength_eyebrow", t("home.strengthEyebrow"))}
+            title={hc("strength_title", t("home.strengthTitle"))}
+          />
           <div className="strength-signal">
             <SignalLine nodes={3} orientation="horizontal" />
           </div>
@@ -89,9 +110,13 @@ export default function Home() {
         <div className="container">
           <SectionLabel index="02" eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
           <div className="brand-strip">
-            {BRANDS.map((b) => (
-              <span className="brand-strip__name" key={b}>
-                {b}
+            {(brands || BRANDS.map((name) => ({ id: name, name, logo_url: null }))).map((b) => (
+              <span className="brand-strip__item" key={b.id}>
+                {b.logo_url ? (
+                  <img className="brand-strip__logo" src={b.logo_url} alt={b.name} />
+                ) : (
+                  <span className="brand-strip__name">{b.name}</span>
+                )}
               </span>
             ))}
           </div>
