@@ -16,8 +16,11 @@ import {
   listSolutions,
   listIndustries,
 } from "../controllers/productsController.js";
+import { getHomeContent } from "../controllers/homeContentController.js";
 
 const router = Router();
+
+router.get("/home-content", getHomeContent);
 
 router.get("/brands", listBrands);
 router.get("/brands/:brandSlug", getBrand);

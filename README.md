@@ -137,6 +137,7 @@ All admin routes except `/login` require `Authorization: Bearer <token>`. Sessio
 
 `/admin/login` → `/admin` (dashboard with counts) → sidebar navigation:
 
+- **หน้าแรก (Home)** → `/admin/home` — edit the Home page's Hero text, the 3 "Our Strength" blocks, and the closing CTA. This one has a **real, working** ภาษาไทย/English tab switch (unlike the display-only language selector elsewhere — see below): each tab shows that language's fields, and Save writes both languages at once. Backed by a `home_content` table with an `_en`/`_th` column per field; if you run this against an existing database, apply `migrations/003_add_home_content.sql` first.
 - **สินค้า (Product)**
   - **แบรนด์ (Brand)** → `/admin/brands` — list with image thumbnail, sort arrows, status dot, edit/delete
   - **หมวดหมู่ (Category)** → `/admin/categories` — same shape, plus a category image
@@ -145,7 +146,7 @@ All admin routes except `/login` require `Authorization: Bearer <token>`. Sessio
 
 Each list page has search, a "+ เพิ่ม" (Add) button, and a paginated table (`ลำดับ` order / `รูปภาพ` image / `ชื่อ` name / `จัดเรียง` reorder arrows / `อัพเดท` last-updated / `จัดการ` actions — green dot to toggle visibility, edit, delete).
 
-Each edit page has two tabs (**ข้อมูล** data / **อัพโหลด** upload-image), a sticky ยกเลิก/บันทึก (Cancel/Save) bar, and a right-hand sidebar panel for Language (display-only — see note below), Brand/Category selects (Series only), and the Status toggle.
+Each edit page (Brand/Category/Series/Product) has two tabs (**ข้อมูล** data / **อัพโหลด** upload-image), a sticky ยกเลิก/บันทึก (Cancel/Save) bar, and a right-hand sidebar panel for Language (display-only on these — Brand/Category/Series/Product names are still single-value, not per-language; only the Home editor above is genuinely bilingual so far), Brand/Category selects (Series only), and the Status toggle.
 
 The admin UI is Thai-labeled and English-content by design — the *interface chrome* (buttons, table headers, breadcrumbs) matches the reference screenshots in Thai, but brand/category/series **names you type in are stored as a single value**, not per-language. The public site's own EN/TH toggle (see below) still works for all the static page copy; it just can't yet show a different catalog name per language. Ask if you'd like real bilingual name fields added (`name_th` / `name_en` columns) — that's a schema change I can do as a follow-up.
 
