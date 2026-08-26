@@ -29,6 +29,7 @@ import {
   getProductAdmin,
   createProduct,
   updateProduct,
+  reorderProduct,
   deleteProduct,
   uploadImage,
 } from "../controllers/adminController.js";
@@ -74,6 +75,7 @@ router.get("/admin/products", listProductsAdmin);
 router.get("/admin/products/:id", getProductAdmin);
 router.post("/admin/products", createProduct);
 router.put("/admin/products/:id", updateProduct);
+router.post("/admin/products/:id/reorder", reorderProduct);
 router.delete("/admin/products/:id", deleteProduct);
 
 router.post("/admin/upload", upload.single("image"), uploadImage);

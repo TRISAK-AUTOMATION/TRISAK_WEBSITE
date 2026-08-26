@@ -79,6 +79,10 @@ export default function AdminProductForm() {
               sortOrder: d.sort_order,
             })) || [],
           relatedProductIds: p.relatedProductIds || [],
+          // Preserve the product's existing position — otherwise saving
+          // an unrelated edit would silently reset it and undo any
+          // reordering done from the product list.
+          sortOrder: p.sort_order ?? 0,
         });
       })
       .catch((err) => setError(err.message))
@@ -131,6 +135,12 @@ export default function AdminProductForm() {
       brandId: Number(form.brandId),
       categoryId: Number(form.categoryId),
       seriesId: form.seriesId ? Number(form.seriesId) : null,
+      // New product: append to the end of the current order instead of
+      // defaulting to 0, which would jump it in front of every existing
+      // product (and collide with whichever product already sits at 0).
+      sortOrder: isEdit
+        ? form.sortOrder ?? 0
+        : allProducts.reduce((max, p) => Math.max(max, p.sort_order ?? 0), -1) + 1,
     };
     try {
       if (isEdit) {
