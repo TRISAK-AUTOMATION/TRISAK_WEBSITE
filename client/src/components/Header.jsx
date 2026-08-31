@@ -1,19 +1,34 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { useSiteSettings } from "../contexts/SiteSettingsContext.jsx";
+import { useMenu } from "../contexts/MenuContext.jsx";
+import MenuLink from "./MenuLink.jsx";
 
-const NAV_ITEMS = [
-  { key: "home", to: "/" },
-  { key: "history", to: "/history" },
-  { key: "products", to: "/products" },
-  { key: "automationSolution", to: "/automation-solution" },
-  { key: "contacts", to: "/contacts" },
+// Used only until the admin-managed menu has loaded (or if it ever
+// fails to load), so the header never renders with no navigation at
+// all. Matches the default items seeded into menu_items.
+const FALLBACK_NAV_ITEMS = [
+  { id: "home", label_en: "Home", label_th: "หน้าแรก", url: "/" },
+  { id: "history", label_en: "History", label_th: "ประวัติบริษัท", url: "/history" },
+  { id: "products", label_en: "Products", label_th: "สินค้า", url: "/products" },
+  {
+    id: "automationSolution",
+    label_en: "Automation Solution",
+    label_th: "โซลูชันระบบอัตโนมัติ",
+    url: "/automation-solution",
+  },
+  { id: "contacts", label_en: "Contacts", label_th: "ติดต่อเรา", url: "/contacts" },
 ];
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { lang, toggleLang, t } = useLanguage();
+  const siteSettings = useSiteSettings();
+  const headerLogo = siteSettings?.header_logo_url;
+  const menu = useMenu();
+  const navItems = menu?.header ?? FALLBACK_NAV_ITEMS;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -25,24 +40,29 @@ export default function Header() {
     <header className={`site-header ${scrolled ? "is-scrolled" : ""}`}>
       <div className="container site-header__inner">
         <NavLink to="/" className="site-header__logo" onClick={() => setOpen(false)}>
-          <span className="site-header__logo-mark">T</span>
-          <span className="site-header__logo-text">
-            TRISAK<span className="site-header__logo-sub">GROUP</span>
-          </span>
+          {headerLogo ? (
+            <img className="site-header__logo-image" src={headerLogo} alt="TRISAK GROUP" />
+          ) : (
+            <>
+              <span className="site-header__logo-mark">T</span>
+              <span className="site-header__logo-text">
+                TRISAK<span className="site-header__logo-sub">GROUP</span>
+              </span>
+            </>
+          )}
         </NavLink>
 
         <nav className="site-header__nav site-header__nav--desktop" aria-label="Main">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                `site-header__link ${isActive ? "is-active" : ""}`
-              }
+          {navItems.map((item) => (
+            <MenuLink
+              key={item.id}
+              url={item.url}
+              end={item.url === "/"}
+              className="site-header__link"
+              activeClassName="is-active"
             >
-              {t(`nav.${item.key}`)}
-            </NavLink>
+              {lang === "en" ? item.label_en : item.label_th}
+            </MenuLink>
           ))}
         </nav>
 
@@ -79,18 +99,17 @@ export default function Header() {
         className={`site-header__nav--mobile ${open ? "is-open" : ""}`}
         aria-label="Mobile"
       >
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
+        {navItems.map((item) => (
+          <MenuLink
+            key={item.id}
+            url={item.url}
+            end={item.url === "/"}
             onClick={() => setOpen(false)}
-            className={({ isActive }) =>
-              `site-header__mobile-link ${isActive ? "is-active" : ""}`
-            }
+            className="site-header__mobile-link"
+            activeClassName="is-active"
           >
-            {t(`nav.${item.key}`)}
-          </NavLink>
+            {lang === "en" ? item.label_en : item.label_th}
+          </MenuLink>
         ))}
 
         <button

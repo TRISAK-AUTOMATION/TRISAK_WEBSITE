@@ -34,6 +34,16 @@ import {
   uploadImage,
 } from "../controllers/adminController.js";
 import { updateHomeContent } from "../controllers/homeContentController.js";
+import { updateSiteSettings } from "../controllers/siteSettingsController.js";
+import {
+  listMenuItemsAdmin,
+  getMenuItemAdmin,
+  createMenuItem,
+  updateMenuItem,
+  toggleMenuItemStatus,
+  deleteMenuItem,
+  reorderMenuItems,
+} from "../controllers/menuController.js";
 
 const router = Router();
 
@@ -46,6 +56,15 @@ router.use("/admin", requireAdmin);
 router.post("/admin/logout", logout);
 
 router.put("/admin/home-content", updateHomeContent);
+router.put("/admin/site-settings", updateSiteSettings);
+
+router.get("/admin/menu-items", listMenuItemsAdmin);
+router.get("/admin/menu-items/:id", getMenuItemAdmin);
+router.post("/admin/menu-items", createMenuItem);
+router.put("/admin/menu-items/reorder", reorderMenuItems);
+router.put("/admin/menu-items/:id", updateMenuItem);
+router.patch("/admin/menu-items/:id/status", toggleMenuItemStatus);
+router.delete("/admin/menu-items/:id", deleteMenuItem);
 
 router.get("/admin/brands", listBrandsAdmin);
 router.get("/admin/brands/:id", getBrandAdmin);

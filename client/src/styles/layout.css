@@ -65,6 +65,14 @@
   margin-top: 1px;
 }
 
+.site-header__logo-image {
+  height: 34px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+  display: block;
+}
+
 .site-header__nav--desktop {
   display: flex;
   align-items: center;
@@ -249,6 +257,15 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text);
+  margin-bottom: 12px;
+}
+
+.site-footer__logo-image {
+  height: 40px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+  display: block;
   margin-bottom: 12px;
 }
 

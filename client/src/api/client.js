@@ -77,6 +77,8 @@ export const api = {
   getSolutions: () => request("/solutions"),
   getIndustries: () => request("/industries"),
   getHomeContent: () => request("/home-content"),
+  getSiteSettings: () => request("/site-settings"),
+  getMenu: () => request("/menu"),
 
   submitContact: (payload) =>
     request("/contact", { method: "POST", body: JSON.stringify(payload) }),
@@ -170,6 +172,27 @@ export const api = {
 
   adminUpdateHomeContent: (payload) =>
     authRequest("/admin/home-content", { method: "PUT", body: JSON.stringify(payload) }),
+  adminUpdateSiteSettings: (payload) =>
+    authRequest("/admin/site-settings", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetMenuItems: (location) =>
+    authRequest(`/admin/menu-items${location ? `?location=${location}` : ""}`),
+  adminGetMenuItem: (id) => authRequest(`/admin/menu-items/${id}`),
+  adminCreateMenuItem: (payload) =>
+    authRequest("/admin/menu-items", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateMenuItem: (id, payload) =>
+    authRequest(`/admin/menu-items/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleMenuItemStatus: (id, isActive) =>
+    authRequest(`/admin/menu-items/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminDeleteMenuItem: (id) => authRequest(`/admin/menu-items/${id}`, { method: "DELETE" }),
+  adminReorderMenuItems: (location, orderedIds) =>
+    authRequest("/admin/menu-items/reorder", {
+      method: "PUT",
+      body: JSON.stringify({ location, orderedIds }),
+    }),
 
   // multipart upload — bypasses request()/authRequest() so fetch can set
   // its own multipart/form-data boundary instead of the JSON content type

@@ -1,8 +1,30 @@
-import { Link } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { useSiteSettings } from "../contexts/SiteSettingsContext.jsx";
+import { useMenu } from "../contexts/MenuContext.jsx";
+import MenuLink from "./MenuLink.jsx";
+
+// Used only until the admin-managed menu has loaded (or if it ever
+// fails to load), so the footer never renders with no links at all.
+// Matches the default items seeded into menu_items.
+const FALLBACK_FOOTER_ITEMS = [
+  { id: "home", label_en: "Home", label_th: "หน้าแรก", url: "/" },
+  { id: "history", label_en: "History", label_th: "ประวัติบริษัท", url: "/history" },
+  { id: "products", label_en: "Products", label_th: "สินค้า", url: "/products" },
+  {
+    id: "automationSolution",
+    label_en: "Automation Solution",
+    label_th: "โซลูชันระบบอัตโนมัติ",
+    url: "/automation-solution",
+  },
+  { id: "contacts", label_en: "Contacts", label_th: "ติดต่อเรา", url: "/contacts" },
+];
 
 export default function Footer() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const siteSettings = useSiteSettings();
+  const footerLogo = siteSettings?.footer_logo_url;
+  const menu = useMenu();
+  const footerItems = menu?.footer ?? FALLBACK_FOOTER_ITEMS;
   const year = new Date().getFullYear();
 
   return (
@@ -10,18 +32,22 @@ export default function Footer() {
       <div className="container">
         <div className="site-footer__grid">
           <div>
-            <div className="site-footer__brand-mark">TRISAK GROUP</div>
+            {footerLogo ? (
+              <img className="site-footer__logo-image" src={footerLogo} alt="TRISAK GROUP" />
+            ) : (
+              <div className="site-footer__brand-mark">TRISAK GROUP</div>
+            )}
             <p className="site-footer__tagline">{t("footer.tagline")}</p>
           </div>
 
           <div>
             <div className="site-footer__heading">{t("footer.quickLinks")}</div>
             <nav className="site-footer__links">
-              <Link to="/">{t("nav.home")}</Link>
-              <Link to="/history">{t("nav.history")}</Link>
-              <Link to="/products">{t("nav.products")}</Link>
-              <Link to="/automation-solution">{t("nav.automationSolution")}</Link>
-              <Link to="/contacts">{t("nav.contacts")}</Link>
+              {footerItems.map((item) => (
+                <MenuLink key={item.id} url={item.url}>
+                  {lang === "en" ? item.label_en : item.label_th}
+                </MenuLink>
+              ))}
             </nav>
           </div>
 

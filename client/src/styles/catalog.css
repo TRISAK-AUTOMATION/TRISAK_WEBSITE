@@ -552,6 +552,12 @@
   margin: 0;
 }
 
+.admin-form__hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: -8px 0 0;
+}
+
 .admin-form__row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -652,6 +658,91 @@
   display: flex;
   gap: 12px;
   padding: 24px 0 60px;
+}
+
+/* Admin > Menu — item list + drag-and-drop reorder */
+
+.menu-item-form {
+  margin-bottom: 24px;
+}
+
+.menu-item-form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.menu-item-form__checkbox input {
+  width: 16px;
+  height: 16px;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 60px;
+}
+
+.menu-item-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.menu-item-row.is-inactive {
+  opacity: 0.55;
+}
+
+.menu-item-row.is-dragging {
+  opacity: 0.35;
+}
+
+.menu-item-row.is-drag-over {
+  border-color: var(--accent-signal);
+}
+
+.menu-item-row__handle {
+  cursor: grab;
+  color: var(--text-faint);
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.menu-item-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-item-row__label {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.menu-item-row__label-en {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+.menu-item-row__url {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  overflow-wrap: anywhere;
 }
 
 .admin-form select {
