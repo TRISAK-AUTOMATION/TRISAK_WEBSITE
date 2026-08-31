@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import ProductCard from "../../components/ProductCard.jsx";
+import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 export default function ProductsOverview() {
@@ -135,14 +136,7 @@ export default function ProductsOverview() {
           <section className="section">
             <div className="container">
               <SectionLabel eyebrow={t("products.brandsEyebrow")} title={t("products.browseByBrand")} />
-              <div className="grid cols-3">
-                {brands.map((b) => (
-                  <Link to={`/products/${b.slug}`} className="grid-cell brand-tile" key={b.slug}>
-                    <span className="brand-tile__name">{b.name}</span>
-                    <span className="btn-arrow">→</span>
-                  </Link>
-                ))}
-              </div>
+              <BrandLogoGrid brands={brands} getHref={(b) => `/products/${b.slug}`} />
             </div>
           </section>
 
