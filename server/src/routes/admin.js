@@ -35,6 +35,7 @@ import {
 } from "../controllers/adminController.js";
 import { updateHomeContent } from "../controllers/homeContentController.js";
 import { updateSiteSettings } from "../controllers/siteSettingsController.js";
+import { getDashboard, listLeadsAdmin, updateLeadStatus } from "../controllers/dashboardController.js";
 import {
   listMenuItemsAdmin,
   getMenuItemAdmin,
@@ -57,6 +58,11 @@ router.post("/admin/logout", logout);
 
 router.put("/admin/home-content", updateHomeContent);
 router.put("/admin/site-settings", updateSiteSettings);
+
+router.get("/admin/dashboard", getDashboard);
+
+router.get("/admin/leads", listLeadsAdmin);
+router.patch("/admin/leads/:id/status", updateLeadStatus);
 
 router.get("/admin/menu-items", listMenuItemsAdmin);
 router.get("/admin/menu-items/:id", getMenuItemAdmin);

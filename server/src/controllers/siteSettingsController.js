@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { logActivity } from "../utils/activityLog.js";
 
 const FIELDS = ["header_logo_url", "footer_logo_url", "favicon_url"];
 
@@ -25,6 +26,7 @@ export async function updateSiteSettings(req, res) {
         `UPDATE site_settings SET ${setClause}, updated_at = now() WHERE id = $${FIELDS.length + 1} RETURNING *`,
         [...values, existing[0].id]
       );
+      logActivity("settings_updated", "อัปเดตการตั้งค่าเว็บไซต์ (โลโก้ / Favicon)");
       return res.json(rows[0]);
     }
 
@@ -34,6 +36,7 @@ export async function updateSiteSettings(req, res) {
       `INSERT INTO site_settings (${columns}) VALUES (${placeholders}) RETURNING *`,
       values
     );
+    logActivity("settings_updated", "อัปเดตการตั้งค่าเว็บไซต์ (โลโก้ / Favicon)");
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);

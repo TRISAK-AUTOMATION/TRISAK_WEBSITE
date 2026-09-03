@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
 import { createSession, destroySession } from "../middleware/adminAuth.js";
+import { logActivity } from "../utils/activityLog.js";
 
 // ---------------- auth ----------------
 
@@ -110,6 +111,7 @@ export async function createBrand(req, res) {
       "INSERT INTO brands (name, slug, logo_url, is_active, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [name, slug, logoUrl || null, isActive, sortOrder]
     );
+    logActivity("brand_added", `เพิ่มแบรนด์ "${name}"`);
     res.status(201).json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -126,6 +128,7 @@ export async function updateBrand(req, res) {
       [name, slug, logoUrl || null, isActive, sortOrder, id]
     );
     if (!rows.length) return res.status(404).json({ error: "Brand not found" });
+    logActivity("brand_edited", `แก้ไขแบรนด์ "${name}"`);
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -176,6 +179,7 @@ export async function deleteBrand(req, res) {
     }
     const result = await pool.query("DELETE FROM brands WHERE id = $1", [id]);
     if (result.rowCount === 0) return res.status(404).json({ error: "Brand not found" });
+    logActivity("brand_deleted", `ลบแบรนด์ (ID ${id})`);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -229,6 +233,7 @@ export async function createCategory(req, res) {
       "INSERT INTO categories (name, slug, image_url, parent_id, is_active, sort_order) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
       [name, slug, imageUrl || null, parentId || null, isActive, sortOrder]
     );
+    logActivity("category_added", `เพิ่มหมวดหมู่ "${name}"`);
     res.status(201).json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -258,6 +263,7 @@ export async function updateCategory(req, res) {
       [name, slug, imageUrl || null, parentId || null, isActive, sortOrder, id]
     );
     if (!rows.length) return res.status(404).json({ error: "Category not found" });
+    logActivity("category_edited", `แก้ไขหมวดหมู่ "${name}"`);
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -315,6 +321,7 @@ export async function deleteCategory(req, res) {
     }
     const result = await pool.query("DELETE FROM categories WHERE id = $1", [id]);
     if (result.rowCount === 0) return res.status(404).json({ error: "Category not found" });
+    logActivity("category_deleted", `ลบหมวดหมู่ (ID ${id})`);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -391,6 +398,7 @@ export async function createSeries(req, res) {
         sortOrder,
       ]
     );
+    logActivity("series_added", `เพิ่มซีรีย์ "${name}"`);
     res.status(201).json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -436,6 +444,7 @@ export async function updateSeries(req, res) {
       ]
     );
     if (!rows.length) return res.status(404).json({ error: "Series not found" });
+    logActivity("series_edited", `แก้ไขซีรีย์ "${name}"`);
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -486,6 +495,7 @@ export async function deleteSeries(req, res) {
     }
     const result = await pool.query("DELETE FROM series WHERE id = $1", [id]);
     if (result.rowCount === 0) return res.status(404).json({ error: "Series not found" });
+    logActivity("series_deleted", `ลบซีรีย์ (ID ${id})`);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -506,7 +516,11 @@ export async function listProductsAdmin(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT p.id, p.name, p.slug, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
-              b.name AS brand, c.name AS category, s.name AS series
+              b.name AS brand, c.name AS category, s.name AS series,
+              EXISTS (
+                SELECT 1 FROM product_documents d
+                WHERE d.product_id = p.id AND d.label ILIKE '%datasheet%'
+              ) AS has_datasheet
        FROM products p
        JOIN brands b ON b.id = p.brand_id
        JOIN categories c ON c.id = p.category_id
@@ -647,6 +661,10 @@ export async function createProduct(req, res) {
     const productId = rows[0].id;
     await replaceProductChildren(client, productId, body);
     await client.query("COMMIT");
+    logActivity("product_added", `เพิ่มสินค้า "${body.name}"`);
+    if ((body.documents || []).some((d) => (d.label || "").toLowerCase().includes("datasheet"))) {
+      logActivity("datasheet_uploaded", `อัปโหลด Datasheet สำหรับ "${body.name}"`);
+    }
     res.status(201).json({ id: productId });
   } catch (err) {
     if (client) await client.query("ROLLBACK");
@@ -693,8 +711,22 @@ export async function updateProduct(req, res) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Product not found" });
     }
+    const existingDocs = await client.query(
+      "SELECT label FROM product_documents WHERE product_id = $1",
+      [id]
+    );
+    const hadDatasheet = existingDocs.rows.some((d) =>
+      (d.label || "").toLowerCase().includes("datasheet")
+    );
     await replaceProductChildren(client, id, body);
     await client.query("COMMIT");
+    logActivity("product_edited", `แก้ไขสินค้า "${body.name}"`);
+    const hasDatasheetNow = (body.documents || []).some((d) =>
+      (d.label || "").toLowerCase().includes("datasheet")
+    );
+    if (hasDatasheetNow && !hadDatasheet) {
+      logActivity("datasheet_uploaded", `อัปโหลด Datasheet สำหรับ "${body.name}"`);
+    }
     res.json({ success: true });
   } catch (err) {
     if (client) await client.query("ROLLBACK");
@@ -724,8 +756,10 @@ export async function reorderProduct(req, res) {
 export async function deleteProduct(req, res) {
   const { id } = req.params;
   try {
+    const existing = await pool.query("SELECT name FROM products WHERE id = $1", [id]);
     const result = await pool.query("DELETE FROM products WHERE id = $1", [id]);
     if (result.rowCount === 0) return res.status(404).json({ error: "Product not found" });
+    logActivity("product_deleted", `ลบสินค้า "${existing.rows[0]?.name || id}"`);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
