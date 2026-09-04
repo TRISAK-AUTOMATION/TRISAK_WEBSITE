@@ -18,6 +18,11 @@
   --accent-tech-dim: rgba(13, 41, 151, 0.08);
   --on-accent: #ffffff; /* text color placed on top of the navy accent */
 
+  /* Aliases so pasted-in / third-party CSS snippets that reference
+     these common token names resolve to the same site palette. */
+  --white: var(--bg);
+  --ink: var(--text);
+
   /* Corner rounding — single control point. Raise or lower this to
      adjust every button, card, input, dropdown, and bordered
      container across the whole site (public + admin) at once. */
@@ -172,14 +177,13 @@ p {
   gap: 10px;
   font-family: var(--font-mono);
   font-size: 13px;
-  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 14px 26px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
-  background: #ffffff;
-  color: #15379e;
+  background: transparent;
+  color: var(--text);
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }

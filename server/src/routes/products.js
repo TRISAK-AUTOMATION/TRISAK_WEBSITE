@@ -19,12 +19,14 @@ import {
 import { getHomeContent } from "../controllers/homeContentController.js";
 import { getSiteSettings } from "../controllers/siteSettingsController.js";
 import { getMenu } from "../controllers/menuController.js";
+import { getActivePopup } from "../controllers/popupsController.js";
 
 const router = Router();
 
 router.get("/home-content", getHomeContent);
 router.get("/site-settings", getSiteSettings);
 router.get("/menu", getMenu);
+router.get("/popups/active", getActivePopup);
 
 router.get("/brands", listBrands);
 router.get("/brands/:brandSlug", getBrand);

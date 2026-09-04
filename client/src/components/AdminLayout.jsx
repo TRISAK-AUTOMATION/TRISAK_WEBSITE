@@ -43,7 +43,10 @@ const NAV_SECTIONS = [
     key: "settings",
     label: "การตั้งค่า",
     icon: "⚙️",
-    children: [{ label: "เว็บไซต์", to: "/admin/settings/website" }],
+    children: [
+      { label: "เว็บไซต์", to: "/admin/settings/website" },
+      { label: "ป๊อปอัพ", to: "/admin/popups" },
+    ],
   },
 ];
 

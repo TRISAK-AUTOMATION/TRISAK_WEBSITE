@@ -25,6 +25,7 @@ const ACTIVITY_ICONS = {
   banner_updated: "🖼",
   datasheet_uploaded: "📄",
   settings_updated: "⚙️",
+  popup_updated: "🔔",
 };
 
 function timeAgo(dateStr) {

@@ -79,6 +79,7 @@ export const api = {
   getHomeContent: () => request("/home-content"),
   getSiteSettings: () => request("/site-settings"),
   getMenu: () => request("/menu"),
+  getActivePopup: () => request("/popups/active"),
 
   submitContact: (payload) =>
     request("/contact", { method: "POST", body: JSON.stringify(payload) }),
@@ -201,6 +202,10 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ location, orderedIds }),
     }),
+
+  adminGetPopupSettings: () => authRequest("/admin/popup"),
+  adminUpdatePopupSettings: (payload) =>
+    authRequest("/admin/popup", { method: "PUT", body: JSON.stringify(payload) }),
 
   // multipart upload — bypasses request()/authRequest() so fetch can set
   // its own multipart/form-data boundary instead of the JSON content type

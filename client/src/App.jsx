@@ -4,6 +4,7 @@ import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import AdminGuard from "./components/AdminGuard.jsx";
 import AdminLayout from "./components/AdminLayout.jsx";
+import PopupModal from "./components/PopupModal.jsx";
 
 import Home from "./pages/Home.jsx";
 import History from "./pages/History.jsx";
@@ -30,6 +31,7 @@ import AdminSeriesForm from "./pages/admin/AdminSeriesForm.jsx";
 import AdminSiteSettings from "./pages/admin/AdminSiteSettings.jsx";
 import AdminMenu from "./pages/admin/AdminMenu.jsx";
 import AdminLeads from "./pages/admin/AdminLeads.jsx";
+import AdminPopup from "./pages/admin/AdminPopup.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -47,6 +49,7 @@ export default function App() {
     <div className="page-shell">
       <ScrollToTop />
       {!isAdmin && <Header />}
+      {!isAdmin && <PopupModal />}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/history" element={<History />} />
@@ -101,6 +104,8 @@ export default function App() {
           <Route path="settings/website" element={<AdminSiteSettings />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="leads" element={<AdminLeads />} />
+
+          <Route path="popups" element={<AdminPopup />} />
         </Route>
       </Routes>
       {!isAdmin && <Footer />}

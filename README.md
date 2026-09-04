@@ -143,6 +143,9 @@ All admin routes except `/login` require `Authorization: Bearer <token>`. Sessio
   - **หมวดหมู่ (Category)** → `/admin/categories` — same shape, plus a category image
   - **ซีรีย์ (Series)** → `/admin/series` — same shape, plus Brand/Category columns; this is where you create a new Series (there's also a "+ add new" shortcut right next to the Series dropdown on the product form)
   - **รายการ (List)** → `/admin/products` — the full product list
+- **การตั้งค่า (Settings)**
+  - **เว็บไซต์ (Website)** → `/admin/settings/website` — logo, favicon, contact details
+  - **ป๊อปอัพ (Pop-up)** → `/admin/popups` — a single image-only welcome pop-up for the Home page: upload/replace/delete the image and toggle it on/off, no text, buttons, or links. Shows on *every* Home page load — refresh, navigating away and back, or a brand-new browser session — as long as it's enabled and has an image; there's deliberately no `localStorage`/`sessionStorage`/cookie tracking whether it's been seen, so closing it (× button) only dismisses that one view. Backed by a single-row `popup_settings` table (image_url, is_active); if you run this against an existing database, apply `migrations/014_simplify_popup.sql` (drops the earlier multi-popup `popups` table from `013_add_popups.sql`, if you'd applied that one — the two migrations supersede each other, so only 014 is needed on a fresh setup).
 
 Each list page has search, a "+ เพิ่ม" (Add) button, and a paginated table (`ลำดับ` order / `รูปภาพ` image / `ชื่อ` name / `จัดเรียง` reorder arrows / `อัพเดท` last-updated / `จัดการ` actions — green dot to toggle visibility, edit, delete).
 
