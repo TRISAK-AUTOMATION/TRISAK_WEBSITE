@@ -1,4 +1,28 @@
 /* =========================================================
+   Admin — content container contrast fix
+   The shared .panel / .contact-form__field / select styles default
+   to the same light-grey as the page background, which is correct
+   on public pages (grey panel on white page) but reads as "invisible"
+   here since .admin-content itself sits on that same grey. Scope
+   overrides to .admin-layout so every card, form section, input,
+   textarea and select in the Admin panel gets a white background —
+   matching the white .admin-list-table-wrap already used on list
+   pages like Brands — while leaving the public site untouched.
+   ========================================================= */
+.admin-layout .panel,
+.admin-layout .contact-form__field input,
+.admin-layout .contact-form__field textarea {
+  background: var(--bg);
+}
+
+.admin-layout .admin-form select,
+.admin-layout .admin-table input,
+.admin-layout .admin-table select,
+.admin-layout .admin-form__list-row input {
+  background: var(--bg);
+}
+
+/* =========================================================
    Admin — overall layout
    ========================================================= */
 .admin-layout {
@@ -61,7 +85,7 @@
   padding: 11px 14px;
   font-size: 13.5px;
   color: var(--text-muted);
-  border-radius: 3px;
+  border-radius: var(--radius);
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -173,6 +197,8 @@
   right: 0;
   background: var(--bg);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
   min-width: 160px;
   z-index: 50;
@@ -502,7 +528,7 @@
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
-  background: var(--bg-panel);
+  background: var(--bg);
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -542,6 +568,7 @@
   max-width: 340px;
   background: var(--bg);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   padding: 11px 16px;
   font-size: 14px;
   color: var(--text);
@@ -550,6 +577,7 @@
 .admin-list-table-wrap {
   background: var(--bg);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   overflow-x: auto;
 }
 
@@ -613,6 +641,7 @@
   object-fit: contain;
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .admin-list-thumb--empty {
@@ -807,6 +836,7 @@
 .admin-edit-notice {
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 14px 18px;
   font-size: 13px;
   color: var(--text-muted);
@@ -841,8 +871,9 @@
 
 .admin-edit-sidebar select {
   width: 100%;
-  background: var(--bg-panel);
+  background: var(--bg);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   color: var(--text);
   padding: 11px 14px;
   font-size: 14px;

@@ -18,6 +18,11 @@
   --accent-tech-dim: rgba(13, 41, 151, 0.08);
   --on-accent: #ffffff; /* text color placed on top of the navy accent */
 
+  /* Corner rounding — single control point. Raise or lower this to
+     adjust every button, card, input, dropdown, and bordered
+     container across the whole site (public + admin) at once. */
+  --radius: 8px;
+
   /* Type — English text renders in Inter; Thai characters (not
      covered by Inter) automatically fall back to Kanit, which also
      covers the Latin alphabet as a secondary fallback. */
@@ -32,6 +37,16 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Safety-net: rounds every native form control and button that
+   doesn't already get --radius from a more specific rule below. Low
+   specificity (element selector) so it never overrides anything. */
+input,
+select,
+textarea,
+button {
+  border-radius: var(--radius);
 }
 
 html {
@@ -161,6 +176,7 @@ p {
   text-transform: uppercase;
   padding: 14px 26px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -210,6 +226,7 @@ p {
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 /* ---------- signal line (signature motif) ---------- */
@@ -265,6 +282,8 @@ p {
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .grid-cell {

@@ -46,6 +46,7 @@
 .catalog-search select {
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   color: var(--text);
   padding: 13px 16px;
   font-family: var(--font-mono);
@@ -82,6 +83,7 @@
   letter-spacing: 0.04em;
   padding: 10px 18px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
@@ -125,6 +127,7 @@
   aspect-ratio: 4 / 3;
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -157,6 +160,7 @@
   font-size: 10px;
   letter-spacing: 0.08em;
   padding: 4px 8px;
+  border-radius: var(--radius);
   font-weight: 600;
 }
 
@@ -361,6 +365,7 @@
   aspect-ratio: 4 / 3;
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -388,10 +393,12 @@
   width: 72px;
   height: 72px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   background: var(--bg-panel);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text-faint);
@@ -474,6 +481,7 @@
   font-size: 12.5px;
   padding: 10px 16px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   color: var(--text-muted);
 }
 
@@ -511,6 +519,8 @@
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
   max-width: 560px;
 }
 
@@ -619,6 +629,7 @@
   width: 100%;
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   color: var(--text);
   padding: 8px 10px;
   font-family: var(--font-body);
@@ -675,6 +686,7 @@
   flex: 1;
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   color: var(--text);
   padding: 11px 14px;
   font-family: var(--font-body);
@@ -709,6 +721,7 @@
   justify-content: center;
   height: 140px;
   border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
   background: var(--bg-panel);
   color: var(--text-faint);
   font-family: var(--font-mono);
@@ -741,6 +754,7 @@
   object-fit: contain;
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .admin-form__image-grid {
@@ -849,6 +863,7 @@
 .admin-form select {
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
   color: var(--text);
   padding: 13px 16px;
   font-family: var(--font-body);
@@ -874,6 +889,8 @@
 
 .category-sidebar {
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
   position: sticky;
   top: 96px;
 }
@@ -949,6 +966,8 @@
 
 .series-card {
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
