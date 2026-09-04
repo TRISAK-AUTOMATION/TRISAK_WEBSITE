@@ -45,6 +45,10 @@ import {
   deleteMenuItem,
   reorderMenuItems,
 } from "../controllers/menuController.js";
+import {
+  getPopupSettingsAdmin,
+  updatePopupSettings,
+} from "../controllers/popupsController.js";
 
 const router = Router();
 
@@ -71,6 +75,9 @@ router.put("/admin/menu-items/reorder", reorderMenuItems);
 router.put("/admin/menu-items/:id", updateMenuItem);
 router.patch("/admin/menu-items/:id/status", toggleMenuItemStatus);
 router.delete("/admin/menu-items/:id", deleteMenuItem);
+
+router.get("/admin/popup", getPopupSettingsAdmin);
+router.put("/admin/popup", updatePopupSettings);
 
 router.get("/admin/brands", listBrandsAdmin);
 router.get("/admin/brands/:id", getBrandAdmin);

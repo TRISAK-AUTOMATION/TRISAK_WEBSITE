@@ -5,6 +5,7 @@
 -- Each PRODUCT can have many images, specs, documents, and related products.
 
 DROP TABLE IF EXISTS activity_log CASCADE;
+DROP TABLE IF EXISTS popup_settings CASCADE;
 DROP TABLE IF EXISTS contact_submissions CASCADE;
 DROP TABLE IF EXISTS related_products CASCADE;
 DROP TABLE IF EXISTS product_documents CASCADE;
@@ -204,6 +205,18 @@ INSERT INTO menu_items (location, label_en, label_th, url, sort_order) VALUES
   ('footer', 'Products', 'สินค้า', '/products', 3),
   ('footer', 'Automation Solution', 'โซลูชันระบบอัตโนมัติ', '/automation-solution', 4),
   ('footer', 'Contacts', 'ติดต่อเรา', '/contacts', 5);
+
+-- ============================================================
+-- popup_settings — the single site-wide welcome pop-up shown on
+-- the Home page, managed from Admin > Settings > Pop-up. Image
+-- only (no text/buttons/links), one row, toggled on/off.
+-- ============================================================
+CREATE TABLE popup_settings (
+  id          SERIAL PRIMARY KEY,
+  image_url   VARCHAR(500),
+  is_active   BOOLEAN NOT NULL DEFAULT false,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 CREATE TABLE contact_submissions (
   id             SERIAL PRIMARY KEY,
