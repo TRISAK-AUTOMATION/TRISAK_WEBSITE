@@ -29,6 +29,7 @@ import AdminSeriesList from "./pages/admin/AdminSeriesList.jsx";
 import AdminSeriesForm from "./pages/admin/AdminSeriesForm.jsx";
 import AdminSiteSettings from "./pages/admin/AdminSiteSettings.jsx";
 import AdminMenu from "./pages/admin/AdminMenu.jsx";
+import AdminLeads from "./pages/admin/AdminLeads.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -99,6 +100,7 @@ export default function App() {
 
           <Route path="settings/website" element={<AdminSiteSettings />} />
           <Route path="menu" element={<AdminMenu />} />
+          <Route path="leads" element={<AdminLeads />} />
         </Route>
       </Routes>
       {!isAdmin && <Footer />}

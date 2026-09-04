@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { logActivity } from "../utils/activityLog.js";
 
 const FIELDS = [
   "hero_meta_en", "hero_meta_th",
@@ -38,6 +39,7 @@ export async function updateHomeContent(req, res) {
         `UPDATE home_content SET ${setClause}, updated_at = now() WHERE id = $${FIELDS.length + 1} RETURNING *`,
         [...values, existing[0].id]
       );
+      logActivity("banner_updated", "อัปเดตแบนเนอร์ / เนื้อหาหน้าแรก");
       return res.json(rows[0]);
     }
 
@@ -47,6 +49,7 @@ export async function updateHomeContent(req, res) {
       `INSERT INTO home_content (${columns}) VALUES (${placeholders}) RETURNING *`,
       values
     );
+    logActivity("banner_updated", "อัปเดตแบนเนอร์ / เนื้อหาหน้าแรก");
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);

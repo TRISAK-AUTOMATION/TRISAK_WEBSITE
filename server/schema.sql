@@ -4,6 +4,7 @@
 -- Product catalog hierarchy: BRAND -> CATEGORY -> SERIES -> PRODUCT
 -- Each PRODUCT can have many images, specs, documents, and related products.
 
+DROP TABLE IF EXISTS activity_log CASCADE;
 DROP TABLE IF EXISTS contact_submissions CASCADE;
 DROP TABLE IF EXISTS related_products CASCADE;
 DROP TABLE IF EXISTS product_documents CASCADE;
@@ -212,8 +213,25 @@ CREATE TABLE contact_submissions (
   phone          VARCHAR(50),
   interested_in  VARCHAR(50),
   message        TEXT,
+  status         VARCHAR(20) NOT NULL DEFAULT 'new'
+                   CHECK (status IN ('new', 'quoted', 'follow_up', 'closed')),
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- activity_log — feeds the Admin Dashboard's "Recent Activity" list.
+-- Written to from adminController/homeContentController/
+-- siteSettingsController whenever an admin makes a change.
+-- ============================================================
+CREATE TABLE activity_log (
+  id           SERIAL PRIMARY KEY,
+  action_type  VARCHAR(50) NOT NULL,
+  description  VARCHAR(255) NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_activity_log_created_at ON activity_log (created_at DESC);
+CREATE INDEX idx_contact_submissions_status ON contact_submissions (status);
 
 -- ============================================================
 -- Seed data

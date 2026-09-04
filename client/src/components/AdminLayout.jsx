@@ -23,6 +23,12 @@ const NAV_SECTIONS = [
     to: "/admin/menu",
   },
   {
+    key: "leads",
+    label: "คำขอติดต่อ",
+    icon: "📩",
+    to: "/admin/leads",
+  },
+  {
     key: "product",
     label: "สินค้า",
     icon: "🛒",

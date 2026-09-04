@@ -158,8 +158,7 @@ export const api = {
   adminDeleteSeries: (id) => authRequest(`/admin/series/${id}`, { method: "DELETE" }),
 
   adminGetProducts: () => authRequest("/admin/products"),
-  adminGetProduct: (id) => authRequest(`/admin/products/${id}`),
-  adminCreateProduct: (payload) =>
+  adminGetProduct: (id) => authRequest(`/admin/products/${id}`),  adminCreateProduct: (payload) =>
     authRequest("/admin/products", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateProduct: (id, payload) =>
     authRequest(`/admin/products/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
@@ -169,6 +168,15 @@ export const api = {
       body: JSON.stringify({ direction }),
     }),
   adminDeleteProduct: (id) => authRequest(`/admin/products/${id}`, { method: "DELETE" }),
+
+  // ---- dashboard / leads ----
+  adminGetDashboard: () => authRequest("/admin/dashboard"),
+  adminGetLeads: (params = {}) => authRequest(`/admin/leads${qs(params)}`),
+  adminUpdateLeadStatus: (id, status) =>
+    authRequest(`/admin/leads/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
 
   adminUpdateHomeContent: (payload) =>
     authRequest("/admin/home-content", { method: "PUT", body: JSON.stringify(payload) }),

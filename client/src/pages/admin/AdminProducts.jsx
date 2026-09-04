@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 
 const PAGE_SIZE = 10;
+
+const ISSUE_LABELS = {
+  "missing-image": "แสดงเฉพาะสินค้าที่ยังไม่มีรูปภาพ",
+  "missing-datasheet": "แสดงเฉพาะสินค้าที่ยังไม่มี Datasheet",
+};
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -11,6 +16,8 @@ export default function AdminProducts() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const issue = searchParams.get("issue") || "";
 
   const load = () => {
     setLoading(true);
@@ -23,7 +30,13 @@ export default function AdminProducts() {
 
   useEffect(load, []);
 
-  const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = products
+    .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((p) => {
+      if (issue === "missing-image") return !p.image_url;
+      if (issue === "missing-datasheet") return !p.has_datasheet;
+      return true;
+    });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -50,6 +63,22 @@ export default function AdminProducts() {
   return (
     <>
       <AdminBreadcrumb items={[{ label: "รายการ" }]} />
+
+      {issue && ISSUE_LABELS[issue] && (
+        <div className="admin-edit-notice" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{ISSUE_LABELS[issue]}</span>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setSearchParams({});
+              setPage(1);
+            }}
+          >
+            ล้างตัวกรอง ✕
+          </button>
+        </div>
+      )}
 
       <div className="admin-list-toolbar">
         <input
