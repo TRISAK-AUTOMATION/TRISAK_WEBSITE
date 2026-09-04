@@ -180,24 +180,125 @@
 }
 
 /* =========================================================
-   Brand tile (Products Overview → Browse by Brand)
+   Brand logo grid (Products Overview → Browse by Brand)
+   3 columns x 2 rows visible (6 brands); horizontally scrollable
+   in pages of 6 when there are more.
    ========================================================= */
-.brand-tile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 40px 32px;
-  transition: background 0.2s ease;
+.brand-logo-scroll {
+  position: relative;
 }
 
-.brand-tile:hover {
+.brand-logo-grid {
+  display: grid;
+  grid-template-rows: repeat(2, 140px);
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 48px) / 3);
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.brand-logo-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-logo-cell {
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.brand-logo-cell:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-panel-raised);
+}
+
+.brand-logo-cell__image {
+  max-width: 100%;
+  max-height: 64px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: grayscale(1) opacity(0.75);
+  transition: filter 0.2s ease;
+}
+
+.brand-logo-cell:hover .brand-logo-cell__image {
+  filter: grayscale(0) opacity(1);
+}
+
+.brand-logo-cell__name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--text);
+}
+
+.brand-logo-scroll__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.brand-logo-scroll__arrow.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.brand-logo-scroll__arrow:hover {
   background: var(--bg-panel);
 }
 
-.brand-tile__name {
-  font-family: var(--font-display);
-  font-size: 22px;
-  letter-spacing: 0.05em;
+.brand-logo-scroll__arrow--left {
+  left: -20px;
+}
+
+.brand-logo-scroll__arrow--right {
+  right: -20px;
+}
+
+@media (max-width: 860px) {
+  .brand-logo-grid {
+    grid-template-rows: repeat(2, 110px);
+    grid-auto-columns: calc((100% - 24px) / 2);
+    gap: 24px;
+  }
+
+  .brand-logo-scroll__arrow--left {
+    left: -8px;
+  }
+
+  .brand-logo-scroll__arrow--right {
+    right: -8px;
+  }
 }
 
 .subcategory-tile {
