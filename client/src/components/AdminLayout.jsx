@@ -17,6 +17,12 @@ const NAV_SECTIONS = [
     to: "/admin/home",
   },
   {
+    key: "menu",
+    label: "เมนู",
+    icon: "🧭",
+    to: "/admin/menu",
+  },
+  {
     key: "product",
     label: "สินค้า",
     icon: "🛒",
@@ -26,6 +32,12 @@ const NAV_SECTIONS = [
       { label: "ซีรีย์", to: "/admin/series" },
       { label: "รายการ", to: "/admin/products" },
     ],
+  },
+  {
+    key: "settings",
+    label: "การตั้งค่า",
+    icon: "⚙️",
+    children: [{ label: "เว็บไซต์", to: "/admin/settings/website" }],
   },
 ];
 

@@ -505,13 +505,13 @@ export async function uploadImage(req, res) {
 export async function listProductsAdmin(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT p.id, p.name, p.slug, p.model, p.image_url, p.is_new, p.updated_at,
+      `SELECT p.id, p.name, p.slug, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
               b.name AS brand, c.name AS category, s.name AS series
        FROM products p
        JOIN brands b ON b.id = p.brand_id
        JOIN categories c ON c.id = p.category_id
        LEFT JOIN series s ON s.id = p.series_id
-       ORDER BY p.updated_at DESC`
+       ORDER BY p.sort_order`
     );
     res.json(rows);
   } catch (err) {
@@ -702,6 +702,22 @@ export async function updateProduct(req, res) {
     res.status(400).json({ error: err.message });
   } finally {
     if (client) client.release();
+  }
+}
+
+export async function reorderProduct(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  try {
+    // Unscoped (global): the admin product list is one flat table
+    // spanning every brand/category/series, so "up"/"down" swaps with
+    // whichever row is literally above/below it in that list — same
+    // model as brands, which also aren't grouped by anything.
+    const result = await reorderRow("products", req.params.id, direction, []);
+    if (result === "not-found") return res.status(404).json({ error: "Product not found" });
+    res.json({ success: true, moved: result === "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 }
 

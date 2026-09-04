@@ -37,6 +37,16 @@ export default function AdminProducts() {
     }
   };
 
+  const handleReorder = async (id, direction) => {
+    setError("");
+    try {
+      await api.adminReorderProduct(id, direction);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <>
       <AdminBreadcrumb items={[{ label: "รายการ" }]} />
@@ -66,6 +76,7 @@ export default function AdminProducts() {
               <th>รูปภาพ</th>
               <th>ชื่อ</th>
               <th>แบรนด์ / หมวดหมู่ / ซีรีย์</th>
+              <th>จัดเรียง</th>
               <th>อัพเดท</th>
               <th>จัดการ</th>
             </tr>
@@ -73,14 +84,14 @@ export default function AdminProducts() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   กำลังโหลด…
                 </td>
               </tr>
             )}
             {!loading && pageItems.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   ยังไม่มีสินค้า — เพิ่มรายการแรกได้เลย
                 </td>
               </tr>
@@ -103,6 +114,16 @@ export default function AdminProducts() {
                   <td className="admin-list-table__muted">
                     {p.brand} / {p.category}
                     {p.series ? ` / ${p.series}` : ""}
+                  </td>
+                  <td>
+                    <div className="admin-sort-arrows">
+                      <button onClick={() => handleReorder(p.id, "up")} aria-label="เลื่อนขึ้น">
+                        ↑
+                      </button>
+                      <button onClick={() => handleReorder(p.id, "down")} aria-label="เลื่อนลง">
+                        ↓
+                      </button>
+                    </div>
                   </td>
                   <td className="admin-list-table__date">
                     {new Date(p.updated_at).toLocaleString("th-TH", {

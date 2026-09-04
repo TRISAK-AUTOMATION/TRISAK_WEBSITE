@@ -23,12 +23,25 @@ export default function AdminBrandForm() {
   const [slugTouched, setSlugTouched] = useState(isEdit);
   const [logoUrl, setLogoUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [sortOrder, setSortOrder] = useState(0);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isEdit) return;
+    if (!isEdit) {
+      // New brand: append to the end of the current order instead of
+      // hardcoding 0, which would jump it in front of every existing
+      // brand (and collide with whichever brand already sits at 0).
+      api
+        .adminGetBrands()
+        .then((brands) => {
+          const maxOrder = brands.reduce((max, b) => Math.max(max, b.sort_order ?? 0), -1);
+          setSortOrder(maxOrder + 1);
+        })
+        .catch(() => {});
+      return;
+    }
     api
       .adminGetBrand(id)
       .then((b) => {
@@ -36,6 +49,10 @@ export default function AdminBrandForm() {
         setSlug(b.slug);
         setLogoUrl(b.logo_url || "");
         setIsActive(b.is_active);
+        // Preserve the brand's existing position — otherwise saving an
+        // unrelated edit (e.g. swapping the logo) would reset it to 0
+        // and silently undo any reordering done from the brand list.
+        setSortOrder(b.sort_order ?? 0);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -46,7 +63,7 @@ export default function AdminBrandForm() {
     setSaving(true);
     setError("");
     try {
-      const payload = { name, slug, logoUrl: logoUrl || null, isActive, sortOrder: 0 };
+      const payload = { name, slug, logoUrl: logoUrl || null, isActive, sortOrder };
       if (isEdit) {
         await api.adminUpdateBrand(id, payload);
       } else {

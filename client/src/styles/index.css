@@ -18,10 +18,12 @@
   --accent-tech-dim: rgba(13, 41, 151, 0.08);
   --on-accent: #ffffff; /* text color placed on top of the navy accent */
 
-  /* Type */
-  --font-display: "Oswald", "Arial Narrow", sans-serif;
-  --font-body: "IBM Plex Sans", "Noto Sans Thai", -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* Type — English text renders in Inter; Thai characters (not
+     covered by Inter) automatically fall back to Kanit, which also
+     covers the Latin alphabet as a secondary fallback. */
+  --font-display: "Inter", "Kanit", sans-serif;
+  --font-body: "Inter", "Kanit", -apple-system, sans-serif;
+  --font-mono: "Inter", "Kanit", ui-monospace, monospace;
 
   /* Layout */
   --page-max: 1240px;

@@ -27,6 +27,8 @@ import AdminCategoryList from "./pages/admin/AdminCategoryList.jsx";
 import AdminCategoryForm from "./pages/admin/AdminCategoryForm.jsx";
 import AdminSeriesList from "./pages/admin/AdminSeriesList.jsx";
 import AdminSeriesForm from "./pages/admin/AdminSeriesForm.jsx";
+import AdminSiteSettings from "./pages/admin/AdminSiteSettings.jsx";
+import AdminMenu from "./pages/admin/AdminMenu.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -94,6 +96,9 @@ export default function App() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="products/new" element={<AdminProductForm />} />
           <Route path="products/:id/edit" element={<AdminProductForm />} />
+
+          <Route path="settings/website" element={<AdminSiteSettings />} />
+          <Route path="menu" element={<AdminMenu />} />
         </Route>
       </Routes>
       {!isAdmin && <Footer />}

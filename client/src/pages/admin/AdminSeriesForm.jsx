@@ -28,9 +28,11 @@ export default function AdminSeriesForm() {
   const [categoryId, setCategoryId] = useState("");
   const [isNew, setIsNew] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const [sortOrder, setSortOrder] = useState(0);
 
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [allSeries, setAllSeries] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +40,7 @@ export default function AdminSeriesForm() {
   useEffect(() => {
     api.adminGetBrands().then(setBrands).catch(() => {});
     api.adminGetCategories().then(setCategories).catch(() => {});
+    api.adminGetSeriesList().then(setAllSeries).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -54,6 +57,11 @@ export default function AdminSeriesForm() {
         setCategoryId(String(s.category_id));
         setIsNew(s.is_new);
         setIsActive(s.is_active);
+        // Preserve the series' existing position among its siblings
+        // (same brand + category) — otherwise saving an unrelated edit
+        // would silently reset it and undo any reordering done from
+        // the series list.
+        setSortOrder(s.sort_order ?? 0);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -64,17 +72,27 @@ export default function AdminSeriesForm() {
     setSaving(true);
     setError("");
     try {
+      const newBrandId = Number(brandId);
+      const newCategoryId = Number(categoryId);
+      // New series: append to the end of its sibling group (same brand
+      // + category) instead of defaulting to 0, which would jump it in
+      // front of every existing sibling.
+      const nextSortOrder = isEdit
+        ? sortOrder
+        : allSeries
+            .filter((s) => s.brand_id === newBrandId && s.category_id === newCategoryId)
+            .reduce((max, s) => Math.max(max, s.sort_order ?? 0), -1) + 1;
       const payload = {
         name,
         slug,
         tagline,
         description,
         imageUrl: imageUrl || null,
-        brandId: Number(brandId),
-        categoryId: Number(categoryId),
+        brandId: newBrandId,
+        categoryId: newCategoryId,
         isNew,
         isActive,
-        sortOrder: 0,
+        sortOrder: nextSortOrder,
       };
       if (isEdit) {
         await api.adminUpdateSeries(id, payload);

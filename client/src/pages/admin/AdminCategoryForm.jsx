@@ -63,6 +63,7 @@ export default function AdminCategoryForm() {
   const [imageUrl, setImageUrl] = useState("");
   const [parentId, setParentId] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [sortOrder, setSortOrder] = useState(0);
   const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -82,6 +83,10 @@ export default function AdminCategoryForm() {
         setImageUrl(c.image_url || "");
         setParentId(c.parent_id ? String(c.parent_id) : "");
         setIsActive(c.is_active);
+        // Preserve the category's existing position among its siblings
+        // — otherwise saving an unrelated edit would silently reset it
+        // and undo any reordering done from the category list.
+        setSortOrder(c.sort_order ?? 0);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -92,13 +97,22 @@ export default function AdminCategoryForm() {
     setSaving(true);
     setError("");
     try {
+      // New category: append to the end of its sibling group (same
+      // parent) instead of defaulting to 0, which would jump it in
+      // front of every existing sibling.
+      const newParentId = parentId ? Number(parentId) : null;
+      const nextSortOrder = isEdit
+        ? sortOrder
+        : allCategories
+            .filter((c) => (c.parent_id ?? null) === newParentId)
+            .reduce((max, c) => Math.max(max, c.sort_order ?? 0), -1) + 1;
       const payload = {
         name,
         slug,
         imageUrl: imageUrl || null,
-        parentId: parentId ? Number(parentId) : null,
+        parentId: newParentId,
         isActive,
-        sortOrder: 0,
+        sortOrder: nextSortOrder,
       };
       if (isEdit) {
         await api.adminUpdateCategory(id, payload);

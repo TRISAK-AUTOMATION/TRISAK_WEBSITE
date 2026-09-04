@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { LanguageProvider } from "./i18n/LanguageContext.jsx";
+import { SiteSettingsProvider } from "./contexts/SiteSettingsContext.jsx";
+import { MenuProvider } from "./contexts/MenuContext.jsx";
 import "./styles/index.css";
 import "./styles/layout.css";
 import "./styles/components.css";
@@ -12,9 +14,13 @@ import "./styles/admin.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <LanguageProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <SiteSettingsProvider>
+        <MenuProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </MenuProvider>
+      </SiteSettingsProvider>
     </LanguageProvider>
   </React.StrictMode>
 );

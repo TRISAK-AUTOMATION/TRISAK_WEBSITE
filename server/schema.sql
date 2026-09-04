@@ -156,6 +156,54 @@ CREATE TABLE home_content (
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ============================================================
+-- site_settings — sitewide, non-page-specific assets managed from
+-- Admin > Settings > Website: header logo, footer logo, favicon.
+-- Single row, same pattern as home_content. NULL means "no custom
+-- image set" — the frontend falls back to its built-in text mark
+-- (Header/Footer) or the browser's default icon (favicon).
+-- ============================================================
+CREATE TABLE site_settings (
+  id                SERIAL PRIMARY KEY,
+  header_logo_url   VARCHAR(255),
+  footer_logo_url   VARCHAR(255),
+  favicon_url       VARCHAR(255),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO site_settings (header_logo_url, footer_logo_url, favicon_url)
+VALUES (NULL, NULL, NULL);
+
+-- ============================================================
+-- menu_items — Header and Footer navigation, managed from
+-- Admin > Menu. "location" separates the two groups; each item has
+-- a bilingual label, a URL (internal path or external link),
+-- an active/inactive flag, and a sort_order used for both display
+-- and the admin's drag-and-drop reordering.
+-- ============================================================
+CREATE TABLE menu_items (
+  id           SERIAL PRIMARY KEY,
+  location     VARCHAR(20) NOT NULL CHECK (location IN ('header', 'footer')),
+  label_en     VARCHAR(150) NOT NULL,
+  label_th     VARCHAR(150) NOT NULL,
+  url          VARCHAR(255) NOT NULL,
+  is_active    BOOLEAN NOT NULL DEFAULT true,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO menu_items (location, label_en, label_th, url, sort_order) VALUES
+  ('header', 'Home', 'หน้าแรก', '/', 1),
+  ('header', 'History', 'ประวัติบริษัท', '/history', 2),
+  ('header', 'Products', 'สินค้า', '/products', 3),
+  ('header', 'Automation Solution', 'โซลูชันระบบอัตโนมัติ', '/automation-solution', 4),
+  ('header', 'Contacts', 'ติดต่อเรา', '/contacts', 5),
+  ('footer', 'Home', 'หน้าแรก', '/', 1),
+  ('footer', 'History', 'ประวัติบริษัท', '/history', 2),
+  ('footer', 'Products', 'สินค้า', '/products', 3),
+  ('footer', 'Automation Solution', 'โซลูชันระบบอัตโนมัติ', '/automation-solution', 4),
+  ('footer', 'Contacts', 'ติดต่อเรา', '/contacts', 5);
+
 CREATE TABLE contact_submissions (
   id             SERIAL PRIMARY KEY,
   name           VARCHAR(150) NOT NULL,
