@@ -31,6 +31,11 @@ import {
   updateProduct,
   reorderProduct,
   deleteProduct,
+  listSolutionsAdmin,
+  getSolutionAdmin,
+  createSolution,
+  updateSolution,
+  deleteSolution,
   uploadImage,
 } from "../controllers/adminController.js";
 import { updateHomeContent } from "../controllers/homeContentController.js";
@@ -49,6 +54,18 @@ import {
   getPopupSettingsAdmin,
   updatePopupSettings,
 } from "../controllers/popupsController.js";
+import {
+  getAboutContent,
+  updateAboutContent,
+  getProductsPageContent,
+  updateProductsPageContent,
+  getContactsPageContent,
+  updateContactsPageContent,
+  getFooterContent,
+  updateFooterContent,
+  getAutomationSolutionContent,
+  updateAutomationSolutionContent,
+} from "../controllers/pageContentController.js";
 
 const router = Router();
 
@@ -78,6 +95,21 @@ router.delete("/admin/menu-items/:id", deleteMenuItem);
 
 router.get("/admin/popup", getPopupSettingsAdmin);
 router.put("/admin/popup", updatePopupSettings);
+
+router.get("/admin/about-content", getAboutContent);
+router.put("/admin/about-content", updateAboutContent);
+
+router.get("/admin/products-page-content", getProductsPageContent);
+router.put("/admin/products-page-content", updateProductsPageContent);
+
+router.get("/admin/contacts-page-content", getContactsPageContent);
+router.put("/admin/contacts-page-content", updateContactsPageContent);
+
+router.get("/admin/footer-content", getFooterContent);
+router.put("/admin/footer-content", updateFooterContent);
+
+router.get("/admin/automation-solution-content", getAutomationSolutionContent);
+router.put("/admin/automation-solution-content", updateAutomationSolutionContent);
 
 router.get("/admin/brands", listBrandsAdmin);
 router.get("/admin/brands/:id", getBrandAdmin);
@@ -109,6 +141,12 @@ router.post("/admin/products", createProduct);
 router.put("/admin/products/:id", updateProduct);
 router.post("/admin/products/:id/reorder", reorderProduct);
 router.delete("/admin/products/:id", deleteProduct);
+
+router.get("/admin/solutions", listSolutionsAdmin);
+router.get("/admin/solutions/:id", getSolutionAdmin);
+router.post("/admin/solutions", createSolution);
+router.put("/admin/solutions/:id", updateSolution);
+router.delete("/admin/solutions/:id", deleteSolution);
 
 router.post("/admin/upload", upload.single("image"), uploadImage);
 

@@ -80,6 +80,11 @@ export const api = {
   getSiteSettings: () => request("/site-settings"),
   getMenu: () => request("/menu"),
   getActivePopup: () => request("/popups/active"),
+  getAboutContent: () => request("/about-content"),
+  getProductsPageContent: () => request("/products-page-content"),
+  getContactsPageContent: () => request("/contacts-page-content"),
+  getFooterContent: () => request("/footer-content"),
+  getAutomationSolutionContent: () => request("/automation-solution-content"),
 
   submitContact: (payload) =>
     request("/contact", { method: "POST", body: JSON.stringify(payload) }),
@@ -206,6 +211,34 @@ export const api = {
   adminGetPopupSettings: () => authRequest("/admin/popup"),
   adminUpdatePopupSettings: (payload) =>
     authRequest("/admin/popup", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetAboutContent: () => authRequest("/admin/about-content"),
+  adminUpdateAboutContent: (payload) =>
+    authRequest("/admin/about-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetProductsPageContent: () => authRequest("/admin/products-page-content"),
+  adminUpdateProductsPageContent: (payload) =>
+    authRequest("/admin/products-page-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetContactsPageContent: () => authRequest("/admin/contacts-page-content"),
+  adminUpdateContactsPageContent: (payload) =>
+    authRequest("/admin/contacts-page-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetFooterContent: () => authRequest("/admin/footer-content"),
+  adminUpdateFooterContent: (payload) =>
+    authRequest("/admin/footer-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetAutomationSolutionContent: () => authRequest("/admin/automation-solution-content"),
+  adminUpdateAutomationSolutionContent: (payload) =>
+    authRequest("/admin/automation-solution-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetSolutions: () => authRequest("/admin/solutions"),
+  adminGetSolution: (id) => authRequest(`/admin/solutions/${id}`),
+  adminCreateSolution: (payload) =>
+    authRequest("/admin/solutions", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateSolution: (id, payload) =>
+    authRequest(`/admin/solutions/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteSolution: (id) => authRequest(`/admin/solutions/${id}`, { method: "DELETE" }),
 
   // multipart upload — bypasses request()/authRequest() so fetch can set
   // its own multipart/form-data boundary instead of the JSON content type

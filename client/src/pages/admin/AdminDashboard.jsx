@@ -26,6 +26,14 @@ const ACTIVITY_ICONS = {
   datasheet_uploaded: "📄",
   settings_updated: "⚙️",
   popup_updated: "🔔",
+  about_updated: "✎",
+  products_page_updated: "✎",
+  contacts_page_updated: "✎",
+  footer_updated: "✎",
+  automation_solution_updated: "✎",
+  solution_added: "🧩",
+  solution_edited: "✎",
+  solution_deleted: "🗑",
 };
 
 function timeAgo(dateStr) {

@@ -11,10 +11,18 @@ const NAV_SECTIONS = [
     end: true,
   },
   {
-    key: "home",
-    label: "หน้าแรก",
-    icon: "🏠",
-    to: "/admin/home",
+    key: "edit",
+    label: "แก้ไข (Edit)",
+    icon: "✎",
+    children: [
+      { label: "หน้าแรก (Home)", to: "/admin/home" },
+      { label: "ประวัติบริษัท (History)", to: "/admin/about" },
+      { label: "สินค้า (Products)", to: "/admin/products-page" },
+      { label: "ติดต่อเรา (Contact Us)", to: "/admin/contact" },
+      { label: "โซลูชันระบบอัตโนมัติ (Automation Solution)", to: "/admin/automation-solution" },
+      { label: "Footer", to: "/admin/footer" },
+      { label: "ป๊อปอัพ (Pop-up)", to: "/admin/popups" },
+    ],
   },
   {
     key: "menu",
@@ -43,10 +51,7 @@ const NAV_SECTIONS = [
     key: "settings",
     label: "การตั้งค่า",
     icon: "⚙️",
-    children: [
-      { label: "เว็บไซต์", to: "/admin/settings/website" },
-      { label: "ป๊อปอัพ", to: "/admin/popups" },
-    ],
+    children: [{ label: "เว็บไซต์", to: "/admin/settings/website" }],
   },
 ];
 
@@ -57,6 +62,18 @@ export default function AdminLayout() {
 
   const isSectionActive = (section) =>
     section.children?.some((c) => location.pathname.startsWith(c.to));
+
+  // Groups start expanded if the current page is one of their
+  // children; otherwise collapsed. From then on the admin controls
+  // it directly by clicking the group label.
+  const [openGroups, setOpenGroups] = useState(() => {
+    const initial = {};
+    NAV_SECTIONS.forEach((s) => {
+      if (s.children) initial[s.key] = isSectionActive(s);
+    });
+    return initial;
+  });
+  const toggleGroup = (key) => setOpenGroups((g) => ({ ...g, [key]: !g[key] }));
 
   const handleLogout = async () => {
     await api.adminLogout();
@@ -75,25 +92,32 @@ export default function AdminLayout() {
           {NAV_SECTIONS.map((section) =>
             section.children ? (
               <div
-                className={`admin-nav-group ${isSectionActive(section) ? "is-open" : ""}`}
+                className={`admin-nav-group ${openGroups[section.key] ? "is-open" : ""}`}
                 key={section.key}
               >
-                <div className="admin-nav-group__label">
+                <button
+                  type="button"
+                  className="admin-nav-group__label"
+                  onClick={() => toggleGroup(section.key)}
+                  aria-expanded={Boolean(openGroups[section.key])}
+                >
                   <span className="admin-nav-group__icon">{section.icon}</span>
                   {section.label}
-                </div>
+                  <span className="admin-nav-group__chevron">▾</span>
+                </button>
                 <div className="admin-nav-group__children">
-                  {section.children.map((child) => (
-                    <NavLink
-                      key={child.to}
-                      to={child.to}
-                      className={({ isActive }) =>
-                        `admin-nav-link admin-nav-link--child ${isActive ? "is-active" : ""}`
-                      }
-                    >
-                      {child.label}
-                    </NavLink>
-                  ))}
+                  {openGroups[section.key] &&
+                    section.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        className={({ isActive }) =>
+                          `admin-nav-link admin-nav-link--child ${isActive ? "is-active" : ""}`
+                        }
+                      >
+                        {child.label}
+                      </NavLink>
+                    ))}
                 </div>
               </div>
             ) : (
@@ -114,6 +138,7 @@ export default function AdminLayout() {
       <div className="admin-main">
         <header className="admin-topbar">
           <div className="admin-topbar__spacer" />
+
           <div className="admin-user-menu">
             <button
               className="admin-user-menu__trigger"

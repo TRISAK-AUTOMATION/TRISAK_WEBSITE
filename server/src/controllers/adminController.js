@@ -766,3 +766,106 @@ export async function deleteProduct(req, res) {
     res.status(500).json({ error: "Failed to delete product" });
   }
 }
+
+// ============================================================
+// Solutions ("Solution Blocks" on the Automation Solution page).
+// Slug is internal-only (not shown in the admin UI, has no public
+// route) so it's generated here rather than exposing another field.
+// ============================================================
+
+function slugifySolutionName(name) {
+  return name
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9ก-๙]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "solution";
+}
+
+async function uniqueSolutionSlug(name, excludeId = null) {
+  const base = slugifySolutionName(name);
+  let slug = base;
+  let n = 1;
+  for (;;) {
+    const { rows } = await pool.query(
+      excludeId ? "SELECT 1 FROM solutions WHERE slug = $1 AND id <> $2" : "SELECT 1 FROM solutions WHERE slug = $1",
+      excludeId ? [slug, excludeId] : [slug]
+    );
+    if (!rows.length) return slug;
+    n += 1;
+    slug = `${base}-${n}`;
+  }
+}
+
+export async function listSolutionsAdmin(req, res) {
+  try {
+    const { rows } = await pool.query("SELECT * FROM solutions ORDER BY sort_order, id");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load solutions" });
+  }
+}
+
+export async function getSolutionAdmin(req, res) {
+  try {
+    const { rows } = await pool.query("SELECT * FROM solutions WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Solution not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load solution" });
+  }
+}
+
+export async function createSolution(req, res) {
+  const { name, summary = null, services = [], benefits = [], imageUrl = null } = req.body || {};
+  if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
+  try {
+    const slug = await uniqueSolutionSlug(name);
+    const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM solutions");
+    const { rows } = await pool.query(
+      `INSERT INTO solutions (name, slug, summary, services, benefits, image_url, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name.trim(), slug, summary, services, benefits, imageUrl, maxRows[0].n]
+    );
+    logActivity("solution_added", `เพิ่ม Solution Block "${name.trim()}"`);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function updateSolution(req, res) {
+  const { id } = req.params;
+  const { name, summary = null, services = [], benefits = [], imageUrl = null } = req.body || {};
+  if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
+  try {
+    const { rows } = await pool.query(
+      `UPDATE solutions SET name = $1, summary = $2, services = $3, benefits = $4, image_url = $5
+       WHERE id = $6 RETURNING *`,
+      [name.trim(), summary, services, benefits, imageUrl, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Solution not found" });
+    logActivity("solution_edited", `แก้ไข Solution Block "${name.trim()}"`);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function deleteSolution(req, res) {
+  const { id } = req.params;
+  try {
+    const existing = await pool.query("SELECT name FROM solutions WHERE id = $1", [id]);
+    const result = await pool.query("DELETE FROM solutions WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Solution not found" });
+    logActivity("solution_deleted", `ลบ Solution Block "${existing.rows[0]?.name || id}"`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete solution" });
+  }
+}

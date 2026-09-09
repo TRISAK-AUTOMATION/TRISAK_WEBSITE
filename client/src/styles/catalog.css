@@ -809,7 +809,7 @@
   padding: 14px 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--bg-panel);
+  background: #FFFFFF;
   transition: opacity 0.15s ease, border-color 0.15s ease;
 }
 

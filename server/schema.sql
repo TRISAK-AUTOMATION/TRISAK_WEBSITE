@@ -6,6 +6,11 @@
 
 DROP TABLE IF EXISTS activity_log CASCADE;
 DROP TABLE IF EXISTS popup_settings CASCADE;
+DROP TABLE IF EXISTS about_content CASCADE;
+DROP TABLE IF EXISTS products_page_content CASCADE;
+DROP TABLE IF EXISTS contacts_page_content CASCADE;
+DROP TABLE IF EXISTS footer_content CASCADE;
+DROP TABLE IF EXISTS automation_solution_page_content CASCADE;
 DROP TABLE IF EXISTS contact_submissions CASCADE;
 DROP TABLE IF EXISTS related_products CASCADE;
 DROP TABLE IF EXISTS product_documents CASCADE;
@@ -111,6 +116,7 @@ CREATE TABLE solutions (
   summary      TEXT,
   services     TEXT[],
   benefits     TEXT[],
+  image_url    VARCHAR(500),
   sort_order   INTEGER NOT NULL DEFAULT 0
 );
 
@@ -156,6 +162,114 @@ CREATE TABLE home_content (
   cta_title_line2_en     VARCHAR(255),
   cta_title_line2_th     VARCHAR(255),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- about_content / products_page_content / contacts_page_content —
+-- same singleton, per-field _en/_th pattern as home_content, for
+-- the About Us, Products, and Contact Us pages. Managed from
+-- Admin Header > Edit > (About Us / Products / Contact Us).
+-- ============================================================
+CREATE TABLE about_content (
+  id                  SERIAL PRIMARY KEY,
+  hero_meta_en        VARCHAR(255),
+  hero_meta_th        VARCHAR(255),
+  hero_title_en       VARCHAR(255),
+  hero_title_th       VARCHAR(255),
+  hero_sub_en         TEXT,
+  hero_sub_th         TEXT,
+  intro_eyebrow_en    VARCHAR(255),
+  intro_eyebrow_th    VARCHAR(255),
+  intro_title_en      VARCHAR(255),
+  intro_title_th      VARCHAR(255),
+  intro_lede_en       TEXT,
+  intro_lede_th       TEXT,
+  intro_body_en       TEXT,
+  intro_body_th       TEXT,
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE products_page_content (
+  id                    SERIAL PRIMARY KEY,
+  hero_meta_en          VARCHAR(255),
+  hero_meta_th          VARCHAR(255),
+  hero_title_en         VARCHAR(255),
+  hero_title_th         VARCHAR(255),
+  hero_sub_en           TEXT,
+  hero_sub_th           TEXT,
+  brands_eyebrow_en     VARCHAR(255),
+  brands_eyebrow_th     VARCHAR(255),
+  categories_eyebrow_en VARCHAR(255),
+  categories_eyebrow_th VARCHAR(255),
+  cta_title_en          VARCHAR(255),
+  cta_title_th          VARCHAR(255),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE contacts_page_content (
+  id                      SERIAL PRIMARY KEY,
+  hero_meta_en            VARCHAR(255),
+  hero_meta_th            VARCHAR(255),
+  hero_title_en           VARCHAR(255),
+  hero_title_th           VARCHAR(255),
+  hero_sub_en             TEXT,
+  hero_sub_th             TEXT,
+  info_eyebrow_en         VARCHAR(255),
+  info_eyebrow_th         VARCHAR(255),
+  info_title_en           VARCHAR(255),
+  info_title_th           VARCHAR(255),
+  head_office_label_en    VARCHAR(255),
+  head_office_label_th    VARCHAR(255),
+  head_office_address_en  TEXT,
+  head_office_address_th  TEXT,
+  head_office_phone       VARCHAR(50),
+  head_office_email       VARCHAR(150),
+  warehouse_label_en      VARCHAR(255),
+  warehouse_label_th      VARCHAR(255),
+  warehouse_address_en    TEXT,
+  warehouse_address_th    TEXT,
+  warehouse_phone         VARCHAR(50),
+  warehouse_email         VARCHAR(150),
+  map_eyebrow_en          VARCHAR(255),
+  map_eyebrow_th          VARCHAR(255),
+  map_title_en            VARCHAR(255),
+  map_title_th            VARCHAR(255),
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- footer_content — footer-specific copy (tagline, bottom legal
+-- lines), managed from Admin Sidebar > Edit > Footer. The footer's
+-- head office / warehouse contact block deliberately reuses
+-- contacts_page_content instead of duplicating those fields.
+-- ============================================================
+CREATE TABLE footer_content (
+  id                   SERIAL PRIMARY KEY,
+  tagline_en           VARCHAR(255),
+  tagline_th           VARCHAR(255),
+  rights_en            VARCHAR(255),
+  rights_th            VARCHAR(255),
+  authorized_line_en   VARCHAR(255),
+  authorized_line_th   VARCHAR(255),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- automation_solution_page_content — hero-only content for the
+-- Automation Solution page (the "solution blocks" underneath the
+-- hero live in the `solutions` table above and are managed from
+-- the same admin page). Same singleton _en/_th pattern as the
+-- other page-content tables.
+-- ============================================================
+CREATE TABLE automation_solution_page_content (
+  id             SERIAL PRIMARY KEY,
+  hero_meta_en   VARCHAR(255),
+  hero_meta_th   VARCHAR(255),
+  hero_title_en  VARCHAR(255),
+  hero_title_th  VARCHAR(255),
+  hero_sub_en    TEXT,
+  hero_sub_th    TEXT,
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ============================================================

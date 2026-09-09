@@ -7,7 +7,7 @@ import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 export default function ProductsOverview() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
@@ -15,6 +15,7 @@ export default function ProductsOverview() {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ brand: "", category: "", q: "" });
   const [searchParams] = useSearchParams();
+  const [pageContent, setPageContent] = useState(null);
 
   // pick up ?category=... or ?brand=... from links elsewhere on the site
   // (e.g. the header's catalog dropdown) on first load
@@ -31,7 +32,20 @@ export default function ProductsOverview() {
     api.getBrands().then(setBrands).catch(() => setBrands([]));
     api.getCategories().then(setCategories).catch(() => setCategories([]));
     api.getFeaturedProducts().then(setFeatured).catch(() => setFeatured([]));
+    api
+      .getProductsPageContent()
+      .then(setPageContent)
+      .catch(() => setPageContent(null));
   }, []);
+
+  // Reads `${field}_${lang}` from the admin-editable
+  // products_page_content row, falling back to the built-in
+  // translation if the DB row isn't loaded yet (or unedited).
+  const pc = (field, fallback) => {
+    if (!pageContent) return fallback;
+    const value = pageContent[`${field}_${lang}`];
+    return value || fallback;
+  };
 
   const hasActiveFilters = filters.brand || filters.category || filters.q;
 
@@ -53,9 +67,9 @@ export default function ProductsOverview() {
       <section className="hero hero--compact">
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
-          <span className="hero__meta">{t("products.heroMeta")}</span>
-          <h1>{t("products.heroTitle")}</h1>
-          <p className="hero__sub">{t("products.heroSub")}</p>
+          <span className="hero__meta">{pc("hero_meta", t("products.heroMeta"))}</span>
+          <h1>{pc("hero_title", t("products.heroTitle"))}</h1>
+          <p className="hero__sub">{pc("hero_sub", t("products.heroSub"))}</p>
 
           <div className="catalog-search">
             <input
@@ -135,14 +149,14 @@ export default function ProductsOverview() {
 
           <section className="section">
             <div className="container">
-              <SectionLabel eyebrow={t("products.brandsEyebrow")} title={t("products.browseByBrand")} />
+              <SectionLabel eyebrow={pc("brands_eyebrow", t("products.brandsEyebrow"))} title={t("products.browseByBrand")} />
               <BrandLogoGrid brands={brands} getHref={(b) => `/products/${b.slug}`} />
             </div>
           </section>
 
           <section className="section">
             <div className="container">
-              <SectionLabel eyebrow={t("products.categoriesEyebrow")} title={t("products.browseByCategory")} />
+              <SectionLabel eyebrow={pc("categories_eyebrow", t("products.categoriesEyebrow"))} title={t("products.browseByCategory")} />
               <div className="category-grid">
                 {categories.map((c) => (
                   <button
@@ -162,7 +176,7 @@ export default function ProductsOverview() {
 
       <section className="cta-band">
         <div className="container cta-band__wrap">
-          <h2>{t("products.ctaTitle")}</h2>
+          <h2>{pc("cta_title", t("products.ctaTitle"))}</h2>
           <Link to="/contacts" className="btn btn-primary">
             {t("common.contactUs")} <span className="btn-arrow">→</span>
           </Link>

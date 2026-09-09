@@ -333,7 +333,7 @@ export async function getProductBySlug(req, res) {
 export async function listSolutions(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, slug, summary, services, benefits FROM solutions ORDER BY sort_order"
+      "SELECT id, name, slug, summary, services, benefits, image_url FROM solutions ORDER BY sort_order, id"
     );
     res.json(rows);
   } catch (err) {

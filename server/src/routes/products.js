@@ -20,6 +20,13 @@ import { getHomeContent } from "../controllers/homeContentController.js";
 import { getSiteSettings } from "../controllers/siteSettingsController.js";
 import { getMenu } from "../controllers/menuController.js";
 import { getActivePopup } from "../controllers/popupsController.js";
+import {
+  getAboutContent,
+  getProductsPageContent,
+  getContactsPageContent,
+  getFooterContent,
+  getAutomationSolutionContent,
+} from "../controllers/pageContentController.js";
 
 const router = Router();
 
@@ -27,6 +34,11 @@ router.get("/home-content", getHomeContent);
 router.get("/site-settings", getSiteSettings);
 router.get("/menu", getMenu);
 router.get("/popups/active", getActivePopup);
+router.get("/about-content", getAboutContent);
+router.get("/products-page-content", getProductsPageContent);
+router.get("/contacts-page-content", getContactsPageContent);
+router.get("/footer-content", getFooterContent);
+router.get("/automation-solution-content", getAutomationSolutionContent);
 
 router.get("/brands", listBrands);
 router.get("/brands/:brandSlug", getBrand);

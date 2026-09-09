@@ -551,6 +551,7 @@
   aspect-ratio: 4 / 3;
   background: var(--bg-panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -572,6 +573,14 @@
   font-size: 15vw;
   max-font-size: 120px;
   color: var(--line-strong);
+  position: relative;
+  z-index: 1;
+}
+
+.solution-block__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   position: relative;
   z-index: 1;
 }

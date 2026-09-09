@@ -20,6 +20,11 @@ import ProductDetail from "./pages/products/ProductDetail.jsx";
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminHomeEditor from "./pages/admin/AdminHomeEditor.jsx";
+import AdminAboutEditor from "./pages/admin/AdminAboutEditor.jsx";
+import AdminProductsPageEditor from "./pages/admin/AdminProductsPageEditor.jsx";
+import AdminContactsPageEditor from "./pages/admin/AdminContactsPageEditor.jsx";
+import AdminFooterEditor from "./pages/admin/AdminFooterEditor.jsx";
+import AdminAutomationSolution from "./pages/admin/AdminAutomationSolution.jsx";
 import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminProductForm from "./pages/admin/AdminProductForm.jsx";
 import AdminBrandList from "./pages/admin/AdminBrandList.jsx";
@@ -84,6 +89,11 @@ export default function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="home" element={<AdminHomeEditor />} />
+          <Route path="about" element={<AdminAboutEditor />} />
+          <Route path="products-page" element={<AdminProductsPageEditor />} />
+          <Route path="contact" element={<AdminContactsPageEditor />} />
+          <Route path="footer" element={<AdminFooterEditor />} />
+          <Route path="automation-solution" element={<AdminAutomationSolution />} />
 
           <Route path="brands" element={<AdminBrandList />} />
           <Route path="brands/new" element={<AdminBrandForm />} />
