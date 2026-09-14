@@ -567,6 +567,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  background: #FFFFFF;
 }
 
 .admin-login__card h2 {
@@ -748,6 +749,12 @@
   gap: 10px;
 }
 
+.image-upload__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .image-upload__preview {
   width: 100%;
   height: 140px;
@@ -755,6 +762,61 @@
   background: var(--bg-panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+}
+
+/* ---- drag-to-position image field (Solution Block crop tool) ---- */
+.image-position-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+}
+
+.image-position-field__frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  touch-action: none; /* let pointer drags pan the image instead of scrolling the page on mobile */
+  user-select: none;
+}
+
+.image-position-field__frame.is-draggable {
+  cursor: grab;
+}
+
+.image-position-field__frame.is-draggable.is-dragging {
+  cursor: grabbing;
+}
+
+.image-position-field__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none; /* the frame itself owns the drag gesture */
+}
+
+.image-position-field__hint-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.image-position-field__caption {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 0;
 }
 
 .admin-form__image-grid {

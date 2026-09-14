@@ -818,16 +818,42 @@ export async function getSolutionAdmin(req, res) {
   }
 }
 
+// Clamp + default the drag-to-position crop point so bad/missing input
+// never reaches the DB as anything but a valid 0–100 integer.
+function clampPosition(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 50;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
 export async function createSolution(req, res) {
-  const { name, summary = null, services = [], benefits = [], imageUrl = null } = req.body || {};
+  const {
+    name,
+    summary = null,
+    services = [],
+    benefits = [],
+    imageUrl = null,
+    imagePositionX = 50,
+    imagePositionY = 50,
+  } = req.body || {};
   if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
   try {
     const slug = await uniqueSolutionSlug(name);
     const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM solutions");
     const { rows } = await pool.query(
-      `INSERT INTO solutions (name, slug, summary, services, benefits, image_url, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [name.trim(), slug, summary, services, benefits, imageUrl, maxRows[0].n]
+      `INSERT INTO solutions (name, slug, summary, services, benefits, image_url, image_position_x, image_position_y, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [
+        name.trim(),
+        slug,
+        summary,
+        services,
+        benefits,
+        imageUrl,
+        clampPosition(imagePositionX),
+        clampPosition(imagePositionY),
+        maxRows[0].n,
+      ]
     );
     logActivity("solution_added", `เพิ่ม Solution Block "${name.trim()}"`);
     res.status(201).json(rows[0]);
@@ -839,13 +865,31 @@ export async function createSolution(req, res) {
 
 export async function updateSolution(req, res) {
   const { id } = req.params;
-  const { name, summary = null, services = [], benefits = [], imageUrl = null } = req.body || {};
+  const {
+    name,
+    summary = null,
+    services = [],
+    benefits = [],
+    imageUrl = null,
+    imagePositionX = 50,
+    imagePositionY = 50,
+  } = req.body || {};
   if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
   try {
     const { rows } = await pool.query(
-      `UPDATE solutions SET name = $1, summary = $2, services = $3, benefits = $4, image_url = $5
-       WHERE id = $6 RETURNING *`,
-      [name.trim(), summary, services, benefits, imageUrl, id]
+      `UPDATE solutions SET name = $1, summary = $2, services = $3, benefits = $4, image_url = $5,
+         image_position_x = $6, image_position_y = $7
+       WHERE id = $8 RETURNING *`,
+      [
+        name.trim(),
+        summary,
+        services,
+        benefits,
+        imageUrl,
+        clampPosition(imagePositionX),
+        clampPosition(imagePositionY),
+        id,
+      ]
     );
     if (!rows.length) return res.status(404).json({ error: "Solution not found" });
     logActivity("solution_edited", `แก้ไข Solution Block "${name.trim()}"`);

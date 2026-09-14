@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import ImagePositionField from "../../components/ImagePositionField.jsx";
 
 const HERO_SUFFIXES = ["hero_meta", "hero_title", "hero_sub"];
 
@@ -15,7 +16,15 @@ function emptyHeroForm() {
 }
 
 function emptyBlockForm() {
-  return { name: "", summary: "", services: "", benefits: "", imageUrl: "" };
+  return {
+    name: "",
+    summary: "",
+    services: "",
+    benefits: "",
+    imageUrl: "",
+    imagePositionX: 50,
+    imagePositionY: 50,
+  };
 }
 
 export default function AdminAutomationSolution() {
@@ -92,6 +101,8 @@ export default function AdminAutomationSolution() {
       services: (b.services || []).join("\n"),
       benefits: (b.benefits || []).join("\n"),
       imageUrl: b.image_url || "",
+      imagePositionX: b.image_position_x ?? 50,
+      imagePositionY: b.image_position_y ?? 50,
     });
     setEditingId(b.id);
   };
@@ -112,6 +123,8 @@ export default function AdminAutomationSolution() {
         services: blockForm.services.split("\n").map((s) => s.trim()).filter(Boolean),
         benefits: blockForm.benefits.split("\n").map((s) => s.trim()).filter(Boolean),
         imageUrl: blockForm.imageUrl || null,
+        imagePositionX: blockForm.imageUrl ? blockForm.imagePositionX : 50,
+        imagePositionY: blockForm.imageUrl ? blockForm.imagePositionY : 50,
       };
       if (editingId === "new") {
         await api.adminCreateSolution(payload);
@@ -294,10 +307,27 @@ export default function AdminAutomationSolution() {
               <span className="admin-edit-sidebar__label" style={{ display: "block", marginBottom: 10 }}>
                 รูปภาพ
               </span>
-              <ImageUploadField
-                value={blockForm.imageUrl}
-                onChange={(url) => setBlockForm((f) => ({ ...f, imageUrl: url }))}
-              />
+              {blockForm.imageUrl && (
+                <ImagePositionField
+                  imageUrl={blockForm.imageUrl}
+                  positionX={blockForm.imagePositionX}
+                  positionY={blockForm.imagePositionY}
+                  onChange={({ x, y }) =>
+                    setBlockForm((f) => ({ ...f, imagePositionX: x, imagePositionY: y }))
+                  }
+                />
+              )}
+              <div style={{ marginTop: blockForm.imageUrl ? 12 : 0 }}>
+                <ImageUploadField
+                  value={blockForm.imageUrl}
+                  hidePreview
+                  onChange={(url) =>
+                    // A newly uploaded/changed image starts centered; removing
+                    // the image resets the saved crop point too.
+                    setBlockForm((f) => ({ ...f, imageUrl: url, imagePositionX: 50, imagePositionY: 50 }))
+                  }
+                />
+              </div>
             </div>
 
             <div className="admin-form__submit-row">

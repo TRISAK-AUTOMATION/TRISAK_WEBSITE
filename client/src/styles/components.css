@@ -548,6 +548,9 @@
 }
 
 .solution-block__visual {
+  /* Fixed-ratio frame: every block gets the same container size and
+     shape no matter what dimensions the uploaded image has. */
+  width: 100%;
   aspect-ratio: 4 / 3;
   background: var(--bg-panel);
   border: 1px solid var(--line);
@@ -556,7 +559,20 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* clip anything that would spill past the frame */
+}
+
+/* Fallback for browsers without `aspect-ratio` support (e.g. old Safari):
+   the padding-top trick reserves the same 4:3 box. */
+@supports not (aspect-ratio: 4 / 3) {
+  .solution-block__visual {
+    height: 0;
+    padding-top: 75%; /* 3 / 4 */
+  }
+  .solution-block__visual > * {
+    position: absolute;
+    inset: 0;
+  }
 }
 
 .solution-block__visual::before {
@@ -580,7 +596,12 @@
 .solution-block__image {
   width: 100%;
   height: 100%;
+  /* `cover` fills the frame edge-to-edge for any source aspect ratio
+     (portrait, landscape, square, ...) by cropping instead of
+     squashing, so the layout never overflows or shifts. */
   object-fit: cover;
+  object-position: center;
+  display: block;
   position: relative;
   z-index: 1;
 }

@@ -10,6 +10,7 @@ export default function AutomationSolution() {
 
   const [heroContent, setHeroContent] = useState(null);
   const [dbSolutions, setDbSolutions] = useState(null);
+  const [brokenImages, setBrokenImages] = useState({});
 
   useEffect(() => {
     api
@@ -55,8 +56,20 @@ export default function AutomationSolution() {
           {solutions.map((s, i) => (
             <div className="solution-block" key={s.slug}>
               <div className="solution-block__visual" aria-hidden="true">
-                {s.image_url ? (
-                  <img src={s.image_url} alt="" className="solution-block__image" />
+                {s.image_url && !brokenImages[s.slug] ? (
+                  <img
+                    src={s.image_url}
+                    alt=""
+                    className="solution-block__image"
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      objectPosition: `${s.image_position_x ?? 50}% ${s.image_position_y ?? 50}%`,
+                    }}
+                    onError={() =>
+                      setBrokenImages((prev) => ({ ...prev, [s.slug]: true }))
+                    }
+                  />
                 ) : (
                   <span className="solution-block__glyph">0{i + 1}</span>
                 )}

@@ -110,14 +110,20 @@ CREATE TABLE related_products (
 );
 
 CREATE TABLE solutions (
-  id           SERIAL PRIMARY KEY,
-  name         VARCHAR(150) NOT NULL,
-  slug         VARCHAR(100) NOT NULL UNIQUE,
-  summary      TEXT,
-  services     TEXT[],
-  benefits     TEXT[],
-  image_url    VARCHAR(500),
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  id                 SERIAL PRIMARY KEY,
+  name               VARCHAR(150) NOT NULL,
+  slug               VARCHAR(100) NOT NULL UNIQUE,
+  summary            TEXT,
+  services           TEXT[],
+  benefits           TEXT[],
+  image_url          VARCHAR(500),
+  -- Object-position-style crop point (percent from left/top, 0–100)
+  -- chosen by dragging the image inside the fixed Solution Block
+  -- frame in the admin. Applied on the public site with the same
+  -- frame + object-fit: cover so admin and site always match.
+  image_position_x   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_x BETWEEN 0 AND 100),
+  image_position_y   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_y BETWEEN 0 AND 100),
+  sort_order         INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE industries (
