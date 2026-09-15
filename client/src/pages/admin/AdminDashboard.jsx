@@ -13,6 +13,7 @@ const ACTIVITY_ICONS = {
   product_added: "🛒",
   product_edited: "✎",
   product_deleted: "🗑",
+  product_import: "📥",
   brand_added: "🏷",
   brand_edited: "✎",
   brand_deleted: "🗑",

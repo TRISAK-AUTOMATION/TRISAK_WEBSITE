@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth.js";
-import { upload } from "../middleware/upload.js";
+import { upload, optimizeUploadedImage } from "../middleware/upload.js";
+import { uploadExcel } from "../middleware/uploadExcel.js";
 import {
   login,
   logout,
@@ -38,6 +39,11 @@ import {
   deleteSolution,
   uploadImage,
 } from "../controllers/adminController.js";
+import {
+  exportProductsExcel,
+  parseProductImport,
+  commitProductImport,
+} from "../controllers/productImportController.js";
 import { updateHomeContent } from "../controllers/homeContentController.js";
 import { updateSiteSettings } from "../controllers/siteSettingsController.js";
 import { getDashboard, listLeadsAdmin, updateLeadStatus } from "../controllers/dashboardController.js";
@@ -136,6 +142,9 @@ router.post("/admin/series/:id/reorder", reorderSeries);
 router.delete("/admin/series/:id", deleteSeries);
 
 router.get("/admin/products", listProductsAdmin);
+router.get("/admin/products/export", exportProductsExcel);
+router.post("/admin/products/import/parse", uploadExcel.single("file"), parseProductImport);
+router.post("/admin/products/import/commit", commitProductImport);
 router.get("/admin/products/:id", getProductAdmin);
 router.post("/admin/products", createProduct);
 router.put("/admin/products/:id", updateProduct);
@@ -148,6 +157,6 @@ router.post("/admin/solutions", createSolution);
 router.put("/admin/solutions/:id", updateSolution);
 router.delete("/admin/solutions/:id", deleteSolution);
 
-router.post("/admin/upload", upload.single("image"), uploadImage);
+router.post("/admin/upload", upload.single("image"), optimizeUploadedImage, uploadImage);
 
 export default router;

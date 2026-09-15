@@ -45,7 +45,7 @@ app.use(
     },
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "5mb" })); // generous enough for bulk product-import payloads
 
 // uploaded product images, served at http://<host>:<port>/uploads/<filename>
 app.use("/uploads", express.static(uploadsDir));

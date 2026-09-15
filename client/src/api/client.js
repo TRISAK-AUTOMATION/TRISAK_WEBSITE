@@ -175,6 +175,60 @@ export const api = {
     }),
   adminDeleteProduct: (id) => authRequest(`/admin/products/${id}`, { method: "DELETE" }),
 
+  // Excel export — downloads the file via a blob so the Authorization
+  // header can be sent (a plain <a href> can't attach auth headers).
+  adminExportProductsExcel: async () => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    const res = await fetch(`${API_URL}/admin/products/export`, {
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      throw new Error("Session expired — signing you out.");
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Export failed: ${res.status}`);
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : "products-export.xlsx";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  // multipart upload — bypasses request()/authRequest() so fetch can set
+  // its own multipart/form-data boundary instead of the JSON content type
+  adminPreviewProductImport: async (file) => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_URL}/admin/products/import/parse`, {
+      method: "POST",
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      body: formData,
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      throw new Error("Session expired — signing you out.");
+    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Import preview failed: ${res.status}`);
+    return body;
+  },
+  adminCommitProductImport: (rows) =>
+    authRequest("/admin/products/import/commit", {
+      method: "POST",
+      body: JSON.stringify({ rows }),
+    }),
+
   // ---- dashboard / leads ----
   adminGetDashboard: () => authRequest("/admin/dashboard"),
   adminGetLeads: (params = {}) => authRequest(`/admin/leads${qs(params)}`),
