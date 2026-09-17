@@ -75,6 +75,7 @@ export const api = {
   getProductBySlug: (slug) => request(`/products/detail/${slug}`),
 
   getSolutions: () => request("/solutions"),
+  getCustomers: () => request("/customers"),
   getIndustries: () => request("/industries"),
   getHomeContent: () => request("/home-content"),
   getSiteSettings: () => request("/site-settings"),
@@ -293,6 +294,18 @@ export const api = {
   adminUpdateSolution: (id, payload) =>
     authRequest(`/admin/solutions/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   adminDeleteSolution: (id) => authRequest(`/admin/solutions/${id}`, { method: "DELETE" }),
+
+  adminGetCustomers: () => authRequest("/admin/customers"),
+  adminCreateCustomer: (payload) =>
+    authRequest("/admin/customers", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateCustomer: (id, payload) =>
+    authRequest(`/admin/customers/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminReorderCustomer: (id, direction) =>
+    authRequest(`/admin/customers/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
+  adminDeleteCustomer: (id) => authRequest(`/admin/customers/${id}`, { method: "DELETE" }),
 
   // multipart upload — bypasses request()/authRequest() so fetch can set
   // its own multipart/form-data boundary instead of the JSON content type

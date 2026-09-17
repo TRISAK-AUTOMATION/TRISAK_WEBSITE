@@ -14,6 +14,7 @@ import {
   getFeaturedProducts,
   getProductBySlug,
   listSolutions,
+  listCustomers,
   listIndustries,
 } from "../controllers/productsController.js";
 import { getHomeContent } from "../controllers/homeContentController.js";
@@ -58,6 +59,7 @@ router.get("/products/featured", getFeaturedProducts);
 router.get("/products/detail/:slug", getProductBySlug);
 
 router.get("/solutions", listSolutions);
+router.get("/customers", listCustomers);
 router.get("/industries", listIndustries);
 
 export default router;

@@ -37,6 +37,11 @@ import {
   createSolution,
   updateSolution,
   deleteSolution,
+  listCustomersAdmin,
+  createCustomer,
+  updateCustomer,
+  reorderCustomer,
+  deleteCustomer,
   uploadImage,
 } from "../controllers/adminController.js";
 import {
@@ -156,6 +161,12 @@ router.get("/admin/solutions/:id", getSolutionAdmin);
 router.post("/admin/solutions", createSolution);
 router.put("/admin/solutions/:id", updateSolution);
 router.delete("/admin/solutions/:id", deleteSolution);
+
+router.get("/admin/customers", listCustomersAdmin);
+router.post("/admin/customers", createCustomer);
+router.put("/admin/customers/:id", updateCustomer);
+router.post("/admin/customers/:id/reorder", reorderCustomer);
+router.delete("/admin/customers/:id", deleteCustomer);
 
 router.post("/admin/upload", upload.single("image"), optimizeUploadedImage, uploadImage);
 

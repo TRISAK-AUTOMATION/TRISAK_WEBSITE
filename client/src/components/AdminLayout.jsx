@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
       { label: "สินค้า (Products)", to: "/admin/products-page" },
       { label: "ติดต่อเรา (Contact Us)", to: "/admin/contact" },
       { label: "โซลูชันระบบอัตโนมัติ (Automation Solution)", to: "/admin/automation-solution" },
+      { label: "ลูกค้าของเรา (Our Customers)", to: "/admin/customers" },
       { label: "Footer", to: "/admin/footer" },
       { label: "ป๊อปอัพ (Pop-up)", to: "/admin/popups" },
     ],

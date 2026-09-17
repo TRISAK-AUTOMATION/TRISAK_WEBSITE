@@ -122,6 +122,13 @@
   position: relative;
 }
 
+/* When the customer logo strip is showing right above, its own bottom
+   border already separates it from Our Strength — drop this section's
+   default top border so the two don't double up into one thick line. */
+.customers-section + .strength-grid {
+  border-top: none;
+}
+
 .strength-block {
   display: flex;
   flex-direction: column;
@@ -193,6 +200,83 @@
 
 .brand-strip__logo:hover {
   filter: grayscale(0) opacity(1);
+}
+
+/* ---- Our Customers: continuous right-to-left logo marquee ---- */
+.customers-section {
+  /* Sits flush against the Hero section above — no top padding/border,
+     just the marquee itself, with its own bottom border separating it
+     from Our Strength below. */
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top: none;
+}
+
+.customers-marquee {
+  overflow: hidden;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+  /* Fade the strip's edges so logos scroll in/out softly instead of
+     popping at a hard boundary. */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.customers-marquee__track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  /* Two identical halves back to back — animating exactly -50% always
+     lands the track on the start of the second (identical) half, so the
+     loop has no visible seam regardless of how many logos there are. */
+  animation: customers-marquee var(--marquee-duration, 30s) linear infinite;
+}
+
+@keyframes customers-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.customers-marquee__item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 125px; /* 64px + 30%, then + 50% */
+  padding: 0 36px;
+}
+
+.customers-marquee__logo {
+  height: 100%;
+  max-width: 312px; /* 160px + 30%, then + 50% */
+  width: auto;
+  object-fit: contain; /* keeps each logo's own proportions — never stretched */
+  filter: grayscale(1) opacity(0.6);
+  transition: filter 0.2s ease;
+}
+
+.customers-marquee__logo:hover {
+  filter: grayscale(0) opacity(1);
+}
+
+@media (max-width: 640px) {
+  .customers-marquee__item {
+    height: 86px; /* 44px + 30%, then + 50% */
+    padding: 0 22px;
+  }
+  .customers-marquee__logo {
+    max-width: 215px; /* 110px + 30%, then + 50% */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customers-marquee__track {
+    animation-duration: 90s;
+  }
 }
 
 .products-cta-row {

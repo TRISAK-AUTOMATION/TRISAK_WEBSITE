@@ -821,6 +821,55 @@
   color: var(--accent-signal);
 }
 
+.admin-sort-arrows button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-sort-arrows button:disabled:hover {
+  border-color: var(--line-strong);
+  color: var(--text-muted);
+}
+
+/* ---- Our Customers: logo grid ---- */
+.admin-customer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.admin-customer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+
+.admin-customer-card.is-busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.admin-customer-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-customer-card--add {
+  border-style: dashed;
+  justify-content: flex-start;
+}
+
+.admin-customer-card__label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .admin-row-actions {
   display: flex;
   align-items: center;

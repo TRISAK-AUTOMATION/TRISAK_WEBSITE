@@ -342,6 +342,18 @@ export async function listSolutions(req, res) {
   }
 }
 
+export async function listCustomers(req, res) {
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, image_url FROM customers ORDER BY sort_order, id"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load customers" });
+  }
+}
+
 export async function listIndustries(req, res) {
   try {
     const { rows } = await pool.query("SELECT id, name FROM industries ORDER BY sort_order");

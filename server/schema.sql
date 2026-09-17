@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS series CASCADE;
 DROP TABLE IF EXISTS brands CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS solutions CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS industries CASCADE;
 
 CREATE TABLE brands (
@@ -124,6 +125,15 @@ CREATE TABLE solutions (
   image_position_x   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_x BETWEEN 0 AND 100),
   image_position_y   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_y BETWEEN 0 AND 100),
   sort_order         INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE customers (
+  -- "Our Customers" logo carousel — image only, by design (the admin
+  -- page focuses on logo management, no name/text fields required).
+  id           SERIAL PRIMARY KEY,
+  image_url    VARCHAR(500) NOT NULL,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE industries (

@@ -7,11 +7,24 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
+// The marquee loops by rendering two back-to-back copies of this list and
+// animating exactly -50% — so however many logos there are, the loop is
+// seamless. With very few logos that copy would look sparse (a couple of
+// logos, then a big gap before they repeat), so pad it out first.
+const MIN_MARQUEE_ITEMS = 8;
+function padLogos(logos) {
+  if (!logos.length) return logos;
+  let padded = logos;
+  while (padded.length < MIN_MARQUEE_ITEMS) padded = padded.concat(logos);
+  return padded;
+}
+
 export default function Home() {
   const { t, lang } = useLanguage();
   const [industries, setIndustries] = useState(null);
   const [homeContent, setHomeContent] = useState(null);
   const [brands, setBrands] = useState(null);
+  const [customers, setCustomers] = useState(null);
 
   useEffect(() => {
     api
@@ -26,6 +39,10 @@ export default function Home() {
       .getBrands()
       .then((data) => setBrands(data?.length ? data : null))
       .catch(() => setBrands(null));
+    api
+      .getCustomers()
+      .then((data) => setCustomers(data?.length ? data : null))
+      .catch(() => setCustomers(null));
   }, []);
 
   // Reads `${field}_${lang}` from the admin-editable home_content row,
@@ -47,6 +64,7 @@ export default function Home() {
   const fallbackIndustries = t("industries");
 
   const heroBgImage = homeContent?.hero_bg_image || "";
+  const marqueeLogos = customers ? padLogos(customers) : [];
 
   return (
     <>
@@ -81,6 +99,24 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 02 — OUR CUSTOMERS */}
+      {customers && customers.length > 0 && (
+        <section className="section customers-section">
+          <div className="customers-marquee">
+            <div
+              className="customers-marquee__track"
+              style={{ "--marquee-duration": `${Math.max(20, marqueeLogos.length * 4)}s` }}
+            >
+              {[...marqueeLogos, ...marqueeLogos].map((c, i) => (
+                <span className="customers-marquee__item" key={`${c.id}-${i}`}>
+                  <img src={c.image_url} alt="" className="customers-marquee__logo" loading="lazy" />
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 02 — OUR STRENGTH */}
       <section className="section strength-grid">
