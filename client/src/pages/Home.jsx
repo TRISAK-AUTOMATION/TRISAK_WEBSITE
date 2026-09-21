@@ -106,7 +106,7 @@ export default function Home() {
           <div className="customers-marquee">
             <div
               className="customers-marquee__track"
-              style={{ "--marquee-duration": `${Math.max(20, marqueeLogos.length * 4)}s` }}
+              style={{ "--marquee-duration": `${Math.min(30, Math.max(20, marqueeLogos.length * 3))}s` }}
             >
               {[...marqueeLogos, ...marqueeLogos].map((c, i) => (
                 <span className="customers-marquee__item" key={`${c.id}-${i}`}>

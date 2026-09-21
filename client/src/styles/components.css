@@ -214,7 +214,9 @@
 
 .customers-marquee {
   overflow: hidden;
-  padding: 20px 0;
+  /* padding + 64px logo height ≈ 112px total — within the ~100–120px
+     target marquee height, with the row vertically centered inside it. */
+  padding: 24px 0;
   border-bottom: 1px solid var(--line);
   /* Fade the strip's edges so logos scroll in/out softly instead of
      popping at a hard boundary. */
@@ -225,11 +227,12 @@
 .customers-marquee__track {
   display: flex;
   align-items: center;
+  gap: 60px; /* ~50–70px whitespace between logos, incl. the loop seam */
   width: max-content;
   /* Two identical halves back to back — animating exactly -50% always
      lands the track on the start of the second (identical) half, so the
      loop has no visible seam regardless of how many logos there are. */
-  animation: customers-marquee var(--marquee-duration, 30s) linear infinite;
+  animation: customers-marquee var(--marquee-duration, 25s) linear infinite;
 }
 
 @keyframes customers-marquee {
@@ -245,16 +248,15 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 125px; /* 64px + 30%, then + 50% */
-  padding: 0 36px;
 }
 
 .customers-marquee__logo {
-  height: 100%;
-  max-width: 312px; /* 160px + 30%, then + 50% */
+  /* Height-only sizing (no width cap): every logo reads at the same
+     visual weight while keeping its own natural aspect ratio — nothing
+     is stretched, squashed, or cropped. */
+  height: 64px;
   width: auto;
-  object-fit: contain; /* keeps each logo's own proportions — never stretched */
+  display: block;
   filter: grayscale(1) opacity(0.6);
   transition: filter 0.2s ease;
 }
@@ -264,12 +266,8 @@
 }
 
 @media (max-width: 640px) {
-  .customers-marquee__item {
-    height: 86px; /* 44px + 30%, then + 50% */
-    padding: 0 22px;
-  }
-  .customers-marquee__logo {
-    max-width: 215px; /* 110px + 30%, then + 50% */
+  .customers-marquee__track {
+    gap: 40px;
   }
 }
 
