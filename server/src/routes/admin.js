@@ -37,6 +37,11 @@ import {
   createSolution,
   updateSolution,
   deleteSolution,
+  listCustomersAdmin,
+  createCustomer,
+  updateCustomer,
+  reorderCustomer,
+  deleteCustomer,
   uploadImage,
 } from "../controllers/adminController.js";
 import {
@@ -46,7 +51,13 @@ import {
 } from "../controllers/productImportController.js";
 import { updateHomeContent } from "../controllers/homeContentController.js";
 import { updateSiteSettings } from "../controllers/siteSettingsController.js";
-import { getDashboard, listLeadsAdmin, updateLeadStatus } from "../controllers/dashboardController.js";
+import { getDashboard } from "../controllers/dashboardController.js";
+import {
+  listContactRequests,
+  getContactRequest,
+  updateContactRequestStatus,
+  deleteContactRequest,
+} from "../controllers/contactRequestsController.js";
 import {
   listMenuItemsAdmin,
   getMenuItemAdmin,
@@ -88,8 +99,10 @@ router.put("/admin/site-settings", updateSiteSettings);
 
 router.get("/admin/dashboard", getDashboard);
 
-router.get("/admin/leads", listLeadsAdmin);
-router.patch("/admin/leads/:id/status", updateLeadStatus);
+router.get("/admin/contact-requests", listContactRequests);
+router.get("/admin/contact-requests/:id", getContactRequest);
+router.patch("/admin/contact-requests/:id/status", updateContactRequestStatus);
+router.delete("/admin/contact-requests/:id", deleteContactRequest);
 
 router.get("/admin/menu-items", listMenuItemsAdmin);
 router.get("/admin/menu-items/:id", getMenuItemAdmin);
@@ -156,6 +169,12 @@ router.get("/admin/solutions/:id", getSolutionAdmin);
 router.post("/admin/solutions", createSolution);
 router.put("/admin/solutions/:id", updateSolution);
 router.delete("/admin/solutions/:id", deleteSolution);
+
+router.get("/admin/customers", listCustomersAdmin);
+router.post("/admin/customers", createCustomer);
+router.put("/admin/customers/:id", updateCustomer);
+router.post("/admin/customers/:id/reorder", reorderCustomer);
+router.delete("/admin/customers/:id", deleteCustomer);
 
 router.post("/admin/upload", upload.single("image"), optimizeUploadedImage, uploadImage);
 

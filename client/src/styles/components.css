@@ -122,6 +122,13 @@
   position: relative;
 }
 
+/* When the customer logo strip is showing right above, its own bottom
+   border already separates it from Our Strength — drop this section's
+   default top border so the two don't double up into one thick line. */
+.customers-section + .strength-grid {
+  border-top: none;
+}
+
 .strength-block {
   display: flex;
   flex-direction: column;
@@ -193,6 +200,81 @@
 
 .brand-strip__logo:hover {
   filter: grayscale(0) opacity(1);
+}
+
+/* ---- Our Customers: continuous right-to-left logo marquee ---- */
+.customers-section {
+  /* Sits flush against the Hero section above — no top padding/border,
+     just the marquee itself, with its own bottom border separating it
+     from Our Strength below. */
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top: none;
+}
+
+.customers-marquee {
+  overflow: hidden;
+  /* padding + 64px logo height ≈ 112px total — within the ~100–120px
+     target marquee height, with the row vertically centered inside it. */
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+  /* Fade the strip's edges so logos scroll in/out softly instead of
+     popping at a hard boundary. */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.customers-marquee__track {
+  display: flex;
+  align-items: center;
+  gap: 60px; /* ~50–70px whitespace between logos, incl. the loop seam */
+  width: max-content;
+  /* Two identical halves back to back — animating exactly -50% always
+     lands the track on the start of the second (identical) half, so the
+     loop has no visible seam regardless of how many logos there are. */
+  animation: customers-marquee var(--marquee-duration, 25s) linear infinite;
+}
+
+@keyframes customers-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.customers-marquee__item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.customers-marquee__logo {
+  /* Height-only sizing (no width cap): every logo reads at the same
+     visual weight while keeping its own natural aspect ratio — nothing
+     is stretched, squashed, or cropped. */
+  height: 64px;
+  width: auto;
+  display: block;
+  filter: grayscale(1) opacity(0.6);
+  transition: filter 0.2s ease;
+}
+
+.customers-marquee__logo:hover {
+  filter: grayscale(0) opacity(1);
+}
+
+@media (max-width: 640px) {
+  .customers-marquee__track {
+    gap: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customers-marquee__track {
+    animation-duration: 90s;
+  }
 }
 
 .products-cta-row {
@@ -829,6 +911,91 @@
 
 .contact-form__status--error {
   color: #fb7185;
+}
+
+/* ---------- Contact form: success modal (Bootstrap-style) ---------- */
+.cf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 18, 30, 0.55);
+  animation: cf-modal-fade 0.15s ease-out;
+}
+
+.cf-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 36px 32px 28px;
+  background: #fff;
+  color: #454957;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: cf-modal-pop 0.2s ease-out;
+}
+
+.cf-modal__x {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #9497a3;
+  cursor: pointer;
+}
+
+.cf-modal__x:hover {
+  color: #454957;
+}
+
+.cf-modal__icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #e7f6ea;
+  color: #2fa84f;
+}
+
+.cf-modal__title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2333;
+}
+
+.cf-modal__body {
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #6b6f7d;
+}
+
+.cf-modal__body p {
+  margin: 0 0 4px;
+}
+
+.cf-modal__ok {
+  min-width: 120px;
+  justify-content: center;
+}
+
+@keyframes cf-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cf-modal-pop {
+  from { opacity: 0; transform: translateY(-16px) scale(0.97); }
+  to { opacity: 1; transform: none; }
 }
 
 .map-frame {

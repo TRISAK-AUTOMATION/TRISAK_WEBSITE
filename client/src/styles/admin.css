@@ -11,15 +11,25 @@
    ========================================================= */
 .admin-layout .panel,
 .admin-layout .contact-form__field input,
-.admin-layout .contact-form__field textarea {
+.admin-layout .contact-form__field textarea,
+.admin-modal .panel,
+.admin-modal .contact-form__field input,
+.admin-modal .contact-form__field textarea {
   background: var(--bg);
 }
 
 .admin-layout .admin-form select,
 .admin-layout .admin-table input,
 .admin-layout .admin-table select,
-.admin-layout .admin-form__list-row input {
+.admin-layout .admin-form__list-row input,
+.admin-modal .admin-form select,
+.admin-modal .admin-form__list-row input {
   background: var(--bg);
+}
+
+/* modals render in a portal outside .admin-layout — keep the form compact there */
+.admin-modal .admin-form__section {
+  padding: 22px;
 }
 
 /* =========================================================
@@ -553,17 +563,12 @@
   color: var(--accent-signal);
 }
 
-.lead-status-badge--quoted {
+.lead-status-badge--in_progress {
   background: #fff4e0;
   color: #b3760a;
 }
 
-.lead-status-badge--follow_up {
-  background: #eaf3ff;
-  color: #1c6fd6;
-}
-
-.lead-status-badge--closed {
+.lead-status-badge--completed {
   background: #e7f6ea;
   color: #2fa84f;
 }
@@ -584,19 +589,358 @@
   color: var(--accent-signal);
 }
 
-.lead-status-select--quoted {
+.lead-status-select--in_progress {
   border-color: #b3760a;
   color: #b3760a;
 }
 
-.lead-status-select--follow_up {
-  border-color: #1c6fd6;
-  color: #1c6fd6;
-}
-
-.lead-status-select--closed {
+.lead-status-select--completed {
   border-color: #2fa84f;
   color: #2fa84f;
+}
+
+/* =========================================================
+   Contact Requests page (toolbar extras, clickable rows, detail modal)
+   ========================================================= */
+.cr-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.cr-toolbar input[type="search"] {
+  flex: 1;
+  min-width: 220px;
+  max-width: 340px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 11px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.cr-toolbar select {
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cr-sort-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cr-sort-btn:hover {
+  color: var(--accent-signal);
+}
+
+.cr-row {
+  cursor: pointer;
+}
+
+.cr-row:hover td {
+  background: var(--bg-panel);
+}
+
+.cr-message-cell {
+  max-width: 260px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+}
+
+.cr-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-icon-btn--view {
+  background: var(--text-muted);
+}
+
+.admin-icon-btn--view:hover {
+  opacity: 0.85;
+}
+
+.cr-detail {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px 16px;
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+
+.cr-detail dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding-top: 2px;
+}
+
+.cr-detail dd {
+  margin: 0;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.cr-detail__message {
+  white-space: pre-wrap;
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   Shared admin modal system (components/AdminModal.jsx)
+   Used by: Contact Request details + delete, Product edit + delete
+   ========================================================= */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 18, 30, 0.5);
+  animation: admin-modal-fade 0.15s ease-out;
+}
+
+.admin-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  background: var(--bg);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  outline: none;
+  animation: admin-modal-pop 0.2s ease-out;
+}
+
+.admin-modal--sm {
+  max-width: 440px;
+}
+
+.admin-modal--lg {
+  max-width: 920px;
+}
+
+.admin-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.admin-modal__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.admin-modal__close {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.admin-modal__close:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.admin-modal__close:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-modal__body {
+  padding: 22px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  font-size: 14.5px;
+  color: var(--text);
+}
+
+.admin-modal__text {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.admin-modal__detail {
+  margin: 14px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  word-break: break-word;
+}
+
+.admin-modal__error {
+  margin: 0;
+  padding: 11px 22px;
+  border-top: 1px solid #f3c5c0;
+  background: #fdecea;
+  color: #b3372d;
+  font-size: 13px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.admin-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.admin-modal__footer .admin-modal__push {
+  margin-right: auto;
+}
+
+.admin-modal__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.admin-modal__btn {
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  padding: 9px 22px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-modal__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-modal__btn--secondary {
+  background: var(--bg);
+  border-color: var(--line-strong);
+  color: var(--text-muted);
+}
+
+.admin-modal__btn--secondary:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.admin-modal__btn--primary {
+  background: var(--accent-signal);
+  color: var(--on-accent);
+}
+
+.admin-modal__btn--danger {
+  background: #e2574c;
+  color: #fff;
+}
+
+.admin-modal__btn--primary:hover:not(:disabled),
+.admin-modal__btn--danger:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.admin-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  background: #1f7a3a;
+  color: #fff;
+  font-size: 13.5px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: admin-modal-pop 0.2s ease-out;
+}
+
+.admin-toast--error {
+  background: #b3372d;
+}
+
+.admin-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+@keyframes admin-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-modal-pop {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 560px) {
+  .admin-modal-backdrop {
+    padding: 12px;
+  }
+  .admin-modal__body {
+    padding: 16px;
+  }
+  .admin-modal__header,
+  .admin-modal__footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .cr-detail {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .cr-detail dd {
+    margin-bottom: 10px;
+  }
 }
 
 /* =========================================================
@@ -819,6 +1163,55 @@
 .admin-sort-arrows button:hover {
   border-color: var(--accent-signal);
   color: var(--accent-signal);
+}
+
+.admin-sort-arrows button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-sort-arrows button:disabled:hover {
+  border-color: var(--line-strong);
+  color: var(--text-muted);
+}
+
+/* ---- Our Customers: logo grid ---- */
+.admin-customer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.admin-customer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+
+.admin-customer-card.is-busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.admin-customer-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-customer-card--add {
+  border-style: dashed;
+  justify-content: flex-start;
+}
+
+.admin-customer-card__label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .admin-row-actions {

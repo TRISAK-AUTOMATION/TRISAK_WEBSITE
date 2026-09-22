@@ -913,3 +913,77 @@ export async function deleteSolution(req, res) {
     res.status(500).json({ error: "Failed to delete solution" });
   }
 }
+
+// ---------------- customers ("Our Customers" logo carousel) ----------------
+// Image-only by design — no name/description fields, matching the public
+// section which only ever renders the logos themselves.
+
+export async function listCustomersAdmin(req, res) {
+  try {
+    const { rows } = await pool.query("SELECT * FROM customers ORDER BY sort_order, id");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load customers" });
+  }
+}
+
+export async function createCustomer(req, res) {
+  const { imageUrl } = req.body || {};
+  if (!imageUrl) return res.status(400).json({ error: "imageUrl is required" });
+  try {
+    const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM customers");
+    const { rows } = await pool.query(
+      "INSERT INTO customers (image_url, sort_order) VALUES ($1, $2) RETURNING *",
+      [imageUrl, maxRows[0].n]
+    );
+    logActivity("customer_added", "เพิ่มโลโก้ลูกค้าใหม่");
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function updateCustomer(req, res) {
+  const { id } = req.params;
+  const { imageUrl } = req.body || {};
+  if (!imageUrl) return res.status(400).json({ error: "imageUrl is required" });
+  try {
+    const { rows } = await pool.query(
+      "UPDATE customers SET image_url = $1, updated_at = now() WHERE id = $2 RETURNING *",
+      [imageUrl, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Customer not found" });
+    logActivity("customer_edited", "แก้ไขโลโก้ลูกค้า");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function reorderCustomer(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  try {
+    const result = await reorderRow("customers", req.params.id, direction, []);
+    if (result === "not-found") return res.status(404).json({ error: "Customer not found" });
+    res.json({ success: true, moved: result === "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteCustomer(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await pool.query("DELETE FROM customers WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Customer not found" });
+    logActivity("customer_deleted", "ลบโลโก้ลูกค้า");
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete customer" });
+  }
+}

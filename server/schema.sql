@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS products_page_content CASCADE;
 DROP TABLE IF EXISTS contacts_page_content CASCADE;
 DROP TABLE IF EXISTS footer_content CASCADE;
 DROP TABLE IF EXISTS automation_solution_page_content CASCADE;
-DROP TABLE IF EXISTS contact_submissions CASCADE;
+DROP TABLE IF EXISTS contact_requests CASCADE;
 DROP TABLE IF EXISTS related_products CASCADE;
 DROP TABLE IF EXISTS product_documents CASCADE;
 DROP TABLE IF EXISTS product_specs CASCADE;
@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS series CASCADE;
 DROP TABLE IF EXISTS brands CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS solutions CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS industries CASCADE;
 
 CREATE TABLE brands (
@@ -124,6 +125,15 @@ CREATE TABLE solutions (
   image_position_x   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_x BETWEEN 0 AND 100),
   image_position_y   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_y BETWEEN 0 AND 100),
   sort_order         INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE customers (
+  -- "Our Customers" logo carousel — image only, by design (the admin
+  -- page focuses on logo management, no name/text fields required).
+  id           SERIAL PRIMARY KEY,
+  image_url    VARCHAR(500) NOT NULL,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE industries (
@@ -338,7 +348,9 @@ CREATE TABLE popup_settings (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE contact_submissions (
+-- contact_requests — submissions from the public Contact Us form,
+-- managed from Admin > Contact Requests.
+CREATE TABLE contact_requests (
   id             SERIAL PRIMARY KEY,
   name           VARCHAR(150) NOT NULL,
   company        VARCHAR(150),
@@ -347,8 +359,9 @@ CREATE TABLE contact_submissions (
   interested_in  VARCHAR(50),
   message        TEXT,
   status         VARCHAR(20) NOT NULL DEFAULT 'new'
-                   CHECK (status IN ('new', 'quoted', 'follow_up', 'closed')),
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+                   CHECK (status IN ('new', 'in_progress', 'completed')),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ============================================================
@@ -364,7 +377,8 @@ CREATE TABLE activity_log (
 );
 
 CREATE INDEX idx_activity_log_created_at ON activity_log (created_at DESC);
-CREATE INDEX idx_contact_submissions_status ON contact_submissions (status);
+CREATE INDEX idx_contact_requests_status ON contact_requests (status);
+CREATE INDEX idx_contact_requests_created_at ON contact_requests (created_at DESC);
 
 -- ============================================================
 -- Seed data

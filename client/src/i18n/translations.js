@@ -297,6 +297,14 @@ export const translations = {
       sending: "Sending…",
       success: "Thanks — your inquiry has been sent. Our team will get back to you shortly.",
       genericError: "Something went wrong. Please try again.",
+      submitError: "Your message could not be submitted. Please try again.",
+      successModal: {
+        title: "Message Sent Successfully",
+        text: "Thank you for contacting us.",
+        subtext: "Our team will review your inquiry and get back to you shortly.",
+        ok: "OK",
+        close: "Close",
+      },
     },
   },
 
@@ -598,6 +606,14 @@ export const translations = {
       sending: "กำลังส่ง…",
       success: "ขอบคุณครับ/ค่ะ ส่งข้อความเรียบร้อยแล้ว ทีมงานของเราจะติดต่อกลับโดยเร็วที่สุด",
       genericError: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+      submitError: "ไม่สามารถส่งข้อความได้ กรุณาลองใหม่อีกครั้ง",
+      successModal: {
+        title: "ส่งข้อความเรียบร้อยแล้ว",
+        text: "ขอบคุณที่ติดต่อเรา",
+        subtext: "ทีมงานของเราจะตรวจสอบข้อความของคุณและติดต่อกลับโดยเร็วที่สุด",
+        ok: "ตกลง",
+        close: "ปิด",
+      },
     },
   },
 };

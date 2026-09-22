@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -25,6 +25,7 @@ import AdminProductsPageEditor from "./pages/admin/AdminProductsPageEditor.jsx";
 import AdminContactsPageEditor from "./pages/admin/AdminContactsPageEditor.jsx";
 import AdminFooterEditor from "./pages/admin/AdminFooterEditor.jsx";
 import AdminAutomationSolution from "./pages/admin/AdminAutomationSolution.jsx";
+import AdminCustomers from "./pages/admin/AdminCustomers.jsx";
 import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminProductForm from "./pages/admin/AdminProductForm.jsx";
 import AdminProductImport from "./pages/admin/AdminProductImport.jsx";
@@ -36,7 +37,7 @@ import AdminSeriesList from "./pages/admin/AdminSeriesList.jsx";
 import AdminSeriesForm from "./pages/admin/AdminSeriesForm.jsx";
 import AdminSiteSettings from "./pages/admin/AdminSiteSettings.jsx";
 import AdminMenu from "./pages/admin/AdminMenu.jsx";
-import AdminLeads from "./pages/admin/AdminLeads.jsx";
+import AdminContactRequests from "./pages/admin/AdminContactRequests.jsx";
 import AdminPopup from "./pages/admin/AdminPopup.jsx";
 
 function ScrollToTop() {
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="contact" element={<AdminContactsPageEditor />} />
           <Route path="footer" element={<AdminFooterEditor />} />
           <Route path="automation-solution" element={<AdminAutomationSolution />} />
+          <Route path="customers" element={<AdminCustomers />} />
 
           <Route path="brands" element={<AdminBrandList />} />
           <Route path="brands/new" element={<AdminBrandForm />} />
@@ -115,7 +117,9 @@ export default function App() {
 
           <Route path="settings/website" element={<AdminSiteSettings />} />
           <Route path="menu" element={<AdminMenu />} />
-          <Route path="leads" element={<AdminLeads />} />
+          <Route path="contact-requests" element={<AdminContactRequests />} />
+          {/* old URL — keep bookmarks working */}
+          <Route path="leads" element={<Navigate to="/admin/contact-requests" replace />} />
 
           <Route path="popups" element={<AdminPopup />} />
         </Route>
