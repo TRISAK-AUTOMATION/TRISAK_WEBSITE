@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import AdminModal, { ModalButton } from "../../components/AdminModal.jsx";
 
 const emptyForm = {
   name: "",
@@ -30,8 +31,29 @@ function slugify(text) {
     .replace(/(^-|-$)/g, "");
 }
 
-export default function AdminProductForm() {
-  const { id } = useParams();
+// Turn a raw API/database error into something an admin can act on.
+function saveErrorMessage(err) {
+  const msg = (err && err.message) || "";
+  if (/duplicate key|unique constraint/i.test(msg)) {
+    return "The product could not be saved because this slug is already used by another product. Please use a different slug and try again.";
+  }
+  if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+    return "The product could not be saved. Please check your connection and try again.";
+  }
+  return msg ? `The product could not be saved: ${msg}` : "The product could not be saved. Please try again.";
+}
+
+/**
+ * Product form. Two modes:
+ *  - page mode (default): used by /admin/products/new and /admin/products/:id/edit
+ *  - modal mode: pass `onClose` (and optionally `productId` / `onSaved`) to
+ *    render the edit form inside the shared admin modal popup — this is what
+ *    the Edit button on the product list uses.
+ */
+export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
+  const routeParams = useParams();
+  const embedded = Boolean(onClose);
+  const id = productId != null ? String(productId) : routeParams.id;
   const isEdit = Boolean(id);
   const navigate = useNavigate();
 
@@ -44,6 +66,8 @@ export default function AdminProductForm() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [initialSnapshot, setInitialSnapshot] = useState(null);
 
   useEffect(() => {
     api.adminGetBrands().then(setBrands).catch(() => {});
@@ -57,7 +81,7 @@ export default function AdminProductForm() {
     api
       .adminGetProduct(id)
       .then((p) => {
-        setForm({
+        const loaded = {
           name: p.name || "",
           slug: p.slug || "",
           brandId: String(p.brand_id || ""),
@@ -83,9 +107,14 @@ export default function AdminProductForm() {
           // an unrelated edit would silently reset it and undo any
           // reordering done from the product list.
           sortOrder: p.sort_order ?? 0,
-        });
+        };
+        setForm(loaded);
+        setInitialSnapshot(JSON.stringify(loaded));
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        setLoadFailed(true);
+        setError(err.message || "The product could not be loaded.");
+      })
       .finally(() => setLoading(false));
   }, [id, isEdit]);
 
@@ -126,12 +155,32 @@ export default function AdminProductForm() {
     });
   };
 
+  // In the popup, backdrop-click / Esc only dismiss it while nothing has been
+  // changed, so a stray click can't throw away a long edit.
+  const dirty = embedded && initialSnapshot !== null && JSON.stringify(form) !== initialSnapshot;
+
+  const validate = () => {
+    if (!form.name.trim()) return "Please enter the product name.";
+    if (!form.slug.trim()) return "Please enter a slug.";
+    if (!form.brandId) return "Please select a brand.";
+    if (!form.categoryId) return "Please select a category.";
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    const problem = validate();
+    if (problem) {
+      setError(problem);
+      return;
+    }
     setSaving(true);
     setError("");
     const payload = {
       ...form,
+      name: form.name.trim(),
+      slug: form.slug.trim(),
       brandId: Number(form.brandId),
       categoryId: Number(form.categoryId),
       seriesId: form.seriesId ? Number(form.seriesId) : null,
@@ -148,30 +197,22 @@ export default function AdminProductForm() {
       } else {
         await api.adminCreateProduct(payload);
       }
-      navigate("/admin/products");
+      if (embedded) {
+        onSaved?.();
+      } else {
+        navigate("/admin/products");
+      }
     } catch (err) {
-      setError(err.message);
+      setError(saveErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return <p className="empty-state">กำลังโหลด…</p>;
-  }
+  const formId = "product-edit-form";
 
-  return (
+  const fields = (
     <>
-      <AdminBreadcrumb
-        items={[
-          { label: "รายการ", to: "/admin/products" },
-          { label: isEdit ? "แก้ไข" : "เพิ่ม" },
-        ]}
-      />
-
-      <form className="admin-form" onSubmit={handleSubmit}>
-        {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
-
         <div className="admin-form__section panel">
           <h3>Basics</h3>
           <div className="admin-form__row">
@@ -225,10 +266,15 @@ export default function AdminProductForm() {
             </label>
             <label className="contact-form__field">
               <span>
-                Series{" "}
-                <Link to="/admin/series/new" className="admin-form__inline-link">
-                  (+ add new)
-                </Link>
+                Series
+                {!embedded && (
+                  <>
+                    {" "}
+                    <Link to="/admin/series/new" className="admin-form__inline-link">
+                      (+ add new)
+                    </Link>
+                  </>
+                )}
               </span>
               <select value={form.seriesId} onChange={(e) => updateField("seriesId", e.target.value)}>
                 <option value="">No series</option>
@@ -425,15 +471,76 @@ export default function AdminProductForm() {
           </div>
         </div>
 
-        <div className="admin-form__submit-row">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
-          </button>
-          <Link to="/admin/products" className="btn">
-            Cancel
-          </Link>
-        </div>
-      </form>
+    </>
+  );
+
+  // ---------- modal mode ----------
+  if (embedded) {
+    return (
+      <AdminModal
+        title="Edit Product"
+        size="lg"
+        onClose={onClose}
+        busy={saving}
+        dismissible={!dirty}
+        error={error}
+        footer={
+          <>
+            <ModalButton onClick={onClose} disabled={saving}>
+              Cancel
+            </ModalButton>
+            <ModalButton
+              type="submit"
+              form={formId}
+              variant="primary"
+              disabled={saving || loading || loadFailed}
+            >
+              {saving ? "Saving…" : "Save"}
+            </ModalButton>
+          </>
+        }
+      >
+        {loading && <p className="empty-state">กำลังโหลด…</p>}
+        {!loading && !loadFailed && (
+          <form id={formId} className="admin-form" onSubmit={handleSubmit}>
+            {fields}
+          </form>
+        )}
+      </AdminModal>
+    );
+  }
+
+  // ---------- page mode ----------
+  if (loading) {
+    return <p className="empty-state">กำลังโหลด…</p>;
+  }
+
+  return (
+    <>
+      <AdminBreadcrumb
+        items={[
+          { label: "รายการ", to: "/admin/products" },
+          { label: isEdit ? "แก้ไข" : "เพิ่ม" },
+        ]}
+      />
+
+      {loadFailed ? (
+        <p className="contact-form__status contact-form__status--error">{error}</p>
+      ) : (
+        <form className="admin-form" onSubmit={handleSubmit}>
+          {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
+          {fields}
+
+          <div className="admin-form__submit-row">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
+            </button>
+            <Link to="/admin/products" className="btn">
+              Cancel
+            </Link>
+          </div>
+        </form>
+      )}
     </>
   );
 }

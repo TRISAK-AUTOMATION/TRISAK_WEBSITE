@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS products_page_content CASCADE;
 DROP TABLE IF EXISTS contacts_page_content CASCADE;
 DROP TABLE IF EXISTS footer_content CASCADE;
 DROP TABLE IF EXISTS automation_solution_page_content CASCADE;
-DROP TABLE IF EXISTS contact_submissions CASCADE;
+DROP TABLE IF EXISTS contact_requests CASCADE;
 DROP TABLE IF EXISTS related_products CASCADE;
 DROP TABLE IF EXISTS product_documents CASCADE;
 DROP TABLE IF EXISTS product_specs CASCADE;
@@ -348,7 +348,9 @@ CREATE TABLE popup_settings (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE contact_submissions (
+-- contact_requests — submissions from the public Contact Us form,
+-- managed from Admin > Contact Requests.
+CREATE TABLE contact_requests (
   id             SERIAL PRIMARY KEY,
   name           VARCHAR(150) NOT NULL,
   company        VARCHAR(150),
@@ -357,8 +359,9 @@ CREATE TABLE contact_submissions (
   interested_in  VARCHAR(50),
   message        TEXT,
   status         VARCHAR(20) NOT NULL DEFAULT 'new'
-                   CHECK (status IN ('new', 'quoted', 'follow_up', 'closed')),
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+                   CHECK (status IN ('new', 'in_progress', 'completed')),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ============================================================
@@ -374,7 +377,8 @@ CREATE TABLE activity_log (
 );
 
 CREATE INDEX idx_activity_log_created_at ON activity_log (created_at DESC);
-CREATE INDEX idx_contact_submissions_status ON contact_submissions (status);
+CREATE INDEX idx_contact_requests_status ON contact_requests (status);
+CREATE INDEX idx_contact_requests_created_at ON contact_requests (created_at DESC);
 
 -- ============================================================
 -- Seed data

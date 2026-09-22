@@ -230,14 +230,20 @@ export const api = {
       body: JSON.stringify({ rows }),
     }),
 
-  // ---- dashboard / leads ----
+  // ---- dashboard ----
   adminGetDashboard: () => authRequest("/admin/dashboard"),
-  adminGetLeads: (params = {}) => authRequest(`/admin/leads${qs(params)}`),
-  adminUpdateLeadStatus: (id, status) =>
-    authRequest(`/admin/leads/${id}/status`, {
+
+  // ---- contact requests (submissions from the public Contact form) ----
+  adminGetContactRequests: (params = {}) =>
+    authRequest(`/admin/contact-requests${qs(params)}`),
+  adminGetContactRequest: (id) => authRequest(`/admin/contact-requests/${id}`),
+  adminUpdateContactRequestStatus: (id, status) =>
+    authRequest(`/admin/contact-requests/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
     }),
+  adminDeleteContactRequest: (id) =>
+    authRequest(`/admin/contact-requests/${id}`, { method: "DELETE" }),
 
   adminUpdateHomeContent: (payload) =>
     authRequest("/admin/home-content", { method: "PUT", body: JSON.stringify(payload) }),

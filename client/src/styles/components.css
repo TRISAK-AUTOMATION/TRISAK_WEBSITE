@@ -913,6 +913,91 @@
   color: #fb7185;
 }
 
+/* ---------- Contact form: success modal (Bootstrap-style) ---------- */
+.cf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 18, 30, 0.55);
+  animation: cf-modal-fade 0.15s ease-out;
+}
+
+.cf-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 36px 32px 28px;
+  background: #fff;
+  color: #454957;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: cf-modal-pop 0.2s ease-out;
+}
+
+.cf-modal__x {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #9497a3;
+  cursor: pointer;
+}
+
+.cf-modal__x:hover {
+  color: #454957;
+}
+
+.cf-modal__icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #e7f6ea;
+  color: #2fa84f;
+}
+
+.cf-modal__title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2333;
+}
+
+.cf-modal__body {
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #6b6f7d;
+}
+
+.cf-modal__body p {
+  margin: 0 0 4px;
+}
+
+.cf-modal__ok {
+  min-width: 120px;
+  justify-content: center;
+}
+
+@keyframes cf-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cf-modal-pop {
+  from { opacity: 0; transform: translateY(-16px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
 .map-frame {
   aspect-ratio: 21 / 8;
   background: var(--bg-panel);

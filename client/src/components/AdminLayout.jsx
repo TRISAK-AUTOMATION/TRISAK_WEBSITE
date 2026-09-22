@@ -32,10 +32,10 @@ const NAV_SECTIONS = [
     to: "/admin/menu",
   },
   {
-    key: "leads",
-    label: "คำขอติดต่อ",
+    key: "contact-requests",
+    label: "คำขอติดต่อ (Contact Requests)",
     icon: "📩",
-    to: "/admin/leads",
+    to: "/admin/contact-requests",
   },
   {
     key: "product",

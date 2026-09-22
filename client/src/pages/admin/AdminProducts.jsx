@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import { ConfirmModal, useToast } from "../../components/AdminModal.jsx";
+import AdminProductForm from "./AdminProductForm.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -17,19 +19,32 @@ export default function AdminProducts() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+
+  // edit popup / delete confirmation popup / success notification
+  const [editingId, setEditingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const { toast, showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const issue = searchParams.get("issue") || "";
 
-  const load = () => {
-    setLoading(true);
-    api
+  // `silent` refreshes the list in place without flashing the loading row
+  const load = ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    return api
       .adminGetProducts()
-      .then(setProducts)
+      .then((data) => {
+        setProducts(data);
+        setError("");
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filtered = products
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -41,14 +56,40 @@ export default function AdminProducts() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const handleDelete = async (id, name) => {
-    if (!confirm(`ลบสินค้า "${name}"?`)) return;
+  // If deleting the last item of the last page leaves it empty, step back.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  // Clicking Delete only opens the confirmation popup — nothing is deleted yet.
+  const handleDelete = (product) => {
+    setDeleteError("");
+    setDeleteTarget(product);
+  };
+
+  const cancelDelete = () => setDeleteTarget(null);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
     try {
-      await api.adminDeleteProduct(id);
-      load();
-    } catch (err) {
-      alert(err.message);
+      await api.adminDeleteProduct(deleteTarget.id);
+      setDeleteTarget(null);
+      showToast("Product deleted successfully.");
+      load({ silent: true });
+    } catch {
+      // keep the popup open and the product in the list
+      setDeleteError("The product could not be deleted. Please try again.");
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const handleSaved = () => {
+    setEditingId(null);
+    showToast("Product updated successfully.");
+    load({ silent: true });
   };
 
   const handleReorder = async (id, direction) => {
@@ -183,16 +224,18 @@ export default function AdminProducts() {
                   </td>
                   <td>
                     <div className="admin-row-actions">
-                      <Link
-                        to={`/admin/products/${p.id}/edit`}
+                      <button
+                        type="button"
                         className="admin-icon-btn admin-icon-btn--edit"
+                        onClick={() => setEditingId(p.id)}
                         title="แก้ไข"
                       >
                         ✎
-                      </Link>
+                      </button>
                       <button
+                        type="button"
                         className="admin-icon-btn admin-icon-btn--delete"
-                        onClick={() => handleDelete(p.id, p.name)}
+                        onClick={() => handleDelete(p)}
                         title="ลบ"
                       >
                         🗑
@@ -222,6 +265,29 @@ export default function AdminProducts() {
           </span>
         </div>
       )}
+
+      {editingId !== null && (
+        <AdminProductForm
+          key={editingId}
+          productId={editingId}
+          onClose={() => setEditingId(null)}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete Product?"
+          message="Are you sure you want to delete this product? This action cannot be undone."
+          detail={`${deleteTarget.name}${deleteTarget.model ? ` · ${deleteTarget.model}` : ""}`}
+          busy={deleting}
+          error={deleteError}
+          onCancel={cancelDelete}
+          onConfirm={confirmDelete}
+        />
+      )}
+
+      {toast}
     </>
   );
 }

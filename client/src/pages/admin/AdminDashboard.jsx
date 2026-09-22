@@ -3,10 +3,9 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 
 const STATUS_LABELS = {
-  new: "ใหม่",
-  quoted: "เสนอราคาแล้ว",
-  follow_up: "ติดตามผล",
-  closed: "ปิดงาน",
+  new: "New",
+  in_progress: "In Progress",
+  completed: "Completed",
 };
 
 const ACTIVITY_ICONS = {
@@ -56,7 +55,7 @@ const SUMMARY_CARDS = [
   { key: "products", label: "สินค้าทั้งหมด", icon: "🛒", to: "/admin/products" },
   { key: "categories", label: "หมวดหมู่", icon: "📂", to: "/admin/categories" },
   { key: "brands", label: "แบรนด์", icon: "🏷", to: "/admin/brands" },
-  { key: "newLeads", label: "คำขอติดต่อใหม่", icon: "📩", to: "/admin/leads?status=new" },
+  { key: "newLeads", label: "คำขอติดต่อใหม่", icon: "📩", to: "/admin/contact-requests?status=new" },
 ];
 
 export default function AdminDashboard() {
@@ -126,7 +125,7 @@ export default function AdminDashboard() {
           <section className="dashboard-panel panel">
             <div className="dashboard-panel__header">
               <h2 className="dashboard-panel__title">คำขอติดต่อล่าสุด</h2>
-              <Link to="/admin/leads" className="dashboard-view-link">
+              <Link to="/admin/contact-requests" className="dashboard-view-link">
                 ดูทั้งหมด →
               </Link>
             </div>
