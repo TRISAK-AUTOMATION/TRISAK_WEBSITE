@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import SuccessModal from "../../components/SuccessModal.jsx";
 
 function emptyForm() {
   return { header_logo_url: "", footer_logo_url: "", favicon_url: "" };
@@ -63,9 +64,7 @@ export default function AdminSiteSettings() {
       </div>
 
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
-      {success && (
-        <p className="contact-form__status contact-form__status--ok">บันทึกสำเร็จ</p>
-      )}
+      {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-form">
         <div className="admin-form__section panel">

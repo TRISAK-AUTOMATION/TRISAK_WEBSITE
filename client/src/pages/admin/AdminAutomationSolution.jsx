@@ -3,6 +3,7 @@ import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import ImagePositionField from "../../components/ImagePositionField.jsx";
+import SuccessModal from "../../components/SuccessModal.jsx";
 
 const HERO_SUFFIXES = ["hero_meta", "hero_title", "hero_sub"];
 
@@ -182,7 +183,7 @@ export default function AdminAutomationSolution() {
         </div>
 
         {heroError && <p className="contact-form__status contact-form__status--error">{heroError}</p>}
-        {heroSuccess && <p className="contact-form__status contact-form__status--ok">บันทึกสำเร็จ</p>}
+        {heroSuccess && <SuccessModal onClose={() => setHeroSuccess(false)} />}
 
         {!heroLoading && (
           <div className="admin-form">

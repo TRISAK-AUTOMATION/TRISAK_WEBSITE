@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = [
   "hero_meta",
@@ -95,7 +96,7 @@ export default function AdminAboutEditor() {
       </div>
 
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
-      {success && <p className="contact-form__status contact-form__status--ok">บันทึกสำเร็จ</p>}
+      {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าประวัติบริษัท (History) ในเวอร์ชัน{" "}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = [
   "hero_meta",
@@ -103,9 +104,7 @@ export default function AdminHomeEditor() {
       </div>
 
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
-      {success && (
-        <p className="contact-form__status contact-form__status--ok">บันทึกสำเร็จ</p>
-      )}
+      {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าแรกในเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong>{" "}

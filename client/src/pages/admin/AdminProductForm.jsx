@@ -4,6 +4,7 @@ import { api } from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import AdminModal, { ModalButton } from "../../components/AdminModal.jsx";
+import SuccessModal from "../../components/SuccessModal.jsx";
 
 const emptyForm = {
   name: "",
@@ -68,6 +69,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const [error, setError] = useState("");
   const [loadFailed, setLoadFailed] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     api.adminGetBrands().then(setBrands).catch(() => {});
@@ -177,6 +179,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     }
     setSaving(true);
     setError("");
+    setShowSuccess(false);
     const payload = {
       ...form,
       name: form.name.trim(),
@@ -192,13 +195,22 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         : allProducts.reduce((max, p) => Math.max(max, p.sort_order ?? 0), -1) + 1,
     };
     try {
+      let updated;
       if (isEdit) {
-        await api.adminUpdateProduct(id, payload);
+        updated = await api.adminUpdateProduct(id, payload);
       } else {
-        await api.adminCreateProduct(payload);
+        updated = await api.adminCreateProduct(payload);
       }
       if (embedded) {
+        // Quick-edit popup from the product list — closes itself; the
+        // list page shows its own toast confirmation.
         onSaved?.();
+      } else if (isEdit) {
+        // Stay on the current Edit page with the just-saved data still
+        // showing, and confirm with the shared SuccessModal instead of
+        // navigating away.
+        setForm((f) => ({ ...f, sortOrder: updated?.sort_order ?? f.sortOrder }));
+        setShowSuccess(true);
       } else {
         navigate("/admin/products");
       }
@@ -541,6 +553,8 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           </div>
         </form>
       )}
+
+      {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
     </>
   );
 }
