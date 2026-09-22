@@ -16,6 +16,7 @@ export default function AdminProducts() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const issue = searchParams.get("issue") || "";
 
@@ -60,6 +61,18 @@ export default function AdminProducts() {
     }
   };
 
+  const handleExport = async () => {
+    setError("");
+    setExporting(true);
+    try {
+      await api.adminExportProductsExcel();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <AdminBreadcrumb items={[{ label: "รายการ" }]} />
@@ -90,9 +103,17 @@ export default function AdminProducts() {
             setPage(1);
           }}
         />
-        <Link to="/admin/products/new" className="btn btn-primary">
-          + เพิ่ม
-        </Link>
+        <div className="admin-list-toolbar__actions">
+          <button type="button" className="btn" onClick={handleExport} disabled={exporting}>
+            {exporting ? "กำลัง Export…" : "⬇ Export Excel"}
+          </button>
+          <Link to="/admin/products/import" className="btn">
+            ⬆ Import Excel
+          </Link>
+          <Link to="/admin/products/new" className="btn btn-primary">
+            + เพิ่ม
+          </Link>
+        </div>
       </div>
 
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
