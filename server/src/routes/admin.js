@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { upload, optimizeUploadedImage } from "../middleware/upload.js";
+import { uploadProductDocument, verifyPdfSignature } from "../middleware/uploadProductDocument.js";
 import { uploadExcel } from "../middleware/uploadExcel.js";
 import {
   login,
@@ -58,6 +59,11 @@ import {
   updateContactRequestStatus,
   deleteContactRequest,
 } from "../controllers/contactRequestsController.js";
+import {
+  createProductDocument,
+  updateProductDocument,
+  deleteProductDocument,
+} from "../controllers/productDocumentsController.js";
 import {
   listMenuItemsAdmin,
   getMenuItemAdmin,
@@ -163,6 +169,19 @@ router.post("/admin/products", createProduct);
 router.put("/admin/products/:id", updateProduct);
 router.post("/admin/products/:id/reorder", reorderProduct);
 router.delete("/admin/products/:id", deleteProduct);
+router.post(
+  "/admin/products/:productId/documents",
+  uploadProductDocument.single("file"),
+  verifyPdfSignature,
+  createProductDocument
+);
+router.put(
+  "/admin/products/:productId/documents/:documentId",
+  uploadProductDocument.single("file"),
+  verifyPdfSignature,
+  updateProductDocument
+);
+router.delete("/admin/products/:productId/documents/:documentId", deleteProductDocument);
 
 router.get("/admin/solutions", listSolutionsAdmin);
 router.get("/admin/solutions/:id", getSolutionAdmin);

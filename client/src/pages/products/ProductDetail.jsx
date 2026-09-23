@@ -5,7 +5,7 @@ import Breadcrumb from "../../components/Breadcrumb.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
 
-const TABS = ["overview", "specifications", "documents", "related"];
+const ALL_TABS = ["overview", "specifications", "documents", "related"];
 
 export default function ProductDetail() {
   const { brandSlug, categorySlug, seriesSlug, productSlug } = useParams();
@@ -50,6 +50,8 @@ export default function ProductDetail() {
   }
 
   const images = product.images?.length ? product.images : [{ image_url: null }];
+  // Hide the Documents tab entirely when the product has no PDF documents.
+  const TABS = ALL_TABS.filter((tab) => tab !== "documents" || (product.documents || []).length > 0);
 
   return (
     <section className="product-detail">
@@ -110,7 +112,7 @@ export default function ProductDetail() {
                 {t("common.contactUs")}
               </Link>
               {product.documents?.[0] && (
-                <a href={product.documents[0].file_url} className="btn">
+                <a href={product.documents[0].fileUrl} className="btn" target="_blank" rel="noopener noreferrer">
                   {t("products.downloadCatalog")}
                 </a>
               )}
@@ -166,14 +168,18 @@ export default function ProductDetail() {
 
           {activeTab === "documents" && (
             <div className="document-list">
-              {(product.documents || []).length === 0 && (
-                <p className="empty-state">{t("products.noDocuments")}</p>
-              )}
               {(product.documents || []).map((d) => (
-                <a href={d.file_url} className="document-row" key={d.id}>
-                  <span>{d.label}</span>
-                  <span className="btn-arrow">↓</span>
-                </a>
+                <div className="document-row" key={d.id}>
+                  <span className="document-row__title">{d.title}</span>
+                  <span className="document-row__actions">
+                    <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="btn">
+                      {t("products.viewPdf")}
+                    </a>
+                    <a href={d.fileUrl} download={d.fileName} className="btn btn-primary">
+                      {t("common.download")}
+                    </a>
+                  </span>
+                </div>
               ))}
             </div>
           )}

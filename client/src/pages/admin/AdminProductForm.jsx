@@ -4,7 +4,7 @@ import { api } from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import AdminModal, { ModalButton } from "../../components/AdminModal.jsx";
-import SuccessModal from "../../components/SuccessModal.jsx";
+import ProductDocumentsPanel from "../../components/ProductDocumentsPanel.jsx";
 
 const emptyForm = {
   name: "",
@@ -20,7 +20,6 @@ const emptyForm = {
   features: [],
   images: [],
   specs: [],
-  documents: [],
   relatedProductIds: [],
 };
 
@@ -69,7 +68,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const [error, setError] = useState("");
   const [loadFailed, setLoadFailed] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     api.adminGetBrands().then(setBrands).catch(() => {});
@@ -97,13 +95,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           features: p.features || [],
           images: p.images?.map((i) => ({ imageUrl: i.image_url, sortOrder: i.sort_order })) || [],
           specs: p.specs?.map((s) => ({ label: s.label, value: s.value, sortOrder: s.sort_order })) || [],
-          documents:
-            p.documents?.map((d) => ({
-              label: d.label,
-              fileUrl: d.file_url,
-              docType: d.doc_type,
-              sortOrder: d.sort_order,
-            })) || [],
           relatedProductIds: p.relatedProductIds || [],
           // Preserve the product's existing position — otherwise saving
           // an unrelated edit would silently reset it and undo any
@@ -134,7 +125,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     }));
   };
 
-  // ---- dynamic list helpers (features / specs / documents / images) ----
+  // ---- dynamic list helpers (features / specs / images) ----
   const addListItem = (field, item) =>
     setForm((f) => ({ ...f, [field]: [...f[field], item] }));
   const updateListItem = (field, index, patch) =>
@@ -179,7 +170,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     }
     setSaving(true);
     setError("");
-    setShowSuccess(false);
     const payload = {
       ...form,
       name: form.name.trim(),
@@ -195,22 +185,13 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         : allProducts.reduce((max, p) => Math.max(max, p.sort_order ?? 0), -1) + 1,
     };
     try {
-      let updated;
       if (isEdit) {
-        updated = await api.adminUpdateProduct(id, payload);
+        await api.adminUpdateProduct(id, payload);
       } else {
-        updated = await api.adminCreateProduct(payload);
+        await api.adminCreateProduct(payload);
       }
       if (embedded) {
-        // Quick-edit popup from the product list — closes itself; the
-        // list page shows its own toast confirmation.
         onSaved?.();
-      } else if (isEdit) {
-        // Stay on the current Edit page with the just-saved data still
-        // showing, and confirm with the shared SuccessModal instead of
-        // navigating away.
-        setForm((f) => ({ ...f, sortOrder: updated?.sort_order ?? f.sortOrder }));
-        setShowSuccess(true);
       } else {
         navigate("/admin/products");
       }
@@ -430,37 +411,11 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
 
         <div className="admin-form__section panel">
           <h3>Documents</h3>
-          {form.documents.map((doc, i) => (
-            <div className="admin-form__list-row admin-form__list-row--pair" key={i}>
-              <input
-                placeholder="Label (e.g. Datasheet (PDF))"
-                value={doc.label}
-                onChange={(e) => updateListItem("documents", i, { label: e.target.value })}
-              />
-              <input
-                placeholder="File URL"
-                value={doc.fileUrl}
-                onChange={(e) => updateListItem("documents", i, { fileUrl: e.target.value })}
-              />
-              <button type="button" className="btn" onClick={() => removeListItem("documents", i)}>
-                Remove
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="btn"
-            onClick={() =>
-              addListItem("documents", {
-                label: "",
-                fileUrl: "",
-                docType: "pdf",
-                sortOrder: form.documents.length,
-              })
-            }
-          >
-            + Add document
-          </button>
+          {isEdit ? (
+            <ProductDocumentsPanel productId={id} />
+          ) : (
+            <p className="admin-form__hint">Save the product first, then come back to edit it to add PDF documents.</p>
+          )}
         </div>
 
         <div className="admin-form__section panel">
@@ -553,8 +508,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           </div>
         </form>
       )}
-
-      {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
     </>
   );
 }

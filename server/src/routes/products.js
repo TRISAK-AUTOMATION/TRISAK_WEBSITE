@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { listProductDocuments } from "../controllers/productDocumentsController.js";
 import {
   listBrands,
   getBrand,
@@ -57,6 +58,7 @@ router.get("/series/:brandSlug/:categorySlug/:seriesSlug", getSeries);
 router.get("/products", listProducts);
 router.get("/products/featured", getFeaturedProducts);
 router.get("/products/detail/:slug", getProductBySlug);
+router.get("/products/:productId/documents", listProductDocuments);
 
 router.get("/solutions", listSolutions);
 router.get("/customers", listCustomers);

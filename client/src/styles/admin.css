@@ -909,61 +909,6 @@
   flex-shrink: 0;
 }
 
-/* ---- SuccessModal (components/SuccessModal.jsx) ---- */
-.success-modal__body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 16px;
-  padding: 8px 4px 4px;
-}
-
-.success-modal__icon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-}
-
-.success-modal__check {
-  width: 64px;
-  height: 64px;
-}
-
-.success-modal__check-circle {
-  stroke: #1f7a3a;
-  stroke-width: 3;
-  stroke-miterlimit: 10;
-  stroke-dasharray: 151;
-  stroke-dashoffset: 151;
-  animation: success-modal-draw-circle 0.4s ease-out forwards;
-}
-
-.success-modal__check-mark {
-  stroke: #1f7a3a;
-  stroke-width: 4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 36;
-  stroke-dashoffset: 36;
-  animation: success-modal-draw-check 0.3s 0.35s ease-out forwards;
-}
-
-.success-modal__message {
-  margin: 0;
-  font-size: 15px;
-  color: var(--text);
-}
-
-@keyframes success-modal-draw-circle {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes success-modal-draw-check {
-  to { stroke-dashoffset: 0; }
-}
-
 @keyframes admin-modal-fade {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -972,6 +917,223 @@
 @keyframes admin-modal-pop {
   from { opacity: 0; transform: translateY(-12px) scale(0.98); }
   to { opacity: 1; transform: none; }
+}
+
+/* =========================================================
+   Product Documents panel (components/ProductDocumentsPanel.jsx)
+   Used inside the Edit Product modal / page — Documents section.
+   ========================================================= */
+.doc-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+
+.doc-row__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #d64545;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.doc-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.doc-row__type {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-signal);
+}
+
+.doc-row__title {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-row__meta {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-row__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-row__actions .btn {
+  padding: 7px 14px;
+  font-size: 12.5px;
+}
+
+.doc-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+
+.doc-upload__file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.doc-upload__file span:first-child {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.doc-upload__file input[type="file"] {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.doc-upload__filename {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.doc-upload__selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.doc-upload__selected-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #fdecea;
+  color: #d64545;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.doc-upload__remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--text-faint);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.doc-upload__remove:hover {
+  color: #b3372d;
+}
+
+.doc-upload__hint {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.doc-upload__error {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: #fdecea;
+  color: #b3372d;
+  font-size: 13px;
+}
+
+.doc-upload__progress {
+  position: relative;
+  height: 26px;
+  border-radius: var(--radius);
+  background: var(--line);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.doc-upload__progress-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent-signal);
+  transition: width 0.15s ease;
+}
+
+.doc-upload__progress span {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--text);
+  mix-blend-mode: difference;
+}
+
+.doc-upload__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .doc-row {
+    flex-wrap: wrap;
+  }
+  .doc-row__actions {
+    flex-wrap: wrap;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
 }
 
 @media (max-width: 560px) {

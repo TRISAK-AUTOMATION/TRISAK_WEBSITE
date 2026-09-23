@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { deleteAllProductDocumentFiles } from "./productDocumentsController.js";
 import { createSession, destroySession } from "../middleware/adminAuth.js";
 import { logActivity } from "../utils/activityLog.js";
 
@@ -519,7 +520,7 @@ export async function listProductsAdmin(req, res) {
               b.name AS brand, c.name AS category, s.name AS series,
               EXISTS (
                 SELECT 1 FROM product_documents d
-                WHERE d.product_id = p.id AND d.label ILIKE '%datasheet%'
+                WHERE d.product_id = p.id AND d.document_type = 'Datasheet'
               ) AS has_datasheet
        FROM products p
        JOIN brands b ON b.id = p.brand_id
@@ -551,7 +552,10 @@ export async function getProductAdmin(req, res) {
         [id]
       ),
       pool.query(
-        "SELECT id, label, file_url, doc_type, sort_order FROM product_documents WHERE product_id = $1 ORDER BY sort_order",
+        `SELECT id, title, document_type AS "documentType", file_name AS "fileName",
+                file_url AS "fileUrl", file_size AS "fileSize", mime_type AS "mimeType",
+                created_at AS "createdAt", updated_at AS "updatedAt"
+         FROM product_documents WHERE product_id = $1 ORDER BY created_at`,
         [id]
       ),
       pool.query("SELECT related_product_id FROM related_products WHERE product_id = $1", [id]),
@@ -578,8 +582,9 @@ export async function getProductAdmin(req, res) {
  *   isNew, sortOrder,
  *   images: [{ imageUrl, sortOrder }],
  *   specs: [{ label, value, sortOrder }],
- *   documents: [{ label, fileUrl, docType, sortOrder }],
  *   relatedProductIds: number[],
+ *   -- documents are NOT part of this payload; they're managed separately
+ *   -- via /admin/products/:productId/documents, see productDocumentsController.js
  * }
  */
 function validateProductPayload(body) {
@@ -590,10 +595,13 @@ function validateProductPayload(body) {
   return null;
 }
 
+// Product documents (PDFs) are NOT touched here — they're managed
+// independently via /admin/products/:productId/documents (upload/replace/
+// delete happen immediately, not on product save) so a product edit can
+// never wipe out or orphan an uploaded file.
 async function replaceProductChildren(client, productId, body) {
   await client.query("DELETE FROM product_images WHERE product_id = $1", [productId]);
   await client.query("DELETE FROM product_specs WHERE product_id = $1", [productId]);
-  await client.query("DELETE FROM product_documents WHERE product_id = $1", [productId]);
   await client.query(
     "DELETE FROM related_products WHERE product_id = $1 OR related_product_id = $1",
     [productId]
@@ -611,13 +619,6 @@ async function replaceProductChildren(client, productId, body) {
     await client.query(
       "INSERT INTO product_specs (product_id, label, value, sort_order) VALUES ($1, $2, $3, $4)",
       [productId, spec.label, spec.value, spec.sortOrder || 0]
-    );
-  }
-  for (const doc of body.documents || []) {
-    if (!doc.label || !doc.fileUrl) continue;
-    await client.query(
-      "INSERT INTO product_documents (product_id, label, file_url, doc_type, sort_order) VALUES ($1, $2, $3, $4, $5)",
-      [productId, doc.label, doc.fileUrl, doc.docType || "pdf", doc.sortOrder || 0]
     );
   }
   for (const relatedId of body.relatedProductIds || []) {
@@ -662,9 +663,6 @@ export async function createProduct(req, res) {
     await replaceProductChildren(client, productId, body);
     await client.query("COMMIT");
     logActivity("product_added", `เพิ่มสินค้า "${body.name}"`);
-    if ((body.documents || []).some((d) => (d.label || "").toLowerCase().includes("datasheet"))) {
-      logActivity("datasheet_uploaded", `อัปโหลด Datasheet สำหรับ "${body.name}"`);
-    }
     res.status(201).json({ id: productId });
   } catch (err) {
     if (client) await client.query("ROLLBACK");
@@ -711,22 +709,9 @@ export async function updateProduct(req, res) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Product not found" });
     }
-    const existingDocs = await client.query(
-      "SELECT label FROM product_documents WHERE product_id = $1",
-      [id]
-    );
-    const hadDatasheet = existingDocs.rows.some((d) =>
-      (d.label || "").toLowerCase().includes("datasheet")
-    );
     await replaceProductChildren(client, id, body);
     await client.query("COMMIT");
     logActivity("product_edited", `แก้ไขสินค้า "${body.name}"`);
-    const hasDatasheetNow = (body.documents || []).some((d) =>
-      (d.label || "").toLowerCase().includes("datasheet")
-    );
-    if (hasDatasheetNow && !hadDatasheet) {
-      logActivity("datasheet_uploaded", `อัปโหลด Datasheet สำหรับ "${body.name}"`);
-    }
     res.json({ success: true });
   } catch (err) {
     if (client) await client.query("ROLLBACK");
@@ -759,6 +744,9 @@ export async function deleteProduct(req, res) {
     const existing = await pool.query("SELECT name FROM products WHERE id = $1", [id]);
     const result = await pool.query("DELETE FROM products WHERE id = $1", [id]);
     if (result.rowCount === 0) return res.status(404).json({ error: "Product not found" });
+    // product_documents rows are gone already (ON DELETE CASCADE) — this
+    // just clears the now-orphaned PDF files off disk.
+    await deleteAllProductDocumentFiles(id);
     logActivity("product_deleted", `ลบสินค้า "${existing.rows[0]?.name || id}"`);
     res.json({ success: true });
   } catch (err) {

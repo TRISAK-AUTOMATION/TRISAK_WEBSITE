@@ -47,6 +47,15 @@ app.use(
 );
 app.use(express.json({ limit: "5mb" })); // generous enough for bulk product-import payloads
 
+// This is a JSON API with no reason for a browser (or an in-between proxy)
+// to ever cache a response — without this, a GET made right after a POST
+// can return a stale cached copy under some browsers' default heuristic
+// caching, which looks exactly like "the write didn't happen".
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
 // uploaded product images, served at http://<host>:<port>/uploads/<filename>
 app.use("/uploads", express.static(uploadsDir));
 

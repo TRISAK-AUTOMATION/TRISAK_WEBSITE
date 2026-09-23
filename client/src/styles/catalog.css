@@ -538,6 +538,22 @@
   background: var(--bg-panel);
 }
 
+.document-row__title {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.document-row__actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.document-row__actions .btn {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
 @media (max-width: 860px) {
   .product-detail {
     padding-top: 120px;

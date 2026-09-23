@@ -95,14 +95,29 @@ CREATE TABLE product_specs (
   sort_order   INTEGER NOT NULL DEFAULT 0
 );
 
+-- Uploaded PDF documents for a product (datasheets, manuals, catalogs...).
+-- The file itself lives on disk under uploads/products/{product_id}/documents/
+-- (served at /uploads/products/{id}/documents/{file}); only metadata and
+-- that path are stored here -- never the PDF binary. See
+-- src/controllers/productDocumentsController.js.
 CREATE TABLE product_documents (
-  id           SERIAL PRIMARY KEY,
-  product_id   INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  label        VARCHAR(150) NOT NULL,
-  file_url     VARCHAR(255) NOT NULL,
-  doc_type     VARCHAR(20) NOT NULL DEFAULT 'pdf', -- pdf | doc | link
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  id             SERIAL PRIMARY KEY,
+  product_id     INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  title          VARCHAR(150) NOT NULL,
+  document_type  VARCHAR(30) NOT NULL DEFAULT 'Other'
+                   CHECK (document_type IN (
+                     'Datasheet', 'User Manual', 'Installation Manual',
+                     'Catalog', 'Technical Document', 'Other'
+                   )),
+  file_name      VARCHAR(255) NOT NULL,
+  file_url       VARCHAR(255) NOT NULL,
+  file_size      BIGINT,
+  mime_type      VARCHAR(100),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX idx_product_documents_product_id ON product_documents (product_id);
 
 CREATE TABLE related_products (
   product_id          INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -522,15 +537,18 @@ FROM products p,
   ) AS spec(label, value, sort_order)
 WHERE p.slug = 'omron-nx1p2';
 
-INSERT INTO product_documents (product_id, label, file_url, doc_type, sort_order)
-SELECT p.id, doc.label, doc.file_url, doc.doc_type, doc.sort_order
+-- Seed rows point at file_url '#' (no real upload) purely to demo the
+-- product page's Documents tab; the admin document manager only ever
+-- creates rows tied to a real uploaded PDF.
+INSERT INTO product_documents (product_id, title, document_type, file_name, file_url, mime_type)
+SELECT p.id, doc.title, doc.document_type, doc.file_name, doc.file_url, 'application/pdf'
 FROM products p,
   (VALUES
-    ('Datasheet (PDF)', '#', 'pdf', 1),
-    ('Catalog (PDF)', '#', 'pdf', 2),
-    ('User Manual (PDF)', '#', 'pdf', 3),
-    ('Technical Guide (PDF)', '#', 'pdf', 4)
-  ) AS doc(label, file_url, doc_type, sort_order)
+    ('Datasheet (PDF)', 'Datasheet', 'datasheet.pdf', '#'),
+    ('Catalog (PDF)', 'Catalog', 'catalog.pdf', '#'),
+    ('User Manual (PDF)', 'User Manual', 'user-manual.pdf', '#'),
+    ('Technical Guide (PDF)', 'Technical Document', 'technical-guide.pdf', '#')
+  ) AS doc(title, document_type, file_name, file_url)
 WHERE p.slug = 'omron-nx1p2';
 
 INSERT INTO related_products (product_id, related_product_id)
