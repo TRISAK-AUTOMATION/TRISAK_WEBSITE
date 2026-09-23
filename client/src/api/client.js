@@ -1,9 +1,42 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 const ADMIN_TOKEN_KEY = "trisak-admin-token";
 
+// XHR (not fetch) so onprogress can report upload percentage.
+function xhrUpload(method, path, formData, { onProgress } = {}) {
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, `${API_URL}${path}`);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      let body = {};
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch {
+        // non-JSON response body — fall through with the status code below
+      }
+      if (xhr.status === 401) {
+        handleUnauthorized();
+        return reject(new Error("Session expired — signing you out."));
+      }
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(body);
+      reject(new Error(body.error || `Request failed: ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("Network error — please check your connection and try again."));
+    xhr.send(formData);
+  });
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
+    // Never let the browser serve a cached response for API data — a GET
+    // made right after a POST/PATCH must always hit the network, or a
+    // freshly-created record can appear to be missing.
+    cache: "no-store",
     ...options,
   });
   if (!res.ok) {
@@ -28,6 +61,7 @@ function handleUnauthorized() {
 async function authRequest(path, options = {}) {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY);
   const res = await fetch(`${API_URL}${path}`, {
+    cache: "no-store",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -175,6 +209,25 @@ export const api = {
       body: JSON.stringify({ direction }),
     }),
   adminDeleteProduct: (id) => authRequest(`/admin/products/${id}`, { method: "DELETE" }),
+
+  // ---- product PDF documents ----
+  getProductDocuments: (productId) => request(`/products/${productId}/documents`),
+  adminUploadProductDocument: (productId, { file, title, documentType }, opts) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("documentType", documentType);
+    return xhrUpload("POST", `/admin/products/${productId}/documents`, formData, opts);
+  },
+  adminReplaceProductDocument: (productId, documentId, { file, title, documentType }, opts) => {
+    const formData = new FormData();
+    if (file) formData.append("file", file);
+    formData.append("title", title);
+    formData.append("documentType", documentType);
+    return xhrUpload("PUT", `/admin/products/${productId}/documents/${documentId}`, formData, opts);
+  },
+  adminDeleteProductDocument: (productId, documentId) =>
+    authRequest(`/admin/products/${productId}/documents/${documentId}`, { method: "DELETE" }),
 
   // Excel export — downloads the file via a blob so the Authorization
   // header can be sent (a plain <a href> can't attach auth headers).

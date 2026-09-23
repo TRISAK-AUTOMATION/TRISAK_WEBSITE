@@ -25,6 +25,7 @@ export const translations = {
       automationSolution: "Automation Solution",
       contactUs: "Contact Us",
       loading: "Loading…",
+      download: "Download",
     },
     home: {
       heroMeta: "Authorized Automation Products & Engineering Solutions",
@@ -168,6 +169,7 @@ export const translations = {
       downloadCatalog: "Download Catalog",
       noSpecs: "No specifications listed yet.",
       noDocuments: "No documents available yet.",
+      viewPdf: "View PDF",
       noRelated: "No related products yet.",
       viewAll: "View all",
       viewSeries: "View series",
@@ -334,6 +336,7 @@ export const translations = {
       automationSolution: "โซลูชันระบบอัตโนมัติ",
       contactUs: "ติดต่อเรา",
       loading: "กำลังโหลด…",
+      download: "ดาวน์โหลด",
     },
     home: {
       heroMeta: "ตัวแทนจำหน่ายสินค้าออโตเมชันและผู้ให้บริการโซลูชันวิศวกรรม",
@@ -477,6 +480,7 @@ export const translations = {
       downloadCatalog: "ดาวน์โหลดแคตตาล็อก",
       noSpecs: "ยังไม่มีข้อมูลสเปคสินค้า",
       noDocuments: "ยังไม่มีเอกสารให้ดาวน์โหลด",
+      viewPdf: "ดูเอกสาร PDF",
       noRelated: "ยังไม่มีสินค้าที่เกี่ยวข้อง",
       viewAll: "ดูทั้งหมด",
       viewSeries: "ดูซีรีย์นี้",

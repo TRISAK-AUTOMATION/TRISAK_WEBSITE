@@ -301,7 +301,9 @@ export async function getProductBySlug(req, res) {
         [product.id]
       ),
       pool.query(
-        "SELECT id, label, file_url, doc_type, sort_order FROM product_documents WHERE product_id = $1 ORDER BY sort_order",
+        `SELECT id, title, document_type AS "documentType", file_name AS "fileName",
+                file_url AS "fileUrl", file_size AS "fileSize", mime_type AS "mimeType"
+         FROM product_documents WHERE product_id = $1 ORDER BY created_at`,
         [product.id]
       ),
       pool.query(

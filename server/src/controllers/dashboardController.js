@@ -31,7 +31,7 @@ export async function getDashboard(req, res) {
         `SELECT COUNT(*)::int AS n FROM products p
          WHERE NOT EXISTS (
            SELECT 1 FROM product_documents d
-           WHERE d.product_id = p.id AND d.label ILIKE '%datasheet%'
+           WHERE d.product_id = p.id AND d.document_type = 'Datasheet'
          )`
       ),
       pool.query(
