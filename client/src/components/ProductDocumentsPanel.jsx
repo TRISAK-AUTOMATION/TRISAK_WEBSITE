@@ -62,8 +62,14 @@ function UploadForm({ mode, initial, onCancel, onSubmit }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const submit = async (e) => {
-    e.preventDefault();
+  // A plain click handler, not a <form onSubmit> — this panel lives inside
+  // the Edit Product modal, which is itself a <form> (its Save button).
+  // Nesting a second <form> in there is invalid HTML and, depending on the
+  // browser, can make this button's click submit the *outer* product form
+  // instead of running this handler — which looks exactly like "clicking
+  // Upload does nothing". Using a div + button type="button" here removes
+  // that risk entirely rather than relying on browsers to handle it well.
+  const submit = async () => {
     if (progress !== null) return;
     if (!title.trim()) return setError("Please enter a document title.");
     if (mode === "add" && !file) return setError("Please choose a PDF file to upload.");
@@ -77,13 +83,24 @@ function UploadForm({ mode, initial, onCancel, onSubmit }) {
       await onSubmit({ title: title.trim(), documentType, file }, setProgress);
       // parent unmounts this form on success
     } catch (err) {
+      console.error("[ProductDocumentsPanel] upload/replace failed:", err);
       setProgress(null);
       setError(err.message || "Upload failed. Please try again.");
     }
   };
 
+  // Recreate "Enter submits" for the title/type fields now that this isn't
+  // a real <form> — and, critically, stop that Enter key from bubbling up
+  // and triggering the *outer* product form's Save instead.
+  const onKeyDown = (e) => {
+    if (e.key !== "Enter" || e.target.tagName === "TEXTAREA") return;
+    e.preventDefault();
+    e.stopPropagation();
+    submit();
+  };
+
   return (
-    <form className="doc-upload" onSubmit={submit}>
+    <div className="doc-upload" onKeyDown={onKeyDown}>
       <div className="admin-form__row">
         <label className="contact-form__field">
           <span>Document Title</span>
@@ -149,11 +166,11 @@ function UploadForm({ mode, initial, onCancel, onSubmit }) {
         <button type="button" className="admin-modal__btn admin-modal__btn--secondary" onClick={onCancel} disabled={progress !== null}>
           Cancel
         </button>
-        <button type="submit" className="admin-modal__btn admin-modal__btn--primary" disabled={progress !== null}>
+        <button type="button" className="admin-modal__btn admin-modal__btn--primary" onClick={submit} disabled={progress !== null}>
           {progress !== null ? "Saving…" : mode === "replace" ? "Save Replacement" : "Upload"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -181,7 +198,10 @@ export default function ProductDocumentsPanel({ productId }) {
         setDocs(rows);
         setLoadError("");
       })
-      .catch((err) => setLoadError(err.message || "Failed to load documents."))
+      .catch((err) => {
+        console.error("[ProductDocumentsPanel] failed to load documents for product", productId, err);
+        setLoadError(err.message || "Failed to load documents.");
+      })
       .finally(() => setLoading(false));
   };
 
@@ -200,6 +220,7 @@ export default function ProductDocumentsPanel({ productId }) {
   // entirely rather than just mitigating it.
   const handleAdd = async ({ title, documentType, file }, onProgress) => {
     const created = await api.adminUploadProductDocument(productId, { title, documentType, file }, { onProgress });
+    console.log("[ProductDocumentsPanel] upload succeeded, server returned:", created);
     setPanel(null);
     showToast("Document uploaded successfully.");
     setDocs((prev) => [...prev, created]);
