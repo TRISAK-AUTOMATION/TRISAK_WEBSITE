@@ -43,6 +43,13 @@ import {
   updateCustomer,
   reorderCustomer,
   deleteCustomer,
+  listIndustriesAdmin,
+  getIndustryAdmin,
+  createIndustry,
+  updateIndustry,
+  toggleIndustryStatus,
+  reorderIndustry,
+  deleteIndustry,
   uploadImage,
 } from "../controllers/adminController.js";
 import {
@@ -194,6 +201,14 @@ router.post("/admin/customers", createCustomer);
 router.put("/admin/customers/:id", updateCustomer);
 router.post("/admin/customers/:id/reorder", reorderCustomer);
 router.delete("/admin/customers/:id", deleteCustomer);
+
+router.get("/admin/industries", listIndustriesAdmin);
+router.get("/admin/industries/:id", getIndustryAdmin);
+router.post("/admin/industries", createIndustry);
+router.put("/admin/industries/:id", updateIndustry);
+router.patch("/admin/industries/:id/status", toggleIndustryStatus);
+router.post("/admin/industries/:id/reorder", reorderIndustry);
+router.delete("/admin/industries/:id", deleteIndustry);
 
 router.post("/admin/upload", upload.single("image"), optimizeUploadedImage, uploadImage);
 

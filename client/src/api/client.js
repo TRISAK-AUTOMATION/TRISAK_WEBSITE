@@ -162,6 +162,25 @@ export const api = {
     }),
   adminDeleteBrand: (id) => authRequest(`/admin/brands/${id}`, { method: "DELETE" }),
 
+  // ---- industries (Home page Industries slider) ----
+  adminGetIndustries: () => authRequest("/admin/industries"),
+  adminGetIndustry: (id) => authRequest(`/admin/industries/${id}`),
+  adminCreateIndustry: (payload) =>
+    authRequest("/admin/industries", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateIndustry: (id, payload) =>
+    authRequest(`/admin/industries/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleIndustryStatus: (id, isActive) =>
+    authRequest(`/admin/industries/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminReorderIndustry: (id, direction) =>
+    authRequest(`/admin/industries/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
+  adminDeleteIndustry: (id) => authRequest(`/admin/industries/${id}`, { method: "DELETE" }),
+
   adminGetCategories: () => authRequest("/admin/categories"),
   adminGetCategory: (id) => authRequest(`/admin/categories/${id}`),
   adminCreateCategory: (payload) =>

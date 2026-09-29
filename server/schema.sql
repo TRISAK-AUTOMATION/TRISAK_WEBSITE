@@ -151,10 +151,22 @@ CREATE TABLE customers (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Content for the Home page's center-focused Industries slider, managed
+-- from Admin > Industries. `description` holds one highlight per line
+-- (rendered as a bullet list); `number` is the slider's big display
+-- number ("05"), independent of `sort_order`.
 CREATE TABLE industries (
-  id           SERIAL PRIMARY KEY,
-  name         VARCHAR(100) NOT NULL,
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  id             SERIAL PRIMARY KEY,
+  number         VARCHAR(10),
+  name           VARCHAR(100) NOT NULL,
+  image_url      VARCHAR(255),
+  overlay_color  VARCHAR(20) NOT NULL DEFAULT '#0f2f5f',
+  description    TEXT,
+  explore_link   VARCHAR(255),
+  is_active      BOOLEAN NOT NULL DEFAULT true,
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Singleton table (always exactly one row) holding the editable text on
@@ -445,15 +457,18 @@ INSERT INTO solutions (name, slug, summary, services, benefits, sort_order) VALU
   4
 );
 
-INSERT INTO industries (name, sort_order) VALUES
-  ('Manufacturing', 1),
-  ('Automotive', 2),
-  ('Food & Beverage', 3),
-  ('Chemical & Petrochemical', 4),
-  ('Pharmaceutical', 5),
-  ('Water & Wastewater', 6),
-  ('Power & Electrical', 7),
-  ('Building & Infrastructure', 8);
+-- image_url is left blank in seed data (no bundled asset) — the slider
+-- falls back to a plain overlay color until an image is uploaded per
+-- industry from Admin > Industries.
+INSERT INTO industries (number, name, overlay_color, description, sort_order) VALUES
+  ('01', 'Manufacturing', '#0f2f5f', 'Factory automation' || chr(10) || 'Process control' || chr(10) || 'Robotics integration', 1),
+  ('02', 'Automotive', '#7a1f1f', 'Assembly lines' || chr(10) || 'Quality inspection' || chr(10) || 'Parts logistics', 2),
+  ('03', 'Food & Beverage', '#2f6b3a', 'Packaging systems' || chr(10) || 'Cold chain monitoring' || chr(10) || 'Hygiene compliance', 3),
+  ('04', 'Chemical & Petrochemical', '#5a3d0f', 'Process safety' || chr(10) || 'Tank & flow monitoring' || chr(10) || 'Hazardous area equipment', 4),
+  ('05', 'Pharmaceutical', '#1c3f6f', 'Cleanroom automation' || chr(10) || 'Batch traceability' || chr(10) || 'Regulatory compliance', 5),
+  ('06', 'Water & Wastewater', '#0f5f5a', 'Treatment plant control' || chr(10) || 'Pump station monitoring' || chr(10) || 'Remote telemetry', 6),
+  ('07', 'Power & Electrical', '#5f4a0f', 'Substation automation' || chr(10) || 'Energy monitoring' || chr(10) || 'Grid protection', 7),
+  ('08', 'Building & Infrastructure', '#3f2f5f', 'HVAC control' || chr(10) || 'Access & security' || chr(10) || 'Facility monitoring', 8);
 
 INSERT INTO home_content (
   hero_meta_en, hero_meta_th,

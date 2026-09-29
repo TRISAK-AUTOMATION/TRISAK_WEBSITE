@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
 import SignalLine from "../components/SignalLine.jsx";
+import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
@@ -192,22 +193,18 @@ export default function Home() {
       </section>
 
       {/* 05 — INDUSTRIES */}
-      <section className="section">
+      <section className="section industries-section">
         <div className="container">
           <SectionLabel index="04" eyebrow={t("home.industriesEyebrow")} title={t("home.industriesTitle")} />
-          <div className="industries-grid">
-            {/* the database only stores English names, so only use it for
-                the English UI — Thai always uses the translated list */}
-            {(lang === "en" && industries
-              ? industries.map((ind) => ind.name)
-              : fallbackIndustries
-            ).map((name) => (
-              <div className="industry-cell" key={name}>
-                <span className="industry-cell__dot" />
-                {name}
-              </div>
-            ))}
-          </div>
+          <IndustriesSlider
+            industries={
+              // the database only stores English text/images, so only use
+              // it for the English UI — Thai always uses the translated
+              // fallback names, same limitation the old grid had
+              lang === "en" && industries ? industries : buildFallbackIndustries(fallbackIndustries)
+            }
+            exploreLabel={t("exploreMore")}
+          />
         </div>
       </section>
 

@@ -21,6 +21,7 @@ const NAV_SECTIONS = [
       { label: "ติดต่อเรา (Contact Us)", to: "/admin/contact" },
       { label: "โซลูชันระบบอัตโนมัติ (Automation Solution)", to: "/admin/automation-solution" },
       { label: "ลูกค้าของเรา (Our Customers)", to: "/admin/customers" },
+      { label: "อุตสาหกรรมที่เราให้บริการ (Industries)", to: "/admin/industries" },
       { label: "Footer", to: "/admin/footer" },
       { label: "ป๊อปอัพ (Pop-up)", to: "/admin/popups" },
     ],

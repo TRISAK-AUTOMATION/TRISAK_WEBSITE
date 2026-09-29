@@ -356,9 +356,15 @@ export async function listCustomers(req, res) {
   }
 }
 
+// Public — used by the Home page slider. Only active industries, in
+// display order, with everything the slider needs to render.
 export async function listIndustries(req, res) {
   try {
-    const { rows } = await pool.query("SELECT id, name FROM industries ORDER BY sort_order");
+    const { rows } = await pool.query(
+      `SELECT id, number, name, image_url AS "imageUrl", overlay_color AS "overlayColor",
+              description, explore_link AS "exploreLink", sort_order AS "sortOrder"
+       FROM industries WHERE is_active = true ORDER BY sort_order`
+    );
     res.json(rows);
   } catch (err) {
     console.error(err);

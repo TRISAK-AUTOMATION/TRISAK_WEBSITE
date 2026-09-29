@@ -706,6 +706,28 @@
   line-height: 1.55;
 }
 
+.industry-color-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.industry-color-field input[type="color"] {
+  width: 40px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.industry-color-field input[type="text"],
+.industry-color-field input:not([type="color"]) {
+  flex: 1;
+}
+
 /* =========================================================
    Shared admin modal system (components/AdminModal.jsx)
    Used by: Contact Request details + delete, Product edit + delete

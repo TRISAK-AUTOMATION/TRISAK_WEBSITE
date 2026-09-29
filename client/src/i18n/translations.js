@@ -67,6 +67,7 @@ export const translations = {
       ctaTitleLine1: "Ready to Improve",
       ctaTitleLine2: "Your Automation?",
     },
+    exploreMore: "Explore More",
     industries: [
       "Manufacturing",
       "Automotive",
@@ -378,6 +379,7 @@ export const translations = {
       ctaTitleLine1: "พร้อมยกระดับ",
       ctaTitleLine2: "ระบบอัตโนมัติของคุณหรือยัง?",
     },
+    exploreMore: "ดูเพิ่มเติม",
     industries: [
       "อุตสาหกรรมการผลิต",
       "ยานยนต์",
