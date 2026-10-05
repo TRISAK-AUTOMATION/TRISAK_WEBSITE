@@ -357,12 +357,13 @@ export async function listCustomers(req, res) {
 }
 
 // Public — used by the Home page slider. Only active industries, in
-// display order, with everything the slider needs to render.
+// display order, with both languages' text so the client can switch
+// instantly without a refetch (see IndustriesSlider's `lang` handling).
 export async function listIndustries(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT id, number, name, image_url AS "imageUrl", overlay_color AS "overlayColor",
-              description, explore_link AS "exploreLink", sort_order AS "sortOrder"
+      `SELECT id, number, name, name_th AS "nameTh", image_url AS "imageUrl", overlay_color AS "overlayColor",
+              description, description_th AS "descriptionTh", explore_link AS "exploreLink", sort_order AS "sortOrder"
        FROM industries WHERE is_active = true ORDER BY sort_order`
     );
     res.json(rows);

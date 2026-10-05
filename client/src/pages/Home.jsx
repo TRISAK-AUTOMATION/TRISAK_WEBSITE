@@ -4,6 +4,7 @@ import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
 import SignalLine from "../components/SignalLine.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
+import { translations } from "../i18n/translations.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
@@ -63,6 +64,13 @@ export default function Home() {
   const pillars = t("home.pillars");
   const productTags = t("home.productTags");
   const fallbackIndustries = t("industries");
+  // Both languages' plain-name lists, for the one case where the API has
+  // no industries at all — keeps the fallback switching languages
+  // correctly too, same as real data would (see buildFallbackIndustries).
+  const fallbackIndustriesBothLangs = {
+    en: translations.en.industries,
+    th: translations.th.industries,
+  };
 
   const heroBgImage = homeContent?.hero_bg_image || "";
   const marqueeLogos = customers ? padLogos(customers) : [];
@@ -198,12 +206,18 @@ export default function Home() {
           <SectionLabel index="04" eyebrow={t("home.industriesEyebrow")} title={t("home.industriesTitle")} />
           <IndustriesSlider
             industries={
-              // the database only stores English text/images, so only use
-              // it for the English UI — Thai always uses the translated
-              // fallback names, same limitation the old grid had
-              lang === "en" && industries ? industries : buildFallbackIndustries(fallbackIndustries)
+              // each slide now carries both languages (name/nameTh,
+              // description/descriptionTh) from a single fetch — the
+              // slider itself picks the right one via `lang` and falls
+              // back to English, so switching languages needs no refetch.
+              // The fallback list only kicks in if the API returned
+              // nothing at all (e.g. a request failure).
+              industries && industries.length
+                ? industries
+                : buildFallbackIndustries(fallbackIndustriesBothLangs.en, fallbackIndustriesBothLangs.th)
             }
             exploreLabel={t("exploreMore")}
+            lang={lang}
           />
         </div>
       </section>

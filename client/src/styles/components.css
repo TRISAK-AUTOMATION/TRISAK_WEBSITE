@@ -336,6 +336,11 @@
   --ind-side-w: 135px;
   --ind-side-h: 380px;
   --ind-gap: 20px;
+  /* single source of truth for timing, so every animated part of the
+     slider (position, size, overlay, title crossfade) stays in sync */
+  --ind-duration: 0.55s;
+  --ind-easing: cubic-bezier(0.65, 0, 0.35, 1);
+  --ind-title-duration: 0.4s;
 }
 
 .industries-slider__viewport {
@@ -343,6 +348,10 @@
   height: var(--ind-center-h);
   margin: 48px 0 32px;
   outline: none;
+  /* scopes any internal layout/paint work (e.g. a slide's width/height
+     transition) to this subtree only, so it can never trigger a reflow
+     of the rest of the page */
+  contain: layout paint;
 }
 
 .industry-slide {
@@ -355,9 +364,15 @@
   border-radius: 6px;
   overflow: hidden;
   cursor: default;
-  transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1), width 0.55s cubic-bezier(0.65, 0, 0.35, 1),
-    height 0.55s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.45s ease;
-  will-change: transform;
+  /* transform (position) and opacity are compositor-only — the browser
+     animates them without recomputing layout, which is what keeps
+     navigation smooth even while width/height (below) are also changing
+     on the one or two slides crossing the active/side boundary */
+  transition: transform var(--ind-duration) var(--ind-easing), width var(--ind-duration) var(--ind-easing),
+    height var(--ind-duration) var(--ind-easing), opacity var(--ind-title-duration) ease;
+  will-change: transform, opacity;
+  contain: layout paint style;
+  backface-visibility: hidden;
 }
 
 .industry-slide--active {
@@ -389,7 +404,7 @@
   position: absolute;
   inset: 0;
   opacity: 0.62;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--ind-title-duration) ease;
 }
 
 .industry-slide--side .industry-slide__overlay {
@@ -397,15 +412,33 @@
 }
 
 /* ---- active (center) slide content ---- */
+/* Both .industry-slide__content and .industry-slide__vertical are always
+   mounted (see IndustrySlide) and stacked on top of each other; only
+   opacity/transform (compositor-only) animate between them, since
+   writing-mode itself can't be transitioned — this crossfade is what
+   replaces the old instant DOM swap with a smooth, synchronized handoff. */
 .industry-slide__content {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 32px 30px;
   color: #fff;
+  transition: opacity var(--ind-title-duration) ease, transform var(--ind-title-duration) ease;
+}
+
+.industry-slide__content.is-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 0.08s; /* let the box finish most of its expansion first */
+}
+
+.industry-slide__content.is-inactive {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  pointer-events: none;
 }
 
 .industry-slide__number {
@@ -473,9 +506,9 @@
 
 /* ---- side slide content (vertical text) ---- */
 .industry-slide__vertical {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -483,6 +516,19 @@
   gap: 14px;
   padding: 22px 0;
   color: #fff;
+  transition: opacity var(--ind-title-duration) ease, transform var(--ind-title-duration) ease;
+}
+
+.industry-slide__vertical.is-active {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 0.08s;
+}
+
+.industry-slide__vertical.is-inactive {
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
 }
 
 .industry-slide__vnumber {
@@ -591,6 +637,19 @@
 
   .industries-slider__nav {
     gap: 18px;
+  }
+}
+
+/* ---- respect the user's OS-level reduced-motion preference: state
+   changes still happen instantly, just without the animated motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .industry-slide,
+  .industry-slide__content,
+  .industry-slide__vertical,
+  .industry-slide__overlay,
+  .industries-slider__dot {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
   }
 }
 

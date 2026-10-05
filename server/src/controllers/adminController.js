@@ -1003,25 +1003,45 @@ function industryFields(body) {
   const {
     number = "",
     name = "",
+    nameTh = "",
     imageUrl = "",
     overlayColor = "#0f2f5f",
     description = "",
+    descriptionTh = "",
     exploreLink = "",
     isActive = true,
     sortOrder = 0,
   } = body || {};
-  return { number, name, imageUrl, overlayColor, description, exploreLink, isActive, sortOrder };
+  return { number, name, nameTh, imageUrl, overlayColor, description, descriptionTh, exploreLink, isActive, sortOrder };
+}
+
+// English name is the one hard requirement (per spec: "require at least
+// one industry name in English"), on both create and update. An image is
+// only required when *creating* a new slide — an existing slide (including
+// ones from before this rule, like the seed data) must stay editable even
+// if it has no image yet, so update never blocks on this. Thai fields are
+// intentionally NOT required either — a blank one just falls back to the
+// English text on the public site.
+function validateIndustryFields(f, { requireImage = false } = {}) {
+  if (!f.name.trim()) return "Please enter the industry name (English).";
+  if (requireImage && !f.imageUrl) return "Please upload a slide image before saving.";
+  return null;
 }
 
 export async function createIndustry(req, res) {
   const f = industryFields(req.body);
-  if (!f.name.trim()) return res.status(400).json({ error: "name is required" });
+  const problem = validateIndustryFields(f, { requireImage: true });
+  if (problem) return res.status(400).json({ error: problem });
   try {
     const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM industries");
     const { rows } = await pool.query(
-      `INSERT INTO industries (number, name, image_url, overlay_color, description, explore_link, is_active, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [f.number, f.name, f.imageUrl || null, f.overlayColor, f.description, f.exploreLink || null, f.isActive, sortOrderOrDefault(f.sortOrder, maxRows[0].n)]
+      `INSERT INTO industries
+         (number, name, name_th, image_url, overlay_color, description, description_th, explore_link, is_active, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [
+        f.number, f.name, f.nameTh || null, f.imageUrl, f.overlayColor, f.description, f.descriptionTh || null,
+        f.exploreLink || null, f.isActive, sortOrderOrDefault(f.sortOrder, maxRows[0].n),
+      ]
     );
     logActivity("industry_added", `เพิ่มอุตสาหกรรม "${f.name}"`);
     res.status(201).json(rows[0]);
@@ -1040,18 +1060,23 @@ function sortOrderOrDefault(sortOrder, fallback) {
 export async function updateIndustry(req, res) {
   const { id } = req.params;
   const f = industryFields(req.body);
-  if (!f.name.trim()) return res.status(400).json({ error: "name is required" });
+  const problem = validateIndustryFields(f);
+  if (problem) return res.status(400).json({ error: problem });
   try {
     // sort_order is intentionally not touched here — it's only ever
     // changed via the dedicated reorder endpoint (the list's up/down
     // arrows), so a plain edit can never silently reset an industry's
-    // position back to the front of the slider.
+    // position back to the front of the slider. Editing one language's
+    // fields never touches the other's columns, so EN/TH stay independent.
     const { rows } = await pool.query(
       `UPDATE industries
-       SET number = $1, name = $2, image_url = $3, overlay_color = $4, description = $5,
-           explore_link = $6, is_active = $7, updated_at = now()
-       WHERE id = $8 RETURNING *`,
-      [f.number, f.name, f.imageUrl || null, f.overlayColor, f.description, f.exploreLink || null, f.isActive, id]
+       SET number = $1, name = $2, name_th = $3, image_url = $4, overlay_color = $5, description = $6,
+           description_th = $7, explore_link = $8, is_active = $9, updated_at = now()
+       WHERE id = $10 RETURNING *`,
+      [
+        f.number, f.name, f.nameTh || null, f.imageUrl, f.overlayColor, f.description, f.descriptionTh || null,
+        f.exploreLink || null, f.isActive, id,
+      ]
     );
     if (!rows.length) return res.status(404).json({ error: "Industry not found" });
     logActivity("industry_edited", `แก้ไขอุตสาหกรรม "${f.name}"`);
