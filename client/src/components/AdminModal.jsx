@@ -157,12 +157,15 @@ export function ConfirmModal({
   detail = "",
   confirmLabel = "OK",
   cancelLabel = "Cancel",
+  busyLabel, // defaults below, by variant — e.g. "Deleting…" vs "Updating…"
+  variant = "danger", // "danger" (delete, red) | "primary" (e.g. enable/disable)
   busy = false,
   error = "",
   onCancel,
   onConfirm,
 }) {
   const cancelRef = useRef(null);
+  const resolvedBusyLabel = busyLabel || (variant === "danger" ? "Deleting…" : "Updating…");
 
   return (
     <AdminModal
@@ -178,8 +181,8 @@ export function ConfirmModal({
           <ModalButton ref={cancelRef} onClick={onCancel} disabled={busy}>
             {cancelLabel}
           </ModalButton>
-          <ModalButton variant="danger" onClick={onConfirm} disabled={busy}>
-            {busy ? "Deleting…" : confirmLabel}
+          <ModalButton variant={variant} onClick={onConfirm} disabled={busy}>
+            {busy ? resolvedBusyLabel : confirmLabel}
           </ModalButton>
         </>
       }

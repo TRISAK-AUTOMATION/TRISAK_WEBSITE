@@ -26,6 +26,8 @@ import AdminContactsPageEditor from "./pages/admin/AdminContactsPageEditor.jsx";
 import AdminFooterEditor from "./pages/admin/AdminFooterEditor.jsx";
 import AdminAutomationSolution from "./pages/admin/AdminAutomationSolution.jsx";
 import AdminCustomers from "./pages/admin/AdminCustomers.jsx";
+import AdminIndustries from "./pages/admin/AdminIndustries.jsx";
+import AdminIndustryForm from "./pages/admin/AdminIndustryForm.jsx";
 import AdminProducts from "./pages/admin/AdminProducts.jsx";
 import AdminProductForm from "./pages/admin/AdminProductForm.jsx";
 import AdminProductImport from "./pages/admin/AdminProductImport.jsx";
@@ -97,6 +99,9 @@ export default function App() {
           <Route path="footer" element={<AdminFooterEditor />} />
           <Route path="automation-solution" element={<AdminAutomationSolution />} />
           <Route path="customers" element={<AdminCustomers />} />
+          <Route path="industries" element={<AdminIndustries />} />
+          <Route path="industries/new" element={<AdminIndustryForm />} />
+          <Route path="industries/:id/edit" element={<AdminIndustryForm />} />
 
           <Route path="brands" element={<AdminBrandList />} />
           <Route path="brands/new" element={<AdminBrandForm />} />

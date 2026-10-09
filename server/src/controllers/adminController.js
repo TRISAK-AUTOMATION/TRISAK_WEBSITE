@@ -975,3 +975,158 @@ export async function deleteCustomer(req, res) {
     res.status(500).json({ error: "Failed to delete customer" });
   }
 }
+
+// ---------------- industries (Home page Industries slider) ----------------
+
+export async function listIndustriesAdmin(req, res) {
+  try {
+    const { rows } = await pool.query("SELECT * FROM industries ORDER BY sort_order, id");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load industries" });
+  }
+}
+
+export async function getIndustryAdmin(req, res) {
+  try {
+    const { rows } = await pool.query("SELECT * FROM industries WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Industry not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load industry" });
+  }
+}
+
+function industryFields(body) {
+  const {
+    number = "",
+    name = "",
+    nameTh = "",
+    imageUrl = "",
+    overlayColor = "#0f2f5f",
+    description = "",
+    descriptionTh = "",
+    exploreLink = "",
+    isActive = true,
+    sortOrder = 0,
+  } = body || {};
+  return { number, name, nameTh, imageUrl, overlayColor, description, descriptionTh, exploreLink, isActive, sortOrder };
+}
+
+// English name is the one hard requirement (per spec: "require at least
+// one industry name in English"), on both create and update. An image is
+// only required when *creating* a new slide — an existing slide (including
+// ones from before this rule, like the seed data) must stay editable even
+// if it has no image yet, so update never blocks on this. Thai fields are
+// intentionally NOT required either — a blank one just falls back to the
+// English text on the public site.
+function validateIndustryFields(f, { requireImage = false } = {}) {
+  if (!f.name.trim()) return "Please enter the industry name (English).";
+  if (requireImage && !f.imageUrl) return "Please upload a slide image before saving.";
+  return null;
+}
+
+export async function createIndustry(req, res) {
+  const f = industryFields(req.body);
+  const problem = validateIndustryFields(f, { requireImage: true });
+  if (problem) return res.status(400).json({ error: problem });
+  try {
+    const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM industries");
+    const { rows } = await pool.query(
+      `INSERT INTO industries
+         (number, name, name_th, image_url, overlay_color, description, description_th, explore_link, is_active, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [
+        f.number, f.name, f.nameTh || null, f.imageUrl, f.overlayColor, f.description, f.descriptionTh || null,
+        f.exploreLink || null, f.isActive, sortOrderOrDefault(f.sortOrder, maxRows[0].n),
+      ]
+    );
+    logActivity("industry_added", `เพิ่มอุตสาหกรรม "${f.name}"`);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+// A brand-new industry defaults to "add at the end"; an explicit sortOrder
+// (e.g. from an edit) is always respected.
+function sortOrderOrDefault(sortOrder, fallback) {
+  return sortOrder || fallback;
+}
+
+export async function updateIndustry(req, res) {
+  const { id } = req.params;
+  const f = industryFields(req.body);
+  const problem = validateIndustryFields(f);
+  if (problem) return res.status(400).json({ error: problem });
+  try {
+    // sort_order is intentionally not touched here — it's only ever
+    // changed via the dedicated reorder endpoint (the list's up/down
+    // arrows), so a plain edit can never silently reset an industry's
+    // position back to the front of the slider. Editing one language's
+    // fields never touches the other's columns, so EN/TH stay independent.
+    const { rows } = await pool.query(
+      `UPDATE industries
+       SET number = $1, name = $2, name_th = $3, image_url = $4, overlay_color = $5, description = $6,
+           description_th = $7, explore_link = $8, is_active = $9, updated_at = now()
+       WHERE id = $10 RETURNING *`,
+      [
+        f.number, f.name, f.nameTh || null, f.imageUrl, f.overlayColor, f.description, f.descriptionTh || null,
+        f.exploreLink || null, f.isActive, id,
+      ]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Industry not found" });
+    logActivity("industry_edited", `แก้ไขอุตสาหกรรม "${f.name}"`);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function toggleIndustryStatus(req, res) {
+  const { isActive } = req.body || {};
+  if (typeof isActive !== "boolean") {
+    return res.status(400).json({ error: "isActive (boolean) is required" });
+  }
+  try {
+    const { rows } = await pool.query(
+      "UPDATE industries SET is_active = $1, updated_at = now() WHERE id = $2 RETURNING id, is_active",
+      [isActive, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Industry not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update industry status" });
+  }
+}
+
+export async function reorderIndustry(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  try {
+    const result = await reorderRow("industries", req.params.id, direction, []);
+    if (result === "not-found") return res.status(404).json({ error: "Industry not found" });
+    res.json({ success: true, moved: result === "ok" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteIndustry(req, res) {
+  const { id } = req.params;
+  try {
+    const existing = await pool.query("SELECT name FROM industries WHERE id = $1", [id]);
+    const result = await pool.query("DELETE FROM industries WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Industry not found" });
+    logActivity("industry_deleted", `ลบอุตสาหกรรม "${existing.rows[0]?.name || id}"`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete industry" });
+  }
+}

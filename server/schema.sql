@@ -151,10 +151,27 @@ CREATE TABLE customers (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Content for the Home page's center-focused Industries slider, managed
+-- from Admin > Industries. `description` holds one highlight per line
+-- (rendered as a bullet list); `number` is the slider's big display
+-- number ("05"), independent of `sort_order`.
+-- name/description are English; name_th/description_th are the Thai
+-- versions — independently editable, and the slider falls back to the
+-- English field for either one when its Thai counterpart is blank.
 CREATE TABLE industries (
-  id           SERIAL PRIMARY KEY,
-  name         VARCHAR(100) NOT NULL,
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  id              SERIAL PRIMARY KEY,
+  number          VARCHAR(10),
+  name            VARCHAR(100) NOT NULL,
+  name_th         VARCHAR(100),
+  image_url       VARCHAR(255),
+  overlay_color   VARCHAR(20) NOT NULL DEFAULT '#0f2f5f',
+  description     TEXT,
+  description_th  TEXT,
+  explore_link    VARCHAR(255),
+  is_active       BOOLEAN NOT NULL DEFAULT true,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Singleton table (always exactly one row) holding the editable text on
@@ -445,15 +462,36 @@ INSERT INTO solutions (name, slug, summary, services, benefits, sort_order) VALU
   4
 );
 
-INSERT INTO industries (name, sort_order) VALUES
-  ('Manufacturing', 1),
-  ('Automotive', 2),
-  ('Food & Beverage', 3),
-  ('Chemical & Petrochemical', 4),
-  ('Pharmaceutical', 5),
-  ('Water & Wastewater', 6),
-  ('Power & Electrical', 7),
-  ('Building & Infrastructure', 8);
+-- image_url is left blank in seed data (no bundled asset) — the slider
+-- falls back to a plain overlay color until an image is uploaded per
+-- industry from Admin > Industries. Thai name/description are filled in
+-- here (matching the site's existing Thai translations) so the slider
+-- has real Thai content out of the box, not just the English fallback.
+INSERT INTO industries (number, name, name_th, overlay_color, description, description_th, sort_order) VALUES
+  ('01', 'Manufacturing', 'อุตสาหกรรมการผลิต', '#0f2f5f',
+    'Factory automation' || chr(10) || 'Process control' || chr(10) || 'Robotics integration',
+    'ระบบอัตโนมัติในโรงงาน' || chr(10) || 'การควบคุมกระบวนการผลิต' || chr(10) || 'การผสานระบบหุ่นยนต์', 1),
+  ('02', 'Automotive', 'ยานยนต์', '#7a1f1f',
+    'Assembly lines' || chr(10) || 'Quality inspection' || chr(10) || 'Parts logistics',
+    'สายการประกอบ' || chr(10) || 'การตรวจสอบคุณภาพ' || chr(10) || 'โลจิสติกส์ชิ้นส่วน', 2),
+  ('03', 'Food & Beverage', 'อาหารและเครื่องดื่ม', '#2f6b3a',
+    'Packaging systems' || chr(10) || 'Cold chain monitoring' || chr(10) || 'Hygiene compliance',
+    'ระบบบรรจุภัณฑ์' || chr(10) || 'การตรวจสอบห่วงโซ่ความเย็น' || chr(10) || 'มาตรฐานสุขอนามัย', 3),
+  ('04', 'Chemical & Petrochemical', 'เคมีและปิโตรเคมี', '#5a3d0f',
+    'Process safety' || chr(10) || 'Tank & flow monitoring' || chr(10) || 'Hazardous area equipment',
+    'ความปลอดภัยของกระบวนการ' || chr(10) || 'การตรวจสอบถังและการไหล' || chr(10) || 'อุปกรณ์สำหรับพื้นที่อันตราย', 4),
+  ('05', 'Pharmaceutical', 'ยาและเวชภัณฑ์', '#1c3f6f',
+    'Cleanroom automation' || chr(10) || 'Batch traceability' || chr(10) || 'Regulatory compliance',
+    'ระบบอัตโนมัติห้องสะอาด' || chr(10) || 'การตรวจสอบย้อนกลับของแบตช์' || chr(10) || 'การปฏิบัติตามกฎระเบียบ', 5),
+  ('06', 'Water & Wastewater', 'ระบบน้ำและบำบัดน้ำเสีย', '#0f5f5a',
+    'Treatment plant control' || chr(10) || 'Pump station monitoring' || chr(10) || 'Remote telemetry',
+    'การควบคุมโรงบำบัด' || chr(10) || 'การตรวจสอบสถานีสูบน้ำ' || chr(10) || 'ระบบโทรมาตรทางไกล', 6),
+  ('07', 'Power & Electrical', 'พลังงานและไฟฟ้า', '#5f4a0f',
+    'Substation automation' || chr(10) || 'Energy monitoring' || chr(10) || 'Grid protection',
+    'ระบบอัตโนมัติสถานีไฟฟ้าย่อย' || chr(10) || 'การตรวจสอบพลังงาน' || chr(10) || 'การป้องกันโครงข่ายไฟฟ้า', 7),
+  ('08', 'Building & Infrastructure', 'อาคารและโครงสร้างพื้นฐาน', '#3f2f5f',
+    'HVAC control' || chr(10) || 'Access & security' || chr(10) || 'Facility monitoring',
+    'การควบคุมระบบ HVAC' || chr(10) || 'ระบบเข้าออกและความปลอดภัย' || chr(10) || 'การตรวจสอบอาคาร', 8);
 
 INSERT INTO home_content (
   hero_meta_en, hero_meta_th,
