@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = ["tagline", "rights", "authorized_line"];
@@ -64,23 +65,7 @@ export default function AdminFooterEditor() {
     <form onSubmit={handleSubmit}>
       <AdminBreadcrumb items={[{ label: "Footer" }]} />
 
-      <div className="admin-edit-tabbar">
-        <div className="admin-edit-tabs">
-          <button
-            type="button"
-            className={`admin-edit-tab ${lang === "th" ? "is-active" : ""}`}
-            onClick={() => setLang("th")}
-          >
-            🇹🇭 ภาษาไทย
-          </button>
-          <button
-            type="button"
-            className={`admin-edit-tab ${lang === "en" ? "is-active" : ""}`}
-            onClick={() => setLang("en")}
-          >
-            🇬🇧 English
-          </button>
-        </div>
+      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
         <div className="admin-edit-tabbar__actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>
             💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
@@ -93,7 +78,7 @@ export default function AdminFooterEditor() {
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความ Footer ในเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> —
-        สลับแท็บด้านบนเพื่อแก้อีกภาษา ส่วนที่อยู่/เบอร์โทร/อีเมลของสำนักงานใหญ่และคลังสินค้าใน Footer
+        เลือกภาษาจากเมนูด้านข้างเพื่อแก้อีกภาษา ส่วนที่อยู่/เบอร์โทร/อีเมลของสำนักงานใหญ่และคลังสินค้าใน Footer
         ใช้ข้อมูลชุดเดียวกับหน้า{" "}
         <Link to="/admin/contact" style={{ color: "inherit", textDecoration: "underline" }}>
           "ติดต่อเรา"
@@ -101,36 +86,38 @@ export default function AdminFooterEditor() {
         — แก้ที่นั่นแล้วจะอัพเดตทั้งสองจุดพร้อมกัน ลิงก์ด่วนใน Footer ใช้ข้อมูลชุดเดียวกับเมนู "เมนู" ในแถบด้านซ้าย
       </div>
 
-      <div className="admin-form">
-        <div className="admin-form__section panel">
-          <h3>แท็กไลน์ใต้โลโก้</h3>
-          <label className="contact-form__field">
-            <span>ข้อความ</span>
-            <textarea rows={2} value={value("tagline")} onChange={(e) => update("tagline", e.target.value)} />
-          </label>
-        </div>
+      <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>
+        <div className="admin-form">
+          <div className="admin-form__section panel">
+            <h3>แท็กไลน์ใต้โลโก้</h3>
+            <label className="contact-form__field">
+              <span>ข้อความ</span>
+              <textarea rows={2} value={value("tagline")} onChange={(e) => update("tagline", e.target.value)} />
+            </label>
+          </div>
 
-        <div className="admin-form__section panel">
-          <h3>บรรทัดล่างสุดของ Footer</h3>
-          <label className="contact-form__field">
-            <span>ข้อความลิขสิทธิ์ (แสดงต่อจากปี ค.ศ. ปัจจุบัน)</span>
-            <input value={value("rights")} onChange={(e) => update("rights", e.target.value)} />
-          </label>
-          <label className="contact-form__field" style={{ marginTop: 20 }}>
-            <span>ข้อความรับรอง/ตัวแทนจำหน่าย</span>
-            <input
-              value={value("authorized_line")}
-              onChange={(e) => update("authorized_line", e.target.value)}
-            />
-          </label>
-        </div>
+          <div className="admin-form__section panel">
+            <h3>บรรทัดล่างสุดของ Footer</h3>
+            <label className="contact-form__field">
+              <span>ข้อความลิขสิทธิ์ (แสดงต่อจากปี ค.ศ. ปัจจุบัน)</span>
+              <input value={value("rights")} onChange={(e) => update("rights", e.target.value)} />
+            </label>
+            <label className="contact-form__field" style={{ marginTop: 20 }}>
+              <span>ข้อความรับรอง/ตัวแทนจำหน่าย</span>
+              <input
+                value={value("authorized_line")}
+                onChange={(e) => update("authorized_line", e.target.value)}
+              />
+            </label>
+          </div>
 
-        <div className="admin-form__submit-row">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "กำลังบันทึก…" : "บันทึก"}
-          </button>
+          <div className="admin-form__submit-row">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "กำลังบันทึก…" : "บันทึก"}
+            </button>
+          </div>
         </div>
-      </div>
+      </AdminEditLayout>
     </form>
   );
 }

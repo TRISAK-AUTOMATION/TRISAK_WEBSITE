@@ -55,7 +55,7 @@ export default function SuccessModal({
     >
       <div className="success-modal__body">
         <span className="success-modal__icon" aria-hidden="true">
-          <svg viewBox="0 0 52 52" className="success-modal__check">
+          <svg viewBox="0 0 52 52" width="52" height="52" className="success-modal__check">
             <circle className="success-modal__check-circle" cx="26" cy="26" r="24" fill="none" />
             <path className="success-modal__check-mark" fill="none" d="M14 27l7 7 16-16" />
           </svg>

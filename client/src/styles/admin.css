@@ -1862,3 +1862,52 @@
 .admin-solution-block-row__info p {
   margin: 4px 0 0;
 }
+
+/* Language/status sidebar layout for edit pages without their own main panel */
+.admin-edit-content {
+  min-width: 0;
+}
+
+.admin-edit-tabbar--actions-only {
+  justify-content: flex-end;
+}
+
+/* =========================================================
+   Success modal (components/SuccessModal.jsx) — compact, content-sized.
+   The check icon's <svg> only had a viewBox, so with no size it stretched
+   to the full modal width (a ~400px-tall blank gap). Give it a fixed size.
+   ========================================================= */
+.success-modal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.success-modal__icon {
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+}
+
+.success-modal__check {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.success-modal__check-circle,
+.success-modal__check-mark {
+  fill: none;
+  stroke: #1f7a3a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.success-modal__message {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}

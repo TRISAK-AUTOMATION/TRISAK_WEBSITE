@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
@@ -79,23 +80,7 @@ export default function AdminHomeEditor() {
     <form onSubmit={handleSubmit}>
       <AdminBreadcrumb items={[{ label: "หน้าแรก" }]} />
 
-      <div className="admin-edit-tabbar">
-        <div className="admin-edit-tabs">
-          <button
-            type="button"
-            className={`admin-edit-tab ${lang === "th" ? "is-active" : ""}`}
-            onClick={() => setLang("th")}
-          >
-            🇹🇭 ภาษาไทย
-          </button>
-          <button
-            type="button"
-            className={`admin-edit-tab ${lang === "en" ? "is-active" : ""}`}
-            onClick={() => setLang("en")}
-          >
-            🇬🇧 English
-          </button>
-        </div>
+      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
         <div className="admin-edit-tabbar__actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>
             💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
@@ -108,115 +93,117 @@ export default function AdminHomeEditor() {
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าแรกในเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong>{" "}
-        — สลับแท็บด้านบนเพื่อแก้อีกภาษา ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก"
+        — เลือกภาษาจากเมนูด้านข้างเพื่อแก้อีกภาษา ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก"
       </div>
 
-      <div className="admin-form">
-        <div className="admin-form__section panel">
-          <h3>Hero</h3>
-          <label className="contact-form__field">
-            <span>ข้อความเล็กเหนือหัวข้อ (Meta)</span>
-            <input value={value("hero_meta")} onChange={(e) => update("hero_meta", e.target.value)} />
-          </label>
-          <div className="admin-form__row" style={{ marginTop: 20 }}>
+      <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>
+        <div className="admin-form">
+          <div className="admin-form__section panel">
+            <h3>Hero</h3>
             <label className="contact-form__field">
-              <span>หัวข้อ บรรทัดที่ 1</span>
-              <input
-                value={value("hero_title_line1")}
-                onChange={(e) => update("hero_title_line1", e.target.value)}
-              />
+              <span>ข้อความเล็กเหนือหัวข้อ (Meta)</span>
+              <input value={value("hero_meta")} onChange={(e) => update("hero_meta", e.target.value)} />
             </label>
-            <label className="contact-form__field">
-              <span>หัวข้อ บรรทัดที่ 2</span>
-              <input
-                value={value("hero_title_line2")}
-                onChange={(e) => update("hero_title_line2", e.target.value)}
-              />
-            </label>
-          </div>
-          <label className="contact-form__field" style={{ marginTop: 20 }}>
-            <span>คำอธิบายใต้หัวข้อ</span>
-            <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
-          </label>
-          <label className="contact-form__field" style={{ marginTop: 20 }}>
-            <span>ภาพพื้นหลัง (แสดงด้านหลังข้อความหัวข้อ — ไม่บังคับ)</span>
-            <ImageUploadField
-              value={form.hero_bg_image}
-              onChange={(url) => {
-                setSuccess(false);
-                setForm((f) => ({ ...f, hero_bg_image: url }));
-              }}
-            />
-          </label>
-        </div>
-
-        <div className="admin-form__section panel">
-          <h3>หัวข้อส่วน "จุดแข็งของเรา"</h3>
-          <div className="admin-form__row">
-            <label className="contact-form__field">
-              <span>ข้อความเล็กเหนือหัวข้อ (Eyebrow)</span>
-              <input
-                value={value("strength_eyebrow")}
-                onChange={(e) => update("strength_eyebrow", e.target.value)}
-              />
-            </label>
-            <label className="contact-form__field">
-              <span>หัวข้อหลัก</span>
-              <input
-                value={value("strength_title")}
-                onChange={(e) => update("strength_title", e.target.value)}
-              />
-            </label>
-          </div>
-        </div>
-
-        {[1, 2, 3].map((n) => (
-          <div className="admin-form__section panel" key={n}>
-            <h3>จุดแข็งข้อที่ {n}</h3>
-            <label className="contact-form__field">
-              <span>หัวข้อ</span>
-              <input
-                value={value(`strength${n}_title`)}
-                onChange={(e) => update(`strength${n}_title`, e.target.value)}
-              />
+            <div className="admin-form__row" style={{ marginTop: 20 }}>
+              <label className="contact-form__field">
+                <span>หัวข้อ บรรทัดที่ 1</span>
+                <input
+                  value={value("hero_title_line1")}
+                  onChange={(e) => update("hero_title_line1", e.target.value)}
+                />
+              </label>
+              <label className="contact-form__field">
+                <span>หัวข้อ บรรทัดที่ 2</span>
+                <input
+                  value={value("hero_title_line2")}
+                  onChange={(e) => update("hero_title_line2", e.target.value)}
+                />
+              </label>
+            </div>
+            <label className="contact-form__field" style={{ marginTop: 20 }}>
+              <span>คำอธิบายใต้หัวข้อ</span>
+              <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
             </label>
             <label className="contact-form__field" style={{ marginTop: 20 }}>
-              <span>รายละเอียด</span>
-              <textarea
-                rows={2}
-                value={value(`strength${n}_body`)}
-                onChange={(e) => update(`strength${n}_body`, e.target.value)}
+              <span>ภาพพื้นหลัง (แสดงด้านหลังข้อความหัวข้อ — ไม่บังคับ)</span>
+              <ImageUploadField
+                value={form.hero_bg_image}
+                onChange={(url) => {
+                  setSuccess(false);
+                  setForm((f) => ({ ...f, hero_bg_image: url }));
+                }}
               />
             </label>
           </div>
-        ))}
 
-        <div className="admin-form__section panel">
-          <h3>CTA ท้ายหน้า</h3>
-          <div className="admin-form__row">
-            <label className="contact-form__field">
-              <span>หัวข้อ บรรทัดที่ 1</span>
-              <input
-                value={value("cta_title_line1")}
-                onChange={(e) => update("cta_title_line1", e.target.value)}
-              />
-            </label>
-            <label className="contact-form__field">
-              <span>หัวข้อ บรรทัดที่ 2</span>
-              <input
-                value={value("cta_title_line2")}
-                onChange={(e) => update("cta_title_line2", e.target.value)}
-              />
-            </label>
+          <div className="admin-form__section panel">
+            <h3>หัวข้อส่วน "จุดแข็งของเรา"</h3>
+            <div className="admin-form__row">
+              <label className="contact-form__field">
+                <span>ข้อความเล็กเหนือหัวข้อ (Eyebrow)</span>
+                <input
+                  value={value("strength_eyebrow")}
+                  onChange={(e) => update("strength_eyebrow", e.target.value)}
+                />
+              </label>
+              <label className="contact-form__field">
+                <span>หัวข้อหลัก</span>
+                <input
+                  value={value("strength_title")}
+                  onChange={(e) => update("strength_title", e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          {[1, 2, 3].map((n) => (
+            <div className="admin-form__section panel" key={n}>
+              <h3>จุดแข็งข้อที่ {n}</h3>
+              <label className="contact-form__field">
+                <span>หัวข้อ</span>
+                <input
+                  value={value(`strength${n}_title`)}
+                  onChange={(e) => update(`strength${n}_title`, e.target.value)}
+                />
+              </label>
+              <label className="contact-form__field" style={{ marginTop: 20 }}>
+                <span>รายละเอียด</span>
+                <textarea
+                  rows={2}
+                  value={value(`strength${n}_body`)}
+                  onChange={(e) => update(`strength${n}_body`, e.target.value)}
+                />
+              </label>
+            </div>
+          ))}
+
+          <div className="admin-form__section panel">
+            <h3>CTA ท้ายหน้า</h3>
+            <div className="admin-form__row">
+              <label className="contact-form__field">
+                <span>หัวข้อ บรรทัดที่ 1</span>
+                <input
+                  value={value("cta_title_line1")}
+                  onChange={(e) => update("cta_title_line1", e.target.value)}
+                />
+              </label>
+              <label className="contact-form__field">
+                <span>หัวข้อ บรรทัดที่ 2</span>
+                <input
+                  value={value("cta_title_line2")}
+                  onChange={(e) => update("cta_title_line2", e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="admin-form__submit-row">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "กำลังบันทึก…" : "บันทึก"}
+            </button>
           </div>
         </div>
-
-        <div className="admin-form__submit-row">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "กำลังบันทึก…" : "บันทึก"}
-          </button>
-        </div>
-      </div>
+      </AdminEditLayout>
     </form>
   );
 }

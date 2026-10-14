@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = [
@@ -70,23 +71,7 @@ export default function AdminProductsPageEditor() {
     <form onSubmit={handleSubmit}>
       <AdminBreadcrumb items={[{ label: "สินค้า (หน้าเว็บไซต์)" }]} />
 
-      <div className="admin-edit-tabbar">
-        <div className="admin-edit-tabs">
-          <button
-            type="button"
-            className={`admin-edit-tab ${lang === "th" ? "is-active" : ""}`}
-            onClick={() => setLang("th")}
-          >
-            🇹🇭 ภาษาไทย
-          </button>
-          <button
-            type="button"
-            className={`admin-edit-tab ${lang === "en" ? "is-active" : ""}`}
-            onClick={() => setLang("en")}
-          >
-            🇬🇧 English
-          </button>
-        </div>
+      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
         <div className="admin-edit-tabbar__actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>
             💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
@@ -99,61 +84,63 @@ export default function AdminProductsPageEditor() {
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าสินค้า (/products) ในเวอร์ชัน{" "}
-        <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — สลับแท็บด้านบนเพื่อแก้อีกภาษา
+        <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — เลือกภาษาจากเมนูด้านข้างเพื่อแก้อีกภาษา
         รายการสินค้า/แบรนด์/หมวดหมู่บนหน้านี้ดึงจากข้อมูลจริงและไม่ได้แก้ที่นี่ (ไปที่เมนู "สินค้า" ในแถบด้านซ้าย)
       </div>
 
-      <div className="admin-form">
-        <div className="admin-form__section panel">
-          <h3>Hero</h3>
-          <label className="contact-form__field">
-            <span>ข้อความเล็กเหนือหัวข้อ (Meta)</span>
-            <input value={value("hero_meta")} onChange={(e) => update("hero_meta", e.target.value)} />
-          </label>
-          <label className="contact-form__field" style={{ marginTop: 20 }}>
-            <span>หัวข้อหลัก</span>
-            <input value={value("hero_title")} onChange={(e) => update("hero_title", e.target.value)} />
-          </label>
-          <label className="contact-form__field" style={{ marginTop: 20 }}>
-            <span>คำอธิบายใต้หัวข้อ</span>
-            <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
-          </label>
-        </div>
-
-        <div className="admin-form__section panel">
-          <h3>หัวข้อส่วนต่างๆ</h3>
-          <div className="admin-form__row">
+      <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>
+        <div className="admin-form">
+          <div className="admin-form__section panel">
+            <h3>Hero</h3>
             <label className="contact-form__field">
-              <span>Eyebrow ส่วน "เลือกตามแบรนด์"</span>
-              <input
-                value={value("brands_eyebrow")}
-                onChange={(e) => update("brands_eyebrow", e.target.value)}
-              />
+              <span>ข้อความเล็กเหนือหัวข้อ (Meta)</span>
+              <input value={value("hero_meta")} onChange={(e) => update("hero_meta", e.target.value)} />
             </label>
-            <label className="contact-form__field">
-              <span>Eyebrow ส่วน "เลือกตามหมวดหมู่"</span>
-              <input
-                value={value("categories_eyebrow")}
-                onChange={(e) => update("categories_eyebrow", e.target.value)}
-              />
+            <label className="contact-form__field" style={{ marginTop: 20 }}>
+              <span>หัวข้อหลัก</span>
+              <input value={value("hero_title")} onChange={(e) => update("hero_title", e.target.value)} />
+            </label>
+            <label className="contact-form__field" style={{ marginTop: 20 }}>
+              <span>คำอธิบายใต้หัวข้อ</span>
+              <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
             </label>
           </div>
-        </div>
 
-        <div className="admin-form__section panel">
-          <h3>CTA ท้ายหน้า</h3>
-          <label className="contact-form__field">
-            <span>หัวข้อ</span>
-            <input value={value("cta_title")} onChange={(e) => update("cta_title", e.target.value)} />
-          </label>
-        </div>
+          <div className="admin-form__section panel">
+            <h3>หัวข้อส่วนต่างๆ</h3>
+            <div className="admin-form__row">
+              <label className="contact-form__field">
+                <span>Eyebrow ส่วน "เลือกตามแบรนด์"</span>
+                <input
+                  value={value("brands_eyebrow")}
+                  onChange={(e) => update("brands_eyebrow", e.target.value)}
+                />
+              </label>
+              <label className="contact-form__field">
+                <span>Eyebrow ส่วน "เลือกตามหมวดหมู่"</span>
+                <input
+                  value={value("categories_eyebrow")}
+                  onChange={(e) => update("categories_eyebrow", e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
 
-        <div className="admin-form__submit-row">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "กำลังบันทึก…" : "บันทึก"}
-          </button>
+          <div className="admin-form__section panel">
+            <h3>CTA ท้ายหน้า</h3>
+            <label className="contact-form__field">
+              <span>หัวข้อ</span>
+              <input value={value("cta_title")} onChange={(e) => update("cta_title", e.target.value)} />
+            </label>
+          </div>
+
+          <div className="admin-form__submit-row">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "กำลังบันทึก…" : "บันทึก"}
+            </button>
+          </div>
         </div>
-      </div>
+      </AdminEditLayout>
     </form>
   );
 }
