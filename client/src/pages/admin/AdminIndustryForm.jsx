@@ -4,6 +4,7 @@ import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import { useToast } from "../../components/AdminModal.jsx";
+import { AdminEditLayout, AdminLanguageSelect, AdminStatusToggle } from "../../components/AdminEditSidebar.jsx";
 
 const emptyForm = {
   number: "",
@@ -146,119 +147,111 @@ export default function AdminIndustryForm() {
             </p>
           )}
 
-          <div className="admin-edit-tabbar">
-            <div className="admin-edit-tabs">
-              <button
-                type="button"
-                className={`admin-edit-tab ${lang === "th" ? "is-active" : ""}`}
-                onClick={() => setLang("th")}
-              >
-                🇹🇭 ภาษาไทย
-              </button>
-              <button
-                type="button"
-                className={`admin-edit-tab ${lang === "en" ? "is-active" : ""}`}
-                onClick={() => setLang("en")}
-              >
-                🇬🇧 English
-              </button>
-            </div>
-          </div>
-
-          <div className="admin-form__section panel">
-            {lang === "th" ? (
+          <AdminEditLayout
+            sidebar={
               <>
-                <h3>Thai (ไทย)</h3>
-                <label className="contact-form__field">
-                  <span>Industry Name (TH)</span>
-                  <input value={form.nameTh} onChange={(e) => set("nameTh")(e.target.value)} placeholder="เช่น การบริการและที่พัก" />
-                </label>
-                <label className="contact-form__field" style={{ marginTop: 16 }}>
-                  <span>Description (TH)</span>
-                  <textarea
-                    rows={4}
-                    value={form.descriptionTh}
-                    onChange={(e) => set("descriptionTh")(e.target.value)}
-                    placeholder={"เอ็กซ์เพรส ฟู้ด กรุ๊ป\nปาล์มส์ ฟู้ด อินเตอร์เนชั่นแนล\nโรงแรม"}
-                  />
-                </label>
+                <AdminLanguageSelect value={lang} onChange={setLang} label="Language" />
+                <AdminStatusToggle
+                  checked={form.isActive}
+                  onChange={set("isActive")}
+                  label="Status"
+                  text="Active (shown in the Home page slider)"
+                />
               </>
-            ) : (
-              <>
-                <h3>English</h3>
-                <label className="contact-form__field">
-                  <span>Industry Name (EN)</span>
-                  <input value={form.name} onChange={(e) => set("name")(e.target.value)} placeholder="e.g. Hospitality" />
-                </label>
-                <label className="contact-form__field" style={{ marginTop: 16 }}>
-                  <span>Description (EN) — one highlight per line</span>
-                  <textarea
-                    rows={4}
-                    value={form.description}
-                    onChange={(e) => set("description")(e.target.value)}
-                    placeholder={"Express Food Group\nPalms Food International\nHotels"}
-                  />
-                </label>
-              </>
-            )}
-          </div>
-
-          <div className="admin-form__section panel">
-            <h3>Slide Image</h3>
-            <label className="contact-form__field">
-              <span>Current image preview / Upload / Replace</span>
-              <ImageUploadField value={form.imageUrl} onChange={set("imageUrl")} />
-            </label>
-          </div>
-
-          <div className="admin-form__section panel">
-            <h3>Slide Settings</h3>
-            <div className="admin-form__row">
-              <label className="contact-form__field">
-                <span>Number</span>
-                <input value={form.number} onChange={(e) => set("number")(e.target.value)} placeholder="e.g. 05" maxLength={10} />
-              </label>
-              <label className="contact-form__field">
-                <span>Overlay Color</span>
-                <div className="industry-color-field">
-                  <input type="color" value={form.overlayColor} onChange={(e) => set("overlayColor")(e.target.value)} />
-                  <input value={form.overlayColor} onChange={(e) => set("overlayColor")(e.target.value)} placeholder="#0f2f5f" />
-                </div>
-              </label>
-            </div>
-            <label className="contact-form__field" style={{ marginTop: 16 }}>
-              <span>Explore More Link</span>
-              <input value={form.exploreLink} onChange={(e) => set("exploreLink")(e.target.value)} placeholder="/products?category=..." />
-            </label>
-
-            <div className="industry-slide-panel__settings-row">
-              <label className="admin-form__checkbox">
-                <input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive")(e.target.checked)} />
-                Active (shown in the Home page slider)
-              </label>
-
-              <div className="industry-slide-panel__order">
-                <span>Display Order{position ? `: ${position.index + 1} of ${position.total}` : ""}</span>
-                {isEdit ? (
-                  <div className="admin-sort-arrows">
-                    <button type="button" onClick={() => handleReorder("up")} disabled={!position || position.index === 0} aria-label="Move up">
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleReorder("down")}
-                      disabled={!position || position.index === position.total - 1}
-                      aria-label="Move down"
-                    >
-                      ↓
-                    </button>
-                  </div>
+            }
+          >
+            <div className="admin-form">
+              <div className="admin-form__section panel">
+                {lang === "th" ? (
+                  <>
+                    <h3>Thai (ไทย)</h3>
+                    <label className="contact-form__field">
+                      <span>Industry Name (TH)</span>
+                      <input value={form.nameTh} onChange={(e) => set("nameTh")(e.target.value)} placeholder="เช่น การบริการและที่พัก" />
+                    </label>
+                    <label className="contact-form__field" style={{ marginTop: 16 }}>
+                      <span>Description (TH)</span>
+                      <textarea
+                        rows={4}
+                        value={form.descriptionTh}
+                        onChange={(e) => set("descriptionTh")(e.target.value)}
+                        placeholder={"เอ็กซ์เพรส ฟู้ด กรุ๊ป\nปาล์มส์ ฟู้ด อินเตอร์เนชั่นแนล\nโรงแรม"}
+                      />
+                    </label>
+                  </>
                 ) : (
-                  <span className="admin-form__hint">New slides are added at the end — reorder after saving.</span>
+                  <>
+                    <h3>English</h3>
+                    <label className="contact-form__field">
+                      <span>Industry Name (EN)</span>
+                      <input value={form.name} onChange={(e) => set("name")(e.target.value)} placeholder="e.g. Hospitality" />
+                    </label>
+                    <label className="contact-form__field" style={{ marginTop: 16 }}>
+                      <span>Description (EN) — one highlight per line</span>
+                      <textarea
+                        rows={4}
+                        value={form.description}
+                        onChange={(e) => set("description")(e.target.value)}
+                        placeholder={"Express Food Group\nPalms Food International\nHotels"}
+                      />
+                    </label>
+                  </>
                 )}
               </div>
+
+              <div className="admin-form__section panel">
+                <h3>Slide Image</h3>
+                <label className="contact-form__field">
+                  <span>Current image preview / Upload / Replace</span>
+                  <ImageUploadField value={form.imageUrl} onChange={set("imageUrl")} />
+                </label>
+              </div>
+
+              <div className="admin-form__section panel">
+                <h3>Slide Settings</h3>
+                <div className="admin-form__row">
+                  <label className="contact-form__field">
+                    <span>Number</span>
+                    <input value={form.number} onChange={(e) => set("number")(e.target.value)} placeholder="e.g. 05" maxLength={10} />
+                  </label>
+                  <label className="contact-form__field">
+                    <span>Overlay Color</span>
+                    <div className="industry-color-field">
+                      <input type="color" value={form.overlayColor} onChange={(e) => set("overlayColor")(e.target.value)} />
+                      <input value={form.overlayColor} onChange={(e) => set("overlayColor")(e.target.value)} placeholder="#0f2f5f" />
+                    </div>
+                  </label>
+                </div>
+                <label className="contact-form__field" style={{ marginTop: 16 }}>
+                  <span>Explore More Link</span>
+                  <input value={form.exploreLink} onChange={(e) => set("exploreLink")(e.target.value)} placeholder="/products?category=..." />
+                </label>
+
+                <div className="industry-slide-panel__settings-row">
+                  <div className="industry-slide-panel__order">
+                    <span>Display Order{position ? `: ${position.index + 1} of ${position.total}` : ""}</span>
+                    {isEdit ? (
+                      <div className="admin-sort-arrows">
+                        <button type="button" onClick={() => handleReorder("up")} disabled={!position || position.index === 0} aria-label="Move up">
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleReorder("down")}
+                          disabled={!position || position.index === position.total - 1}
+                          aria-label="Move down"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="admin-form__hint">New slides are added at the end — reorder after saving.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </AdminEditLayout>
 
           <div className="admin-form__submit-row">
             <button type="submit" className="btn btn-primary" disabled={saving}>

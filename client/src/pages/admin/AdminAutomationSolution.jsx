@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import ImagePositionField from "../../components/ImagePositionField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
@@ -158,23 +159,7 @@ export default function AdminAutomationSolution() {
 
       {/* ---- Hero ---- */}
       <form onSubmit={handleHeroSubmit}>
-        <div className="admin-edit-tabbar">
-          <div className="admin-edit-tabs">
-            <button
-              type="button"
-              className={`admin-edit-tab ${lang === "th" ? "is-active" : ""}`}
-              onClick={() => setLang("th")}
-            >
-              🇹🇭 ภาษาไทย
-            </button>
-            <button
-              type="button"
-              className={`admin-edit-tab ${lang === "en" ? "is-active" : ""}`}
-              onClick={() => setLang("en")}
-            >
-              🇬🇧 English
-            </button>
-          </div>
+        <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
           <div className="admin-edit-tabbar__actions">
             <button type="submit" className="btn btn-primary" disabled={heroSaving || heroLoading}>
               💾 {heroSaving ? "กำลังบันทึก…" : "บันทึก Hero"}
@@ -186,29 +171,31 @@ export default function AdminAutomationSolution() {
         {heroSuccess && <SuccessModal onClose={() => setHeroSuccess(false)} />}
 
         {!heroLoading && (
-          <div className="admin-form">
-            <div className="admin-form__section panel">
-              <h3>Hero</h3>
-              <label className="contact-form__field">
-                <span>ข้อความเล็กเหนือหัวข้อ (Meta)</span>
-                <input value={heroValue("hero_meta")} onChange={(e) => updateHero("hero_meta", e.target.value)} />
-              </label>
-              <label className="contact-form__field" style={{ marginTop: 20 }}>
-                <span>หัวข้อหลัก</span>
-                <input value={heroValue("hero_title")} onChange={(e) => updateHero("hero_title", e.target.value)} />
-              </label>
-              <label className="contact-form__field" style={{ marginTop: 20 }}>
-                <span>คำอธิบายใต้หัวข้อ</span>
-                <textarea rows={3} value={heroValue("hero_sub")} onChange={(e) => updateHero("hero_sub", e.target.value)} />
-              </label>
+          <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>
+            <div className="admin-form">
+              <div className="admin-form__section panel">
+                <h3>Hero</h3>
+                <label className="contact-form__field">
+                  <span>ข้อความเล็กเหนือหัวข้อ (Meta)</span>
+                  <input value={heroValue("hero_meta")} onChange={(e) => updateHero("hero_meta", e.target.value)} />
+                </label>
+                <label className="contact-form__field" style={{ marginTop: 20 }}>
+                  <span>หัวข้อหลัก</span>
+                  <input value={heroValue("hero_title")} onChange={(e) => updateHero("hero_title", e.target.value)} />
+                </label>
+                <label className="contact-form__field" style={{ marginTop: 20 }}>
+                  <span>คำอธิบายใต้หัวข้อ</span>
+                  <textarea rows={3} value={heroValue("hero_sub")} onChange={(e) => updateHero("hero_sub", e.target.value)} />
+                </label>
+              </div>
             </div>
-          </div>
+          </AdminEditLayout>
         )}
       </form>
 
       {/* ---- Solution Blocks ---- */}
       <div className="admin-edit-notice" style={{ marginTop: 32 }}>
-        🔔 Solution Block คือการ์ดแต่ละใบในหน้านี้ (ชื่อ/รายละเอียด/บริการ/ประโยชน์ ใช้ภาษาเดียว ไม่มีแท็บ EN/TH)
+        🔔 Solution Block คือการ์ดแต่ละใบในหน้านี้ (ชื่อ/รายละเอียด/บริการ/ประโยชน์ ใช้ภาษาเดียว ไม่มีตัวเลือกภาษา EN/TH)
         — จัดการรูปภาพและเพิ่ม/ลบการ์ดได้ที่นี่
       </div>
 
