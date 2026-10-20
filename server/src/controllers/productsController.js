@@ -31,7 +31,7 @@ export async function listCategories(req, res) {
     // top-level ("หมวดหมู่ใหญ่") only — subcategories are reached by
     // drilling down from these, not listed flat
     const { rows } = await pool.query(
-      "SELECT id, name, slug, image_url FROM categories WHERE is_active = true AND parent_id IS NULL ORDER BY sort_order"
+      "SELECT id, name, slug, image_url, icon_key FROM categories WHERE is_active = true AND parent_id IS NULL ORDER BY sort_order"
     );
     res.json(rows);
   } catch (err) {

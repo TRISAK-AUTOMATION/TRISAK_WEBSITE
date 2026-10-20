@@ -174,6 +174,8 @@ Route: `/products/:brandSlug/:categorySlug` for the top level, then `/products/:
 
 If you're upgrading an existing database, run `migrations/002_add_category_parent.sql` (adds the one new column, keeps all your data).
 
+**Category icons** — each category's icon on the public `/products` page is chosen in Admin → Categories → Edit → **ไอคอน** tab (icon picker with live previews; saved to `categories.icon_key`, shown after the success popup). Priority on the site: chosen icon → uploaded category image → neutral placeholder. On an existing database apply `migrations/024_add_category_icon_key.sql` (adds the column and seeds the original nine categories so nothing changes visually).
+
 All seed content in the database comes from the structure given in the brief (brands: OMRON, YASKAWA, NITTO; categories: PLC & HMI, Inverter, Servo & Motion, Industrial Robot, Sensors, Safety, I/O & Industrial PC, Electrical Components, Enclosures; solutions: HMI & PLC, Drive & Motion, Robotic, Smart Factory), plus a demo OMRON / PLC & HMI / NX Series product line to exercise the full catalog flow end-to-end.
 
 ## Language toggle (EN / TH)

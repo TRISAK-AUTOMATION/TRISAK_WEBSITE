@@ -1911,3 +1911,48 @@
   max-width: 100%;
   overflow-wrap: anywhere;
 }
+
+/* Category edit — icon picker */
+.icon-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.icon-picker__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.icon-picker__item:hover {
+  background: var(--bg-panel);
+}
+
+.icon-picker__item.is-selected {
+  border-color: var(--accent-signal);
+  background: var(--accent-signal-dim);
+  color: var(--accent-signal);
+  box-shadow: 0 0 0 1px var(--accent-signal);
+}
+
+.icon-picker__svg {
+  width: 40px;
+  height: 40px;
+}
+
+.icon-picker__hint {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}

@@ -4,6 +4,7 @@ import { api } from "../../api/client.js";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import ProductCard from "../../components/ProductCard.jsx";
 import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
+import CategoryTileGrid from "../../components/CategoryTileGrid.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 export default function ProductsOverview() {
@@ -157,18 +158,10 @@ export default function ProductsOverview() {
           <section className="section">
             <div className="container">
               <SectionLabel eyebrow={pc("categories_eyebrow", t("products.categoriesEyebrow"))} title={t("products.browseByCategory")} />
-              <div className="category-grid">
-                {categories.map((c) => (
-                  <button
-                    key={c.slug}
-                    className="category-cell"
-                    onClick={() => setFilters((f) => ({ ...f, category: c.slug }))}
-                  >
-                    <span>{c.name}</span>
-                    <span className="category-cell__arrow">→</span>
-                  </button>
-                ))}
-              </div>
+              <CategoryTileGrid
+                categories={categories}
+                onSelect={(c) => setFilters((f) => ({ ...f, category: c.slug }))}
+              />
             </div>
           </section>
         </>

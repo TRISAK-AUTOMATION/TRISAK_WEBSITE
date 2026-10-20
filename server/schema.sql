@@ -39,6 +39,7 @@ CREATE TABLE categories (
   name         VARCHAR(100) NOT NULL UNIQUE,
   slug         VARCHAR(100) NOT NULL UNIQUE,
   image_url    VARCHAR(255),
+  icon_key     VARCHAR(50),
   parent_id    INTEGER REFERENCES categories(id) ON DELETE CASCADE,
   is_active    BOOLEAN NOT NULL DEFAULT true,
   sort_order   INTEGER NOT NULL DEFAULT 0,
@@ -431,6 +432,8 @@ INSERT INTO categories (name, slug, sort_order) VALUES
   ('I/O & Industrial PC', 'io-industrial-pc', 7),
   ('Electrical Components', 'electrical-components', 8),
   ('Enclosures', 'enclosures', 9);
+
+UPDATE categories SET icon_key = slug;
 
 INSERT INTO solutions (name, slug, summary, services, benefits, sort_order) VALUES
 (

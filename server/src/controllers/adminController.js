@@ -226,13 +226,20 @@ async function getDescendantIds(categoryId) {
   return rows.map((r) => r.id);
 }
 
+// icon_key is a short identifier from the frontend icon library
+// (e.g. "plc-hmi"). Empty / missing means "no icon chosen".
+const ICON_KEY_PATTERN = /^[a-z0-9-]{1,50}$/;
+
 export async function createCategory(req, res) {
-  const { name, slug, imageUrl, parentId, isActive = true, sortOrder = 0 } = req.body || {};
+  const { name, slug, imageUrl, iconKey, parentId, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
+  if (iconKey && !ICON_KEY_PATTERN.test(iconKey)) {
+    return res.status(400).json({ error: "Invalid icon selected" });
+  }
   try {
     const { rows } = await pool.query(
-      "INSERT INTO categories (name, slug, image_url, parent_id, is_active, sort_order) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [name, slug, imageUrl || null, parentId || null, isActive, sortOrder]
+      "INSERT INTO categories (name, slug, image_url, icon_key, parent_id, is_active, sort_order) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [name, slug, imageUrl || null, iconKey || null, parentId || null, isActive, sortOrder]
     );
     logActivity("category_added", `เพิ่มหมวดหมู่ "${name}"`);
     res.status(201).json(rows[0]);
@@ -243,8 +250,11 @@ export async function createCategory(req, res) {
 
 export async function updateCategory(req, res) {
   const { id } = req.params;
-  const { name, slug, imageUrl, parentId, isActive = true, sortOrder = 0 } = req.body || {};
+  const { name, slug, imageUrl, iconKey, parentId, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
+  if (iconKey && !ICON_KEY_PATTERN.test(iconKey)) {
+    return res.status(400).json({ error: "Invalid icon selected" });
+  }
 
   try {
     if (parentId) {
@@ -260,8 +270,14 @@ export async function updateCategory(req, res) {
     }
 
     const { rows } = await pool.query(
-      "UPDATE categories SET name = $1, slug = $2, image_url = $3, parent_id = $4, is_active = $5, sort_order = $6, updated_at = now() WHERE id = $7 RETURNING *",
-      [name, slug, imageUrl || null, parentId || null, isActive, sortOrder, id]
+      // iconKey omitted (undefined) keeps the stored icon; null / "" clears it.
+      `UPDATE categories SET name = $1, slug = $2, image_url = $3, parent_id = $4,
+         is_active = $5, sort_order = $6,
+         icon_key = CASE WHEN $8::boolean THEN $9 ELSE icon_key END,
+         updated_at = now()
+       WHERE id = $7 RETURNING *`,
+      [name, slug, imageUrl || null, parentId || null, isActive, sortOrder, id,
+       iconKey !== undefined, iconKey || null]
     );
     if (!rows.length) return res.status(404).json({ error: "Category not found" });
     logActivity("category_edited", `แก้ไขหมวดหมู่ "${name}"`);

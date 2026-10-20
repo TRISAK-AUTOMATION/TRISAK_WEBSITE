@@ -1380,3 +1380,103 @@
 @media (max-width: 640px) {
   .vp-popup-close { top: -12px; right: 0; }
 }
+
+/* =========================================================
+   Products page — category tiles (section 03)
+   ========================================================= */
+.category-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 168px;
+  padding: 24px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.category-tile:hover,
+.category-tile:focus-visible {
+  background: var(--bg-panel);
+  border-color: var(--text-faint);
+  color: var(--text);
+}
+
+.category-tile:focus-visible {
+  outline: 2px solid var(--accent-tech);
+  outline-offset: 2px;
+}
+
+.category-tile__icon {
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+
+.category-tile__img {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  object-fit: contain;
+  filter: grayscale(1);
+}
+
+.category-tile__name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.category-tile--wide {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  gap: 20px;
+  min-height: 96px;
+}
+
+@media (max-width: 1024px) {
+  .category-tile {
+    min-height: 148px;
+    padding: 20px 8px;
+  }
+  .category-tile__name {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+}
+
+@media (max-width: 700px) {
+  .category-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .category-tile {
+    min-height: 132px;
+    gap: 12px;
+  }
+  .category-tile__icon,
+  .category-tile__img {
+    width: 44px;
+    height: 44px;
+  }
+  .category-tile--wide {
+    min-height: 84px;
+  }
+}

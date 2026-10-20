@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import SuccessModal from "../../components/SuccessModal.jsx";
+import CategoryLineIcon, { CATEGORY_ICON_OPTIONS } from "../../components/categoryIcons.jsx";
 
 function slugify(text) {
   return text
@@ -61,6 +63,8 @@ export default function AdminCategoryForm() {
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(isEdit);
   const [imageUrl, setImageUrl] = useState("");
+  const [iconKey, setIconKey] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
   const [parentId, setParentId] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [sortOrder, setSortOrder] = useState(0);
@@ -81,6 +85,7 @@ export default function AdminCategoryForm() {
         setName(c.name);
         setSlug(c.slug);
         setImageUrl(c.image_url || "");
+        setIconKey(c.icon_key || "");
         setParentId(c.parent_id ? String(c.parent_id) : "");
         setIsActive(c.is_active);
         // Preserve the category's existing position among its siblings
@@ -110,6 +115,7 @@ export default function AdminCategoryForm() {
         name,
         slug,
         imageUrl: imageUrl || null,
+        iconKey: iconKey || null,
         parentId: newParentId,
         isActive,
         sortOrder: nextSortOrder,
@@ -119,7 +125,8 @@ export default function AdminCategoryForm() {
       } else {
         await api.adminCreateCategory(payload);
       }
-      navigate("/admin/categories");
+      // Success popup first; closing it returns to the category list.
+      setShowSuccess(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -155,6 +162,13 @@ export default function AdminCategoryForm() {
             onClick={() => setTab("data")}
           >
             🇹🇭 ข้อมูล
+          </button>
+          <button
+            type="button"
+            className={`admin-edit-tab ${tab === "icon" ? "is-active" : ""}`}
+            onClick={() => setTab("icon")}
+          >
+            ไอคอน
           </button>
           <button
             type="button"
@@ -214,6 +228,40 @@ export default function AdminCategoryForm() {
             </>
           )}
 
+          {tab === "icon" && (
+            <>
+              <div className="admin-edit-notice">ไอคอนหมวดหมู่ (แสดงในหน้าสินค้า)</div>
+              <div className="icon-picker" role="radiogroup" aria-label="Category icon">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!iconKey}
+                  className={`icon-picker__item${!iconKey ? " is-selected" : ""}`}
+                  onClick={() => setIconKey("")}
+                >
+                  <CategoryLineIcon iconKey={null} className="icon-picker__svg" />
+                  <span>ค่าเริ่มต้น</span>
+                </button>
+                {CATEGORY_ICON_OPTIONS.map((o) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={iconKey === o.key}
+                    key={o.key}
+                    className={`icon-picker__item${iconKey === o.key ? " is-selected" : ""}`}
+                    onClick={() => setIconKey(o.key)}
+                  >
+                    <CategoryLineIcon iconKey={o.key} className="icon-picker__svg" />
+                    <span>{o.label}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="icon-picker__hint">
+                เลือกไอคอนแล้วกด “บันทึก” — “ค่าเริ่มต้น” จะใช้รูปที่อัพโหลดไว้ (ถ้ามี)
+              </p>
+            </>
+          )}
+
           {tab === "upload" && (
             <>
               <div className="admin-edit-notice">รูปภาพหมวดหมู่</div>
@@ -259,6 +307,9 @@ export default function AdminCategoryForm() {
           </div>
         </aside>
       </div>
+      {showSuccess && (
+        <SuccessModal onClose={() => navigate("/admin/categories")} />
+      )}
     </form>
   );
 }
