@@ -29,6 +29,7 @@ import {
   getFooterContent,
   getAutomationSolutionContent,
 } from "../controllers/pageContentController.js";
+import { getHistoryContent } from "../controllers/historyContentController.js";
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.get("/site-settings", getSiteSettings);
 router.get("/menu", getMenu);
 router.get("/popups/active", getActivePopup);
 router.get("/about-content", getAboutContent);
+router.get("/history-content", getHistoryContent);
 router.get("/products-page-content", getProductsPageContent);
 router.get("/contacts-page-content", getContactsPageContent);
 router.get("/footer-content", getFooterContent);

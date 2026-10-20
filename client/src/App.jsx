@@ -21,6 +21,12 @@ import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminHomeEditor from "./pages/admin/AdminHomeEditor.jsx";
 import AdminAboutEditor from "./pages/admin/AdminAboutEditor.jsx";
+import AdminHistoryTimeline from "./pages/admin/AdminHistoryTimeline.jsx";
+import AdminHistoryTimelineForm from "./pages/admin/AdminHistoryTimelineForm.jsx";
+import AdminHistoryStats from "./pages/admin/AdminHistoryStats.jsx";
+import AdminHistoryStatForm from "./pages/admin/AdminHistoryStatForm.jsx";
+import AdminHistoryOrg from "./pages/admin/AdminHistoryOrg.jsx";
+import AdminHistoryOrgForm from "./pages/admin/AdminHistoryOrgForm.jsx";
 import AdminProductsPageEditor from "./pages/admin/AdminProductsPageEditor.jsx";
 import AdminContactsPageEditor from "./pages/admin/AdminContactsPageEditor.jsx";
 import AdminFooterEditor from "./pages/admin/AdminFooterEditor.jsx";
@@ -94,6 +100,15 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="home" element={<AdminHomeEditor />} />
           <Route path="about" element={<AdminAboutEditor />} />
+          <Route path="about/timeline" element={<AdminHistoryTimeline />} />
+          <Route path="about/timeline/new" element={<AdminHistoryTimelineForm />} />
+          <Route path="about/timeline/:id/edit" element={<AdminHistoryTimelineForm />} />
+          <Route path="about/statistics" element={<AdminHistoryStats />} />
+          <Route path="about/statistics/new" element={<AdminHistoryStatForm />} />
+          <Route path="about/statistics/:id/edit" element={<AdminHistoryStatForm />} />
+          <Route path="about/organization" element={<AdminHistoryOrg />} />
+          <Route path="about/organization/new" element={<AdminHistoryOrgForm />} />
+          <Route path="about/organization/:id/edit" element={<AdminHistoryOrgForm />} />
           <Route path="products-page" element={<AdminProductsPageEditor />} />
           <Route path="contact" element={<AdminContactsPageEditor />} />
           <Route path="footer" element={<AdminFooterEditor />} />

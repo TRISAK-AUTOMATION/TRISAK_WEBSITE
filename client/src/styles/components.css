@@ -757,6 +757,49 @@
   background: var(--line-strong);
 }
 
+/* one node + its sub-tree (same stacking as the diagram itself, so nested
+   levels look like the top level) */
+.org-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* optional profile image / person name inside a node */
+.org-node--rich {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.org-node__img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.org-node__person {
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+/* optional image on a timeline entry */
+.timeline__image {
+  display: block;
+  max-width: min(100%, 420px);
+  height: auto;
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
 .stat-row {
   display: flex;
   gap: 1px;

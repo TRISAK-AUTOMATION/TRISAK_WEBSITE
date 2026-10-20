@@ -3,6 +3,7 @@ import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
+import { AdminHistoryTabs } from "../../components/HistoryAdmin.jsx";
 
 const FIELD_SUFFIXES = [
   "hero_meta",
@@ -72,7 +73,8 @@ export default function AdminAboutEditor() {
     <form onSubmit={handleSubmit}>
       <AdminBreadcrumb items={[{ label: "ประวัติบริษัท (History)" }]} />
 
-      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
+      <div className="admin-edit-tabbar">
+        <AdminHistoryTabs />
         <div className="admin-edit-tabbar__actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>
             💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
@@ -86,7 +88,7 @@ export default function AdminAboutEditor() {
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าประวัติบริษัท (History) ในเวอร์ชัน{" "}
         <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — เลือกภาษาจากเมนูด้านข้างเพื่อแก้อีกภาษา
-        ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก" ส่วนไทม์ไลน์ / สถิติ / โครงสร้างองค์กรของหน้านี้ยังไม่รองรับการแก้ไขในระบบนี้
+        ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก" ส่วนไทม์ไลน์ / สถิติ / โครงสร้างองค์กรแก้ไขได้จากแท็บด้านบน
       </div>
 
       <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>

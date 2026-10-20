@@ -25,7 +25,7 @@ export async function logout(req, res) {
 // Full CRUD + status toggle + reorder, to back the dedicated admin list
 // and edit pages for each entity.
 
-async function reorderRow(table, id, direction, scopeColumns = []) {
+export async function reorderRow(table, id, direction, scopeColumns = []) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -72,7 +72,7 @@ async function reorderRow(table, id, direction, scopeColumns = []) {
   }
 }
 
-function parseDirection(req, res) {
+export function parseDirection(req, res) {
   const { direction } = req.body || {};
   if (direction !== "up" && direction !== "down") {
     res.status(400).json({ error: "direction must be 'up' or 'down'" });

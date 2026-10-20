@@ -96,6 +96,7 @@ import {
   getAutomationSolutionContent,
   updateAutomationSolutionContent,
 } from "../controllers/pageContentController.js";
+import { timelineAdmin, statsAdmin, orgAdmin } from "../controllers/historyContentController.js";
 
 const router = Router();
 
@@ -130,6 +131,22 @@ router.put("/admin/popup", updatePopupSettings);
 
 router.get("/admin/about-content", getAboutContent);
 router.put("/admin/about-content", updateAboutContent);
+
+// History page sections (Timeline / Statistics / Organization Structure)
+for (const [segment, h] of [
+  ["timeline", timelineAdmin],
+  ["statistics", statsAdmin],
+  ["organization", orgAdmin],
+]) {
+  const base = `/admin/history/${segment}`;
+  router.get(base, h.list);
+  router.post(base, h.create);
+  router.get(`${base}/:id`, h.get);
+  router.put(`${base}/:id`, h.update);
+  router.patch(`${base}/:id/status`, h.toggleStatus);
+  router.post(`${base}/:id/reorder`, h.reorder);
+  router.delete(`${base}/:id`, h.remove);
+}
 
 router.get("/admin/products-page-content", getProductsPageContent);
 router.put("/admin/products-page-content", updateProductsPageContent);

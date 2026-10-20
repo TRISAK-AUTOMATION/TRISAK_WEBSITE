@@ -6,6 +6,9 @@
 
 DROP TABLE IF EXISTS activity_log CASCADE;
 DROP TABLE IF EXISTS popup_settings CASCADE;
+DROP TABLE IF EXISTS history_org_nodes CASCADE;
+DROP TABLE IF EXISTS history_stats CASCADE;
+DROP TABLE IF EXISTS history_timeline CASCADE;
 DROP TABLE IF EXISTS about_content CASCADE;
 DROP TABLE IF EXISTS products_page_content CASCADE;
 DROP TABLE IF EXISTS contacts_page_content CASCADE;
@@ -212,6 +215,59 @@ CREATE TABLE home_content (
   cta_title_line2_th     VARCHAR(255),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- history_timeline / history_stats / history_org_nodes — the History
+-- page's Timeline, Statistics and Organization Structure sections.
+-- Managed from Admin > Edit > History (tabs). Each row has _en/_th
+-- text, an is_active flag and a sort_order; org nodes use parent_id
+-- to form the chart (NULL = top level).
+-- ============================================================
+CREATE TABLE history_timeline (
+  id              SERIAL PRIMARY KEY,
+  year_en         VARCHAR(100) NOT NULL,
+  year_th         VARCHAR(100),
+  title_en        VARCHAR(255) NOT NULL,
+  title_th        VARCHAR(255),
+  description_en  TEXT,
+  description_th  TEXT,
+  image_url       VARCHAR(255),
+  is_active       BOOLEAN NOT NULL DEFAULT true,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE history_stats (
+  id          SERIAL PRIMARY KEY,
+  label_en    VARCHAR(150) NOT NULL,
+  label_th    VARCHAR(150),
+  value       VARCHAR(50) NOT NULL,
+  unit_en     VARCHAR(30),
+  unit_th     VARCHAR(30),
+  is_active   BOOLEAN NOT NULL DEFAULT true,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- parent_id NULL = top-level node. ON DELETE RESTRICT: a node that still
+-- has children can't be removed by accident (the admin API also checks).
+CREATE TABLE history_org_nodes (
+  id          SERIAL PRIMARY KEY,
+  parent_id   INTEGER REFERENCES history_org_nodes(id) ON DELETE RESTRICT,
+  name_en     VARCHAR(150) NOT NULL,
+  name_th     VARCHAR(150),
+  person_en   VARCHAR(150),
+  person_th   VARCHAR(150),
+  image_url   VARCHAR(255),
+  is_active   BOOLEAN NOT NULL DEFAULT true,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_history_org_nodes_parent ON history_org_nodes(parent_id);
 
 -- ============================================================
 -- about_content / products_page_content / contacts_page_content —
@@ -597,3 +653,47 @@ SELECT a.id, b.id
 FROM products a, products b
 WHERE a.slug = 'omron-nx1p2'
   AND b.slug IN ('omron-nx102', 'omron-nx701', 'omron-nx-ecc201', 'omron-nx-ad2203');
+
+-- History page: built-in content, so the public page looks unchanged on a fresh install.
+INSERT INTO history_timeline (year_en, year_th, title_en, title_th, description_en, description_th, sort_order)
+SELECT * FROM (VALUES
+  ('Founding', 'ก่อตั้ง',
+   'TRISAK GROUP established', 'ก่อตั้ง TRISAK GROUP',
+   'Founded as an authorized distributor of industrial automation products, serving Thailand''s manufacturing sector.',
+   'ก่อตั้งขึ้นในฐานะตัวแทนจำหน่ายสินค้าออโตเมชันทางอุตสาหกรรม ให้บริการภาคการผลิตของประเทศไทย', 1),
+  ('Expansion', 'ขยายธุรกิจ',
+   'Engineering solutions division launched', 'เปิดฝ่ายโซลูชันด้านวิศวกรรม',
+   'Grew beyond distribution into system design, integration, and commissioning services.',
+   'ขยายธุรกิจจากการจำหน่ายสินค้า สู่บริการออกแบบระบบ ติดตั้ง และทดสอบระบบ', 2),
+  ('Partnership', 'พันธมิตร',
+   'Authorized partnerships with OMRON, YASKAWA, NITTO', 'ได้รับการแต่งตั้งเป็นตัวแทนจำหน่ายจาก OMRON, YASKAWA, NITTO',
+   'Formalized as an authorized distributor for leading global automation brands.',
+   'ได้รับการรับรองอย่างเป็นทางการในฐานะตัวแทนจำหน่ายแบรนด์ออโตเมชันชั้นนำระดับโลก', 3),
+  ('Today', 'ปัจจุบัน',
+   'One-stop automation partner', 'พันธมิตรด้านระบบอัตโนมัติแบบครบวงจร',
+   'Combining authorized distribution, engineering solutions, and technical support under one roof.',
+   'ผนวกรวมการจำหน่ายสินค้า โซลูชันด้านวิศวกรรม และการสนับสนุนด้านเทคนิคไว้ในที่เดียว', 4)
+) AS v(year_en, year_th, title_en, title_th, description_en, description_th, sort_order);
+
+INSERT INTO history_stats (label_en, label_th, value, sort_order)
+SELECT * FROM (VALUES
+  ('Authorized Brands', 'แบรนด์ที่ได้รับการแต่งตั้ง', '3', 1),
+  ('Solution Pillars', 'กลุ่มโซลูชันหลัก', '4', 2),
+  ('Industries Served', 'กลุ่มอุตสาหกรรมที่ให้บริการ', '8', 3)
+) AS v(label_en, label_th, value, sort_order);
+
+DO $$
+DECLARE
+  root_id INTEGER;
+BEGIN
+  IF TRUE THEN
+    INSERT INTO history_org_nodes (parent_id, name_en, name_th, sort_order)
+    VALUES (NULL, 'TRISAK GROUP', 'TRISAK GROUP', 1)
+    RETURNING id INTO root_id;
+
+    INSERT INTO history_org_nodes (parent_id, name_en, name_th, sort_order) VALUES
+      (root_id, 'Products Distribution', 'ฝ่ายจำหน่ายสินค้า', 1),
+      (root_id, 'Engineering Solutions', 'ฝ่ายโซลูชันวิศวกรรม', 2),
+      (root_id, 'Technical Support', 'ฝ่ายสนับสนุนด้านเทคนิค', 3);
+  END IF;
+END $$;

@@ -116,6 +116,7 @@ export const api = {
   getMenu: () => request("/menu"),
   getActivePopup: () => request("/popups/active"),
   getAboutContent: () => request("/about-content"),
+  getHistoryContent: () => request("/history-content"),
   getProductsPageContent: () => request("/products-page-content"),
   getContactsPageContent: () => request("/contacts-page-content"),
   getFooterContent: () => request("/footer-content"),
@@ -344,6 +345,26 @@ export const api = {
   adminGetPopupSettings: () => authRequest("/admin/popup"),
   adminUpdatePopupSettings: (payload) =>
     authRequest("/admin/popup", { method: "PUT", body: JSON.stringify(payload) }),
+
+  // ---- History page sections (Timeline / Statistics / Organization) ----
+  adminGetHistoryItems: (section) => authRequest(`/admin/history/${section}`),
+  adminGetHistoryItem: (section, id) => authRequest(`/admin/history/${section}/${id}`),
+  adminCreateHistoryItem: (section, payload) =>
+    authRequest(`/admin/history/${section}`, { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateHistoryItem: (section, id, payload) =>
+    authRequest(`/admin/history/${section}/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleHistoryItemStatus: (section, id, isActive) =>
+    authRequest(`/admin/history/${section}/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminReorderHistoryItem: (section, id, direction) =>
+    authRequest(`/admin/history/${section}/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
+  adminDeleteHistoryItem: (section, id) =>
+    authRequest(`/admin/history/${section}/${id}`, { method: "DELETE" }),
 
   adminGetAboutContent: () => authRequest("/admin/about-content"),
   adminUpdateAboutContent: (payload) =>
