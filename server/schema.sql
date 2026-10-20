@@ -389,6 +389,7 @@ CREATE TABLE site_settings (
   header_logo_url   VARCHAR(255),
   footer_logo_url   VARCHAR(255),
   favicon_url       VARCHAR(255),
+  header_visible    BOOLEAN NOT NULL DEFAULT TRUE,
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

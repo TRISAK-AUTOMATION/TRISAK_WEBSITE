@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
+import { useSiteSettings } from "./contexts/SiteSettingsContext.jsx";
 import AdminGuard from "./components/AdminGuard.jsx";
 import AdminLayout from "./components/AdminLayout.jsx";
 import PopupModal from "./components/PopupModal.jsx";
@@ -59,11 +60,15 @@ function ScrollToTop() {
 export default function App() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith("/admin");
+  const siteSettings = useSiteSettings();
+  // Show the Header unless an admin has explicitly turned it off. While
+  // settings are loading (or failed to load) we keep the Header visible.
+  const showHeader = !isAdmin && siteSettings?.header_visible !== false;
 
   return (
-    <div className="page-shell">
+    <div className={`page-shell${!isAdmin && !showHeader ? " page-shell--no-header" : ""}`}>
       <ScrollToTop />
-      {!isAdmin && <Header />}
+      {showHeader && <Header />}
       {!isAdmin && <PopupModal />}
       <Routes>
         <Route path="/" element={<Home />} />

@@ -110,6 +110,12 @@ button {
   min-height: 100vh;
 }
 
+/* Header hidden from Admin > Settings > Website: release the space the
+   fixed header would have occupied. */
+.page-shell--no-header {
+  padding-top: 0;
+}
+
 section {
   position: relative;
 }

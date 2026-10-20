@@ -5,7 +5,7 @@ import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 function emptyForm() {
-  return { header_logo_url: "", footer_logo_url: "", favicon_url: "" };
+  return { header_logo_url: "", footer_logo_url: "", favicon_url: "", header_visible: true };
 }
 
 export default function AdminSiteSettings() {
@@ -67,6 +67,25 @@ export default function AdminSiteSettings() {
       {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-form">
+        <div className="admin-form__section panel">
+          <h3>Header — การแสดงผล</h3>
+          <p className="admin-form__hint">
+            เปิดเพื่อแสดง Header (โลโก้ เมนู และปุ่มต่างๆ) ในทุกหน้าของเว็บไซต์ ปิดเพื่อซ่อน Header ทั้งหมด
+            โดยไม่กระทบเนื้อหาหน้าและ Footer
+          </p>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={form.header_visible !== false}
+              onChange={(e) => update("header_visible", e.target.checked)}
+            />
+            <span className="admin-toggle__track">
+              <span className="admin-toggle__thumb" />
+            </span>
+            {form.header_visible !== false ? "เปิด — แสดง Header" : "ปิด — ซ่อน Header"}
+          </label>
+        </div>
+
         <div className="admin-form__section panel">
           <h3>Header — โลโก้ส่วนหัว</h3>
           <p className="admin-form__hint">
