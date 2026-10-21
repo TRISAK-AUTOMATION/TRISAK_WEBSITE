@@ -42,7 +42,7 @@ export default function Contacts() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel index="01" eyebrow={cc("info_eyebrow", t("contacts.infoEyebrow"))} title={cc("info_title", t("contacts.infoTitle"))} />
+          <SectionLabel eyebrow={cc("info_eyebrow", t("contacts.infoEyebrow"))} title={cc("info_title", t("contacts.infoTitle"))} />
           <div className="contacts-layout">
             <div className="panel">
               <div className="contact-info-block">
@@ -88,7 +88,7 @@ export default function Contacts() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel index="02" eyebrow={cc("map_eyebrow", t("contacts.mapEyebrow"))} title={cc("map_title", t("contacts.mapTitle"))} />
+          <SectionLabel eyebrow={cc("map_eyebrow", t("contacts.mapEyebrow"))} title={cc("map_title", t("contacts.mapTitle"))} />
           <div className="map-frame">
             <span className="map-frame__pin" style={{ top: "38%", left: "42%" }}>
               {cc("head_office_label", t("contacts.headOffice"))}

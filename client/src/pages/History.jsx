@@ -120,7 +120,6 @@ export default function History() {
       <section className="section">
         <div className="container">
           <SectionLabel
-            index="01"
             eyebrow={ac("intro_eyebrow", t("history.introEyebrow"))}
             title={ac("intro_title", t("history.introTitle"))}
             lede={ac("intro_lede", t("history.introLede"))}
@@ -133,7 +132,7 @@ export default function History() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel index="02" eyebrow={t("history.timelineEyebrow")} title={t("history.timelineTitle")} />
+          <SectionLabel eyebrow={t("history.timelineEyebrow")} title={t("history.timelineTitle")} />
           <div className="timeline">
             {timeline.map((m) => (
               <div className="timeline__item" key={m.id}>
@@ -149,7 +148,7 @@ export default function History() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel index="03" eyebrow={t("history.statsEyebrow")} title={t("history.statsTitle")} />
+          <SectionLabel eyebrow={t("history.statsEyebrow")} title={t("history.statsTitle")} />
           <div className="stat-row">
             {stats.map((s) => (
               <div className="stat-cell" key={s.id}>
@@ -166,7 +165,7 @@ export default function History() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel index="04" eyebrow={t("history.structureEyebrow")} title={t("history.structureTitle")} />
+          <SectionLabel eyebrow={t("history.structureEyebrow")} title={t("history.structureTitle")} />
           {orgRoots.length > 0 && (
             <div className="org-diagram panel">
               {orgRoots.length === 1 ? (
@@ -186,7 +185,6 @@ export default function History() {
       <section className="section">
         <div className="container">
           <SectionLabel
-            index="05"
             eyebrow={t("history.experienceEyebrow")}
             title={t("history.experienceTitle")}
             lede={t("history.experienceLede")}

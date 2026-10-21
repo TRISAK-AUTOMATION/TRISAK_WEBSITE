@@ -131,7 +131,6 @@ export default function Home() {
       <section className="section strength-grid">
         <div className="container">
           <SectionLabel
-            index="01"
             eyebrow={hc("strength_eyebrow", t("home.strengthEyebrow"))}
             title={hc("strength_title", t("home.strengthTitle"))}
           />
@@ -153,7 +152,7 @@ export default function Home() {
       {/* 03 — PRODUCTS */}
       <section className="section">
         <div className="container">
-          <SectionLabel index="02" eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
+          <SectionLabel eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
           <div className="brand-strip">
             {(brands || BRANDS.map((name) => ({ id: name, name, logo_url: null }))).map((b) => (
               <span className="brand-strip__item" key={b.id}>
@@ -184,7 +183,6 @@ export default function Home() {
       <section className="section">
         <div className="container">
           <SectionLabel
-            index="03"
             eyebrow={t("home.solutionsEyebrow")}
             title={t("home.solutionsTitle")}
             lede={t("home.solutionsLede")}
@@ -203,7 +201,7 @@ export default function Home() {
       {/* 05 — INDUSTRIES */}
       <section className="section industries-section">
         <div className="container">
-          <SectionLabel index="04" eyebrow={t("home.industriesEyebrow")} title={t("home.industriesTitle")} />
+          <SectionLabel eyebrow={t("home.industriesEyebrow")} title={t("home.industriesTitle")} />
           <IndustriesSlider
             industries={
               // each slide now carries both languages (name/nameTh,

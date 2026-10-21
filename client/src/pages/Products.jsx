@@ -98,7 +98,7 @@ export default function Products() {
       {/* Featured products */}
       <section className="section">
         <div className="container">
-          <SectionLabel index="01" eyebrow={t("catalog.featuredProducts")} title={t("catalog.featuredProducts")} />
+          <SectionLabel eyebrow={t("catalog.featuredProducts")} title={t("catalog.featuredProducts")} />
           {loading && <p className="empty-state">{t("catalog.loading")}</p>}
           {!loading && featured.length === 0 && <p className="empty-state">{t("catalog.noResults")}</p>}
           {!loading && featured.length > 0 && (
@@ -122,7 +122,7 @@ export default function Products() {
       {/* Brands */}
       <section className="section">
         <div className="container">
-          <SectionLabel index="02" eyebrow={t("products.brandsEyebrow")} title={t("catalog.browseByBrand")} />
+          <SectionLabel eyebrow={t("products.brandsEyebrow")} title={t("catalog.browseByBrand")} />
           <div className="brand-strip">
             {brands.map((b) => (
               <Link className="brand-strip__name" key={b.slug} to={`/products/brand/${b.slug}`}>
@@ -136,7 +136,7 @@ export default function Products() {
       {/* Categories */}
       <section className="section">
         <div className="container">
-          <SectionLabel index="03" eyebrow={t("products.categoriesEyebrow")} title={t("catalog.browseByCategory")} />
+          <SectionLabel eyebrow={t("products.categoriesEyebrow")} title={t("catalog.browseByCategory")} />
           <div className="category-grid">
             {categories.map((c) => (
               <Link key={c.slug} className="category-cell" to={`/products/category/${c.slug}`}>

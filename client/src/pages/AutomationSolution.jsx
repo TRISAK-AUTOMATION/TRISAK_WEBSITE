@@ -107,7 +107,6 @@ export default function AutomationSolution() {
       <section className="section">
         <div className="container">
           <SectionLabel
-            index="05"
             eyebrow={t("automationSolution.processEyebrow")}
             title={t("automationSolution.processTitle")}
             lede={t("automationSolution.processLede")}
