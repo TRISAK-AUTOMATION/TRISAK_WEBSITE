@@ -32,13 +32,12 @@ export default function AutomationSolution() {
     return value || fallback;
   };
 
-  // Solution block text (name/summary/services/benefits) is managed
-  // from Admin Sidebar > Edit > Automation Solution and is
-  // single-language (like Brand/Category/Series names elsewhere),
-  // so it doesn't change with the EN/TH toggle once edited. Falls
-  // back to the fully-translated static list until an admin adds
-  // at least one block from the DB.
+  // Existing blocks retain their canonical content. When Thai content has
+  // been entered in the admin editor, use it for the Thai public view and
+  // gracefully fall back to canonical content for legacy blocks.
   const solutions = dbSolutions || staticSolutions;
+  const solutionText = (solution, field) =>
+    lang === "th" ? solution[`${field}_th`] || solution[field] : solution[field];
 
   return (
     <>
@@ -78,13 +77,13 @@ export default function AutomationSolution() {
                 <span className="solution-block__num">
                   {t("automationSolution.solutionLabel")} 0{i + 1}
                 </span>
-                <h2>{s.name}</h2>
-                <p className="solution-block__summary">{s.summary}</p>
+                <h2>{solutionText(s, "name")}</h2>
+                <p className="solution-block__summary">{solutionText(s, "summary")}</p>
                 <div className="solution-block__lists">
                   <div>
                     <h4>{t("automationSolution.servicesLabel")}</h4>
                     <ul>
-                      {(s.services || []).map((item) => (
+                      {(solutionText(s, "services") || []).map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
@@ -92,7 +91,7 @@ export default function AutomationSolution() {
                   <div>
                     <h4>{t("automationSolution.benefitsLabel")}</h4>
                     <ul>
-                      {(s.benefits || []).map((item) => (
+                      {(solutionText(s, "benefits") || []).map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>

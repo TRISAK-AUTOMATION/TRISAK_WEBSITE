@@ -836,6 +836,10 @@ export async function createSolution(req, res) {
     summary = null,
     services = [],
     benefits = [],
+    nameTh = null,
+    summaryTh = null,
+    servicesTh = [],
+    benefitsTh = [],
     imageUrl = null,
     imagePositionX = 50,
     imagePositionY = 50,
@@ -845,14 +849,18 @@ export async function createSolution(req, res) {
     const slug = await uniqueSolutionSlug(name);
     const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM solutions");
     const { rows } = await pool.query(
-      `INSERT INTO solutions (name, slug, summary, services, benefits, image_url, image_position_x, image_position_y, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      `INSERT INTO solutions (name, slug, summary, services, benefits, name_th, summary_th, services_th, benefits_th, image_url, image_position_x, image_position_y, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
         name.trim(),
         slug,
         summary,
         services,
         benefits,
+        nameTh,
+        summaryTh,
+        servicesTh,
+        benefitsTh,
         imageUrl,
         clampPosition(imagePositionX),
         clampPosition(imagePositionY),
@@ -874,6 +882,10 @@ export async function updateSolution(req, res) {
     summary = null,
     services = [],
     benefits = [],
+    nameTh = null,
+    summaryTh = null,
+    servicesTh = [],
+    benefitsTh = [],
     imageUrl = null,
     imagePositionX = 50,
     imagePositionY = 50,
@@ -881,14 +893,18 @@ export async function updateSolution(req, res) {
   if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
   try {
     const { rows } = await pool.query(
-      `UPDATE solutions SET name = $1, summary = $2, services = $3, benefits = $4, image_url = $5,
-         image_position_x = $6, image_position_y = $7
-       WHERE id = $8 RETURNING *`,
+      `UPDATE solutions SET name = $1, summary = $2, services = $3, benefits = $4, name_th = $5, summary_th = $6,
+         services_th = $7, benefits_th = $8, image_url = $9, image_position_x = $10, image_position_y = $11
+       WHERE id = $12 RETURNING *`,
       [
         name.trim(),
         summary,
         services,
         benefits,
+        nameTh,
+        summaryTh,
+        servicesTh,
+        benefitsTh,
         imageUrl,
         clampPosition(imagePositionX),
         clampPosition(imagePositionY),

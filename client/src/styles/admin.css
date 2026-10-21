@@ -1863,6 +1863,35 @@
   margin: 4px 0 0;
 }
 
+.admin-solution-block-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-solution-block-order {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.admin-solution-block-editor {
+  padding: 4px 0 18px;
+}
+
+@media (max-width: 640px) {
+  .admin-solution-block-row {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .admin-solution-block-row .admin-row-actions {
+    flex-direction: column;
+  }
+}
+
 /* Language/status sidebar layout for edit pages without their own main panel */
 .admin-edit-content {
   min-width: 0;
