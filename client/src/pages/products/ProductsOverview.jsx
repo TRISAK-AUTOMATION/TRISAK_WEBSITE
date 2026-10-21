@@ -49,6 +49,7 @@ export default function ProductsOverview() {
   };
 
   const hasActiveFilters = filters.brand || filters.category || filters.q;
+  const heroBgImage = pageContent?.hero_bg_image || "";
 
   useEffect(() => {
     if (!hasActiveFilters) {
@@ -65,7 +66,13 @@ export default function ProductsOverview() {
 
   return (
     <>
-      <section className="hero hero--compact">
+      <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
           <span className="hero__meta">{pc("hero_meta", t("products.heroMeta"))}</span>

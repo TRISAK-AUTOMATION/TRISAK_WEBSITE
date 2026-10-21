@@ -36,12 +36,19 @@ export default function AutomationSolution() {
   // been entered in the admin editor, use it for the Thai public view and
   // gracefully fall back to canonical content for legacy blocks.
   const solutions = dbSolutions || staticSolutions;
+  const heroBgImage = heroContent?.hero_bg_image || "";
   const solutionText = (solution, field) =>
     lang === "th" ? solution[`${field}_th`] || solution[field] : solution[field];
 
   return (
     <>
-      <section className="hero hero--compact">
+      <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
           <span className="hero__meta">{hc("hero_meta", t("automationSolution.heroMeta"))}</span>

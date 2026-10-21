@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
+import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 const BILINGUAL_SUFFIXES = [
@@ -21,7 +22,7 @@ const BILINGUAL_SUFFIXES = [
 const PLAIN_FIELDS = ["head_office_phone", "head_office_email", "warehouse_phone", "warehouse_email"];
 
 function emptyForm() {
-  const form = {};
+  const form = { hero_bg_image: "" };
   for (const base of BILINGUAL_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -116,6 +117,16 @@ export default function AdminContactsPageEditor() {
             <label className="contact-form__field" style={{ marginTop: 20 }}>
               <span>คำอธิบายใต้หัวข้อ</span>
               <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
+            </label>
+            <label className="contact-form__field" style={{ marginTop: 20 }}>
+              <span>Hero background image (Contacts page only — optional)</span>
+              <ImageUploadField
+                value={form.hero_bg_image}
+                onChange={(url) => {
+                  setSuccess(false);
+                  setForm((f) => ({ ...f, hero_bg_image: url }));
+                }}
+              />
             </label>
           </div>
 

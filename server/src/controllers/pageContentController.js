@@ -69,6 +69,7 @@ const PRODUCTS_PAGE_FIELDS = [
   "hero_meta_en", "hero_meta_th",
   "hero_title_en", "hero_title_th",
   "hero_sub_en", "hero_sub_th",
+  "hero_bg_image",
   "brands_eyebrow_en", "brands_eyebrow_th",
   "categories_eyebrow_en", "categories_eyebrow_th",
   "cta_title_en", "cta_title_th",
@@ -100,6 +101,7 @@ const CONTACTS_PAGE_FIELDS = [
   "hero_meta_en", "hero_meta_th",
   "hero_title_en", "hero_title_th",
   "hero_sub_en", "hero_sub_th",
+  "hero_bg_image",
   "info_eyebrow_en", "info_eyebrow_th",
   "info_title_en", "info_title_th",
   "head_office_label_en", "head_office_label_th",
@@ -166,6 +168,7 @@ const AUTOMATION_SOLUTION_FIELDS = [
   "hero_meta_en", "hero_meta_th",
   "hero_title_en", "hero_title_th",
   "hero_sub_en", "hero_sub_th",
+  "hero_bg_image",
 ];
 
 export async function getAutomationSolutionContent(req, res) {

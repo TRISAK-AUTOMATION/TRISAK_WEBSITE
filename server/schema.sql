@@ -302,6 +302,7 @@ CREATE TABLE products_page_content (
   hero_title_th         VARCHAR(255),
   hero_sub_en           TEXT,
   hero_sub_th           TEXT,
+  hero_bg_image         VARCHAR(255),
   brands_eyebrow_en     VARCHAR(255),
   brands_eyebrow_th     VARCHAR(255),
   categories_eyebrow_en VARCHAR(255),
@@ -319,6 +320,7 @@ CREATE TABLE contacts_page_content (
   hero_title_th           VARCHAR(255),
   hero_sub_en             TEXT,
   hero_sub_th             TEXT,
+  hero_bg_image           VARCHAR(255),
   info_eyebrow_en         VARCHAR(255),
   info_eyebrow_th         VARCHAR(255),
   info_title_en           VARCHAR(255),
@@ -374,6 +376,7 @@ CREATE TABLE automation_solution_page_content (
   hero_title_th  VARCHAR(255),
   hero_sub_en    TEXT,
   hero_sub_th    TEXT,
+  hero_bg_image  VARCHAR(255),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

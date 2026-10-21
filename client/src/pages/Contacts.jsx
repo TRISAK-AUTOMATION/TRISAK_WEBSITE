@@ -28,10 +28,17 @@ export default function Contacts() {
 
   const headOfficeAddress = cc("head_office_address", t("contacts.headOfficeAddress"));
   const warehouseAddress = cc("warehouse_address", t("contacts.warehouseAddress"));
+  const heroBgImage = pageContent?.hero_bg_image || "";
 
   return (
     <>
-      <section className="hero hero--compact">
+      <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
           <span className="hero__meta">{cc("hero_meta", t("contacts.heroMeta"))}</span>
