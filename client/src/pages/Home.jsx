@@ -6,6 +6,18 @@ import SignalLine from "../components/SignalLine.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
 import { translations } from "../i18n/translations.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import trisakLogo from "../assets/logos/trisak.png";
+import faccoLogo from "../assets/logos/facco.png";
+import htcLogo from "../assets/logos/htc.png";
+
+// Company logos for the three "Our Strength" cards (same order as the cards).
+// Heights are tuned per logo so all three have the same visual size (equal
+// area) even though their aspect ratios differ.
+const GROUP_LOGOS = [
+  { src: trisakLogo, height: 45 },
+  { src: faccoLogo, height: 48 },
+  { src: htcLogo, height: 66 },
+];
 
 const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -140,8 +152,18 @@ export default function Home() {
           <div className="grid cols-3">
             {strengths.map((s, i) => (
               <div className="grid-cell strength-block" key={i}>
-                <span className="strength-block__index">0{i + 1}</span>
-                <h3>{s.title}</h3>
+                {GROUP_LOGOS[i] ? (
+                  <div className="strength-block__logo-wrap">
+                    <img
+                      className="strength-block__logo"
+                      src={GROUP_LOGOS[i].src}
+                      alt={s.title}
+                      style={{ height: GROUP_LOGOS[i].height }}
+                    />
+                  </div>
+                ) : (
+                  <h3>{s.title}</h3>
+                )}
                 <p>{s.body}</p>
               </div>
             ))}

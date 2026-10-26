@@ -146,6 +146,28 @@
   font-size: 14.5px;
 }
 
+/* Company logo in place of the heading: centered in the card, grows a
+   little on hover. */
+.strength-block__logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+}
+
+.strength-block__logo {
+  display: block;
+  width: auto;
+  max-width: 85%;
+  object-fit: contain;
+  transition: transform 0.25s ease;
+  cursor: pointer;
+}
+
+.strength-block__logo:hover {
+  transform: scale(1.12);
+}
+
 .strength-signal {
   display: none;
 }
