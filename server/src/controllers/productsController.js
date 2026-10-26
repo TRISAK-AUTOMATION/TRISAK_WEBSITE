@@ -221,7 +221,7 @@ const PRODUCT_LIST_SELECT = `
 `;
 
 export async function listProducts(req, res) {
-  const { brand, category, categoryId, series, q } = req.query;
+  const { brand, category, categoryId, series, q, sort, limit } = req.query;
   const conditions = ["b.is_active = true", "c.is_active = true", "(s.id IS NULL OR s.is_active = true)"];
   const values = [];
   let query = PRODUCT_LIST_SELECT;
@@ -246,7 +246,13 @@ export async function listProducts(req, res) {
     conditions.push(`(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length})`);
   }
   query += " WHERE " + conditions.join(" AND ");
-  query += " ORDER BY p.sort_order, p.name";
+  // sort=newest → most recently added first (opt-in; default order unchanged)
+  query += sort === "newest" ? " ORDER BY p.created_at DESC, p.id DESC" : " ORDER BY p.sort_order, p.name";
+  const maxRows = Number.parseInt(limit, 10);
+  if (Number.isInteger(maxRows) && maxRows > 0) {
+    values.push(Math.min(maxRows, 100));
+    query += ` LIMIT $${values.length}`;
+  }
 
   try {
     const { rows } = await pool.query(query, values);

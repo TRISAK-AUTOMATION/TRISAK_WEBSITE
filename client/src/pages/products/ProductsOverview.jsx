@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import ProductCard from "../../components/ProductCard.jsx";
+import LatestProductsCarousel from "../../components/LatestProductsCarousel.jsx";
 import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
 import CategoryTileGrid from "../../components/CategoryTileGrid.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
@@ -11,7 +12,6 @@ export default function ProductsOverview() {
   const { t, lang } = useLanguage();
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [featured, setFeatured] = useState([]);
   const [results, setResults] = useState(null); // null = not searching yet
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ brand: "", category: "", q: "" });
@@ -32,7 +32,6 @@ export default function ProductsOverview() {
   useEffect(() => {
     api.getBrands().then(setBrands).catch(() => setBrands([]));
     api.getCategories().then(setCategories).catch(() => setCategories([]));
-    api.getFeaturedProducts().then(setFeatured).catch(() => setFeatured([]));
     api
       .getProductsPageContent()
       .then(setPageContent)
@@ -140,20 +139,7 @@ export default function ProductsOverview() {
         </section>
       ) : (
         <>
-          {featured.length > 0 && (
-            <section className="section">
-              <div className="container">
-                <div className="section-head-row">
-                  <SectionLabel eyebrow={t("products.featuredEyebrow")} title={t("products.featuredTitle")} />
-                </div>
-                <div className="product-grid">
-                  {featured.map((p) => (
-                    <ProductCard product={p} key={p.id} />
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
+          <LatestProductsCarousel />
 
           <section className="section">
             <div className="container">
