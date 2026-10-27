@@ -86,7 +86,7 @@ export default function CategoryPage() {
         </div>
       </section>
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="section product-listing-section">
         <div className="container">
           {loading && <p className="empty-state">{t("products.loadingProducts")}</p>}
           {!loading && category && (

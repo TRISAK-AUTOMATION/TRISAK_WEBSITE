@@ -1493,3 +1493,9 @@
     display: block;
   }
 }
+
+/* Breathing room between the Hero and the product listing (Category and
+   Latest Products pages only). Scales smoothly across breakpoints. */
+.section.product-listing-section {
+  padding-top: clamp(40px, 6vw, 72px);
+}

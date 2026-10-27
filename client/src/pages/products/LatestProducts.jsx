@@ -37,7 +37,7 @@ export default function LatestProducts() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section product-listing-section">
         <div className="container">
           <FilterableProductListing perCategoryLimit={limit} />
         </div>
