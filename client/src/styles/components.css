@@ -29,6 +29,29 @@
   z-index: 0;
 }
 
+/* Hero background slideshow (Products page): stacked layers that
+   cross-fade. Each slide reuses .hero__bg-image for sizing. */
+.hero__bg-slideshow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero__bg-slide {
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.hero__bg-slide.is-active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__bg-slide {
+    transition: none;
+  }
+}
+
 /* Dark, bottom-weighted scrim: keeps the heading/body text (anchored
    to the bottom of the hero) readable over any photo, while letting
    more of the image show through near the top. */

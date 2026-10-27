@@ -70,10 +70,13 @@ const PRODUCTS_PAGE_FIELDS = [
   "hero_title_en", "hero_title_th",
   "hero_sub_en", "hero_sub_th",
   "hero_bg_image",
+  "hero_bg_images",
   "brands_eyebrow_en", "brands_eyebrow_th",
   "categories_eyebrow_en", "categories_eyebrow_th",
   "cta_title_en", "cta_title_th",
 ];
+
+const MAX_HERO_SLIDES = 10;
 
 export async function getProductsPageContent(req, res) {
   try {
@@ -86,7 +89,15 @@ export async function getProductsPageContent(req, res) {
 
 export async function updateProductsPageContent(req, res) {
   try {
-    const row = await upsertSingleton("products_page_content", PRODUCTS_PAGE_FIELDS, req.body || {});
+    // Slideshow: accept an ordered array of image URLs, store it as JSONB,
+    // and mirror the first slide into the legacy single-image column.
+    const body = { ...(req.body || {}) };
+    const images = (Array.isArray(body.hero_bg_images) ? body.hero_bg_images : [])
+      .filter((u) => typeof u === "string" && u.trim() && u.length <= 255)
+      .slice(0, MAX_HERO_SLIDES);
+    body.hero_bg_images = JSON.stringify(images);
+    body.hero_bg_image = images[0] || null;
+    const row = await upsertSingleton("products_page_content", PRODUCTS_PAGE_FIELDS, body);
     logActivity("products_page_updated", "อัปเดตเนื้อหาหน้าสินค้า");
     res.json(row);
   } catch (err) {

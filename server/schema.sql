@@ -303,6 +303,7 @@ CREATE TABLE products_page_content (
   hero_sub_en           TEXT,
   hero_sub_th           TEXT,
   hero_bg_image         VARCHAR(255),
+  hero_bg_images        JSONB NOT NULL DEFAULT '[]'::jsonb,
   brands_eyebrow_en     VARCHAR(255),
   brands_eyebrow_th     VARCHAR(255),
   categories_eyebrow_en VARCHAR(255),

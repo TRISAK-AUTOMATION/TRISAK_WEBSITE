@@ -6,6 +6,7 @@ import ProductCard from "../../components/ProductCard.jsx";
 import LatestProductsCarousel from "../../components/LatestProductsCarousel.jsx";
 import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
 import CategoryTileGrid from "../../components/CategoryTileGrid.jsx";
+import HeroSlideshow from "../../components/HeroSlideshow.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 export default function ProductsOverview() {
@@ -48,7 +49,13 @@ export default function ProductsOverview() {
   };
 
   const hasActiveFilters = filters.brand || filters.category || filters.q;
-  const heroBgImage = pageContent?.hero_bg_image || "";
+  // Slideshow images; falls back to the legacy single image if the list is empty.
+  const heroBgImages = Array.isArray(pageContent?.hero_bg_images) && pageContent.hero_bg_images.length
+    ? pageContent.hero_bg_images
+    : pageContent?.hero_bg_image
+      ? [pageContent.hero_bg_image]
+      : [];
+  const hasHeroBg = heroBgImages.length > 0;
 
   useEffect(() => {
     if (!hasActiveFilters) {
@@ -65,10 +72,10 @@ export default function ProductsOverview() {
 
   return (
     <>
-      <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
-        {heroBgImage && (
+      <section className={`hero hero--compact ${hasHeroBg ? "hero--has-bg" : ""}`}>
+        {hasHeroBg && (
           <>
-            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <HeroSlideshow images={heroBgImages} />
             <div className="hero__bg-scrim" aria-hidden="true" />
           </>
         )}

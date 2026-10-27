@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
-import ImageUploadField from "../../components/ImageUploadField.jsx";
+import ImageListField from "../../components/ImageListField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = [
@@ -15,7 +15,7 @@ const FIELD_SUFFIXES = [
 ];
 
 function emptyForm() {
-  const form = { hero_bg_image: "" };
+  const form = { hero_bg_images: [] };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -35,7 +35,15 @@ export default function AdminProductsPageEditor() {
     api
       .adminGetProductsPageContent()
       .then((d) => {
-        if (d) setForm((f) => ({ ...f, ...d }));
+        if (d) {
+          // Older rows only have the single hero_bg_image — show it as slide 1.
+          const images = Array.isArray(d.hero_bg_images) && d.hero_bg_images.length
+            ? d.hero_bg_images
+            : d.hero_bg_image
+              ? [d.hero_bg_image]
+              : [];
+          setForm((f) => ({ ...f, ...d, hero_bg_images: images }));
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -55,7 +63,7 @@ export default function AdminProductsPageEditor() {
     setSuccess(false);
     try {
       const updated = await api.adminUpdateProductsPageContent(form);
-      setForm((f) => ({ ...f, ...updated }));
+      setForm((f) => ({ ...f, ...updated, hero_bg_images: updated.hero_bg_images || f.hero_bg_images }));
       setSuccess(true);
     } catch (err) {
       setError(err.message);
@@ -105,16 +113,19 @@ export default function AdminProductsPageEditor() {
               <span>คำอธิบายใต้หัวข้อ</span>
               <textarea rows={3} value={value("hero_sub")} onChange={(e) => update("hero_sub", e.target.value)} />
             </label>
-            <label className="contact-form__field" style={{ marginTop: 20 }}>
-              <span>Hero background image (Products page only — optional)</span>
-              <ImageUploadField
-                value={form.hero_bg_image}
-                onChange={(url) => {
+            <div className="contact-form__field" style={{ marginTop: 20 }}>
+              <span>Hero background slideshow (Products page only — optional)</span>
+              <small style={{ display: "block", margin: "4px 0 10px", opacity: 0.7 }}>
+                อัปโหลดได้หลายรูป (สูงสุด 10) เปลี่ยนรูปอัตโนมัติทุก 3 วินาทีตามลำดับที่เห็น — ถ้ามีรูปเดียวจะแสดงรูปนิ่ง
+              </small>
+              <ImageListField
+                value={form.hero_bg_images}
+                onChange={(urls) => {
                   setSuccess(false);
-                  setForm((f) => ({ ...f, hero_bg_image: url }));
+                  setForm((f) => ({ ...f, hero_bg_images: urls }));
                 }}
               />
-            </label>
+            </div>
           </div>
 
           <div className="admin-form__section panel">

@@ -1291,3 +1291,61 @@
     top: calc(50% - 19px);
   }
 }
+
+
+/* ---- multi-image list field (Products hero slideshow admin) ---- */
+.image-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.image-list__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-list__thumb {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.image-list__order {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  min-width: 22px;
+  padding: 2px 6px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #fff;
+  background: rgba(10, 14, 32, 0.75);
+  border-radius: 4px;
+}
+
+.image-list__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.image-list__max {
+  font-size: 13px;
+  opacity: 0.7;
+}
