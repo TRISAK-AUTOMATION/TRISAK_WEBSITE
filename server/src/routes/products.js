@@ -4,6 +4,7 @@ import {
   listBrands,
   getBrand,
   listCategories,
+  listCategoryTree,
   listCategoriesForBrand,
   getCategory,
   getCategoryById,
@@ -49,6 +50,8 @@ router.get("/brands/:brandSlug", getBrand);
 router.get("/brands/:brandSlug/categories", listCategoriesForBrand);
 
 router.get("/categories", listCategories);
+// must stay above "/categories/:categorySlug"
+router.get("/categories/tree", listCategoryTree);
 router.get("/categories/id/:id", getCategoryById);
 router.get("/categories/:id/children", getCategoryChildren);
 router.get("/categories/:id/breadcrumb", getCategoryBreadcrumb);

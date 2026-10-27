@@ -95,6 +95,7 @@ export const api = {
   getCategoriesForBrand: (brandSlug) => request(`/brands/${brandSlug}/categories`),
 
   getCategories: () => request("/categories"),
+  getCategoryTree: () => request("/categories/tree"),
   getCategory: (categorySlug) => request(`/categories/${categorySlug}`),
   getCategoryById: (id) => request(`/categories/id/${id}`),
   getCategoryChildren: (id, brandSlug) => request(`/categories/${id}/children${qs({ brand: brandSlug })}`),

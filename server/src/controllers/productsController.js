@@ -40,6 +40,20 @@ export async function listCategories(req, res) {
   }
 }
 
+// Every active category with its parent_id, so the client can build the full
+// hierarchy (used by the product filter sidebar). Read-only, no products.
+export async function listCategoryTree(req, res) {
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, name, slug, parent_id, sort_order FROM categories WHERE is_active = true ORDER BY sort_order, id"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load category tree" });
+  }
+}
+
 // Top-level categories that have products (possibly via a descendant
 // subcategory) under a given brand — used to build the Brand page's
 // category picker.
@@ -212,7 +226,7 @@ export async function getSeries(req, res) {
 const PRODUCT_LIST_SELECT = `
   SELECT p.id, p.name, p.slug, p.model, p.short_description, p.image_url, p.is_new,
          b.name AS brand, b.slug AS brand_slug,
-         c.name AS category, c.slug AS category_slug,
+         c.id AS category_id, c.name AS category, c.slug AS category_slug,
          s.name AS series, s.slug AS series_slug
   FROM products p
   JOIN brands b ON b.id = p.brand_id

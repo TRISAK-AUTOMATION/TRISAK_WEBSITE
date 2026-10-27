@@ -942,84 +942,13 @@
    ========================================================= */
 .category-layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 260px minmax(0, 1fr);
   gap: 48px;
   align-items: start;
 }
 
-.category-sidebar {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  position: sticky;
-  top: 96px;
-}
-
-.category-sidebar__heading {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-panel);
-}
-
-.category-sidebar__list {
-  display: flex;
-  flex-direction: column;
-}
-
-.category-sidebar__tree {
-  display: flex;
-  flex-direction: column;
-}
-
-.category-sidebar__ancestor {
-  padding: 14px 20px;
-  font-size: 13px;
-  color: var(--text);
-  font-weight: 600;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-panel);
-}
-
-.category-sidebar__ancestor:hover {
-  color: var(--accent-signal);
-}
-
-.category-sidebar__item {
-  padding: 14px 20px;
-  font-size: 13.5px;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--line);
-  border-left: 2px solid transparent;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-.category-sidebar__item:last-child {
-  border-bottom: none;
-}
-
-.category-sidebar__item:hover {
-  background: var(--bg-panel);
-  color: var(--text);
-}
-
-.category-sidebar__item.is-active {
-  background: var(--accent-signal-dim);
-  color: var(--accent-signal);
-  border-left-color: var(--accent-signal);
-  font-weight: 600;
-}
-
 .category-main {
   min-width: 0;
-}
-
-.category-sidebar__item--child {
-  font-size: 13px;
 }
 
 /* Borderless product tiles (Category page) */
@@ -1103,9 +1032,7 @@
 @media (max-width: 860px) {
   .category-layout {
     grid-template-columns: 1fr;
-  }
-  .category-sidebar {
-    position: static;
+    gap: 32px;
   }
 }
 
@@ -1154,29 +1081,7 @@
   color: var(--accent-signal);
 }
 
-.product-tile-grid--four {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 48px 32px;
-}
-
-@media (max-width: 1100px) {
-  .product-tile-grid--four {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 800px) {
-  .product-tile-grid--four {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 40px 24px;
-  }
-}
-
 @media (max-width: 560px) {
-  .product-tile-grid--four {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
   .latest-group + .latest-group {
     margin-top: 40px;
     padding-top: 40px;
@@ -1401,4 +1306,190 @@
 .image-list__max {
   font-size: 13px;
   opacity: 0.7;
+}
+
+/* =========================================================
+   Product filter sidebar (search + categories + brands)
+   ========================================================= */
+.filter-sidebar {
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.filter-sidebar__toggle {
+  display: none;
+}
+
+.filter-sidebar__top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.filter-search {
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 11px 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+}
+
+.filter-search:focus {
+  outline: none;
+  border-color: var(--accent-signal);
+}
+
+.filter-clear {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--accent-signal);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.filter-section {
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+
+.filter-section__title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 12px;
+}
+
+.filter-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.filter-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+}
+
+.filter-tree__toggle,
+.filter-tree__spacer {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.filter-tree__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.filter-tree__toggle:hover {
+  background: var(--bg-panel);
+  color: var(--text);
+}
+
+.filter-tree__toggle svg {
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+}
+
+.filter-tree__toggle.is-open svg {
+  transform: rotate(0deg);
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--text);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.filter-check input {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent-signal);
+  cursor: pointer;
+}
+
+.filter-check span {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .filter-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .filter-sidebar__toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .filter-sidebar__badge {
+    background: var(--accent-signal);
+    color: var(--on-accent);
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 1;
+    padding: 4px 8px;
+  }
+
+  .filter-sidebar__chev {
+    margin-left: auto;
+    transition: transform 0.15s ease;
+  }
+
+  .filter-sidebar.is-open .filter-sidebar__chev {
+    transform: rotate(180deg);
+  }
+
+  .filter-sidebar__body {
+    display: none;
+    padding-top: 20px;
+  }
+
+  .filter-sidebar.is-open .filter-sidebar__body {
+    display: block;
+  }
 }

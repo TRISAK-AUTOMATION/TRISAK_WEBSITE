@@ -1,10 +1,10 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
-import ProductCard from "../../components/ProductCard.jsx";
+import FilterableProductListing from "../../components/FilterableProductListing.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
-import { categoryLevelHref, categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
+import { categoryLevelHref } from "../../utils/categoryBreadcrumb.js";
 
 export default function CategoryPage() {
   const params = useParams();
@@ -18,9 +18,6 @@ export default function CategoryPage() {
   const [brand, setBrand] = useState(null);
   const [category, setCategory] = useState(null); // current node
   const [crumb, setCrumb] = useState([]); // [{id,name,slug}, ...] root..current
-  const [siblings, setSiblings] = useState([]); // same-level categories (sidebar)
-  const [children, setChildren] = useState([]); // subcategories of current node
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -42,37 +39,15 @@ export default function CategoryPage() {
           currentId = topCat.id;
         }
 
-        const [cat, crumbChain, kids] = await Promise.all([
+        const [cat, crumbChain] = await Promise.all([
           api.getCategoryById(currentId),
           api.getCategoryBreadcrumb(currentId),
-          api.getCategoryChildren(currentId, brandSlug),
         ]);
-        if (cancelled) return;
-
-        const sibs = cat.parent_id
-          ? await api.getCategoryChildren(cat.parent_id, brandSlug)
-          : await api.getCategoriesForBrand(brandSlug);
-        if (cancelled) return;
-
-        // Products of the selected category. When it only groups
-        // subcategories (no products of its own), include theirs too so the
-        // grid is never empty just because products live one level down.
-        let prods = await api.getProducts({ brand: brandSlug, categoryId: currentId });
-        if (prods.length === 0 && kids.length > 0) {
-          const groups = await Promise.all(
-            kids.map((k) => api.getProducts({ brand: brandSlug, categoryId: k.id }))
-          );
-          const seen = new Set();
-          prods = groups.flat().filter((p) => !seen.has(p.id) && seen.add(p.id));
-        }
         if (cancelled) return;
 
         setBrand(b);
         setCategory(cat);
         setCrumb(crumbChain);
-        setChildren(kids);
-        setSiblings(sibs);
-        setProducts(prods);
       } catch {
         if (!cancelled) setNotFound(true);
       } finally {
@@ -88,18 +63,6 @@ export default function CategoryPage() {
 
   if (notFound) return <Navigate to={`/products/${brandSlug}`} replace />;
 
-  const basePath = `/products/${brandSlug}/${categorySlug}`;
-  const isTop = crumb.length <= 1;
-
-  const childHref = (childId) => {
-    const chain = [...crumb.slice(1).map((c) => c.id), childId];
-    return `${basePath}/cat/${chain.join("/")}`;
-  };
-  const siblingHref = (sib) => {
-    if (isTop) return `/products/${brandSlug}/${sib.slug}`;
-    const chain = [...crumb.slice(1, -1).map((c) => c.id), sib.id];
-    return `${basePath}/cat/${chain.join("/")}`;
-  };
   const crumbHref = (i) => categoryLevelHref(brandSlug, crumb, i);
 
   return (
@@ -124,60 +87,15 @@ export default function CategoryPage() {
       </section>
 
       <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container category-layout">
-          <aside className="category-sidebar">
-            <div className="category-sidebar__heading">{brand?.name}</div>
-            <nav className="category-sidebar__tree">
-              {crumb.slice(0, -1).map((c, i) => (
-                <Link
-                  key={c.id}
-                  to={categoryLevelHref(brandSlug, crumb, i)}
-                  className="category-sidebar__ancestor"
-                  style={{ paddingLeft: 20 + i * 18 }}
-                >
-                  {c.name}
-                </Link>
-              ))}
-              {siblings.map((s) => (
-                <Fragment key={s.id}>
-                  <Link
-                    to={siblingHref(s)}
-                    style={{ paddingLeft: 20 + Math.max(crumb.length - 1, 0) * 18 }}
-                    className={`category-sidebar__item ${s.id === category?.id ? "is-active" : ""}`}
-                  >
-                    {s.name}
-                  </Link>
-                  {s.id === category?.id &&
-                    children.map((child) => (
-                      <Link
-                        key={child.id}
-                        to={childHref(child.id)}
-                        style={{ paddingLeft: 20 + Math.max(crumb.length, 1) * 18 }}
-                        className="category-sidebar__item category-sidebar__item--child"
-                      >
-                        {child.name}
-                      </Link>
-                    ))}
-                </Fragment>
-              ))}
-            </nav>
-          </aside>
-
-          <div className="category-main">
-            {loading && <p className="empty-state">{t("products.loadingProducts")}</p>}
-
-            {!loading && products.length === 0 && (
-              <p className="empty-state">{t("products.noProductsFound")}</p>
-            )}
-
-            {!loading && products.length > 0 && (
-              <div className="product-tile-grid">
-                {products.map((p) => (
-                  <ProductCard key={p.id} product={p} variant="plain" />
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="container">
+          {loading && <p className="empty-state">{t("products.loadingProducts")}</p>}
+          {!loading && category && (
+            <FilterableProductListing
+              key={`${brandSlug}/${category.id}`}
+              initialBrandSlug={brandSlug}
+              initialCategoryId={category.id}
+            />
+          )}
         </div>
       </section>
 
