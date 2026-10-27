@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import ProductImage from "./ProductImage.jsx";
+import AvailabilityBadge from "./AvailabilityBadge.jsx";
 
 // variant="split" → horizontal card: model + short description on the left,
 // product image on the right (used by the Products page "Latest Products"
@@ -16,16 +18,17 @@ export default function ProductCard({ product, variant }) {
     return (
       <Link to={href} className="product-tile">
         <div className="product-tile__image">
-          {product.image_url ? (
-            <img src={product.image_url} alt={title} loading="lazy" draggable="false" />
-          ) : (
-            <span className="product-card__image-placeholder">{title}</span>
-          )}
+          <ProductImage src={product.image_url} alt={title} />
           {product.is_new && <span className="badge-new">NEW</span>}
         </div>
-        {product.category && <span className="product-tile__type">{product.category}</span>}
+        {(product.brand || product.category) && (
+          <span className="product-tile__type">
+            {[product.brand, product.category].filter(Boolean).join(" · ")}
+          </span>
+        )}
         <h3 className="product-tile__model">{title}</h3>
         {desc && <p className="product-tile__desc">{desc}</p>}
+        <AvailabilityBadge status={product.availability_status} />
       </Link>
     );
   }
@@ -38,13 +41,10 @@ export default function ProductCard({ product, variant }) {
         <div className="product-card-split__text">
           <h3 className="product-card-split__model">{title}</h3>
           {desc && <p className="product-card-split__desc">{desc}</p>}
+          <AvailabilityBadge status={product.availability_status} />
         </div>
         <div className="product-card-split__image">
-          {product.image_url ? (
-            <img src={product.image_url} alt={title} loading="lazy" draggable="false" />
-          ) : (
-            <span className="product-card__image-placeholder">{title}</span>
-          )}
+          <ProductImage src={product.image_url} alt={title} />
           {product.is_new && <span className="badge-new">NEW</span>}
         </div>
       </Link>
@@ -54,11 +54,7 @@ export default function ProductCard({ product, variant }) {
   return (
     <Link to={href} className="grid-cell product-card">
       <div className="product-card__image" aria-hidden="true">
-        {product.image_url ? (
-          <img src={product.image_url} alt="" />
-        ) : (
-          <span className="product-card__image-placeholder">{product.model || product.name}</span>
-        )}
+        <ProductImage src={product.image_url} />
         {product.is_new && <span className="badge-new">NEW</span>}
       </div>
       <span className="product-card__brand">{product.brand}</span>
@@ -69,6 +65,7 @@ export default function ProductCard({ product, variant }) {
           {product.model}
         </span>
       )}
+      <AvailabilityBadge status={product.availability_status} />
     </Link>
   );
 }

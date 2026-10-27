@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
+import { availabilityLabel } from "../../utils/productAvailability.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { ConfirmModal, useToast } from "../../components/AdminModal.jsx";
 import AdminProductForm from "./AdminProductForm.jsx";
@@ -201,6 +202,13 @@ export default function AdminProducts() {
                   <td>
                     {p.name} {p.is_new && <span className="admin-badge-new">NEW</span>}
                     <div className="admin-list-table__submeta">{p.model}</div>
+                    {p.availability_status && p.availability_status !== "available" && (
+                      <span
+                        className={`availability-badge availability-badge--${p.availability_status.replace(/_/g, "-")}`}
+                      >
+                        {availabilityLabel(p.availability_status)}
+                      </span>
+                    )}
                   </td>
                   <td className="admin-list-table__muted">
                     {p.brand} / {p.category}

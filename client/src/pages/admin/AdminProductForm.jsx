@@ -5,6 +5,7 @@ import ImageUploadField from "../../components/ImageUploadField.jsx";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import AdminModal, { ModalButton } from "../../components/AdminModal.jsx";
 import ProductDocumentsPanel from "../../components/ProductDocumentsPanel.jsx";
+import { AVAILABILITY_OPTIONS, REPLACEMENT_STATUSES } from "../../utils/productAvailability.js";
 
 const emptyForm = {
   name: "",
@@ -21,6 +22,9 @@ const emptyForm = {
   images: [],
   specs: [],
   relatedProductIds: [],
+  availabilityStatus: "available",
+  statusNote: "",
+  replacementProductId: "",
 };
 
 function slugify(text) {
@@ -68,6 +72,8 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const [error, setError] = useState("");
   const [loadFailed, setLoadFailed] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+  const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
+  const [replacementFilter, setReplacementFilter] = useState("");
 
   useEffect(() => {
     api.adminGetBrands().then(setBrands).catch(() => {});
@@ -96,12 +102,16 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           images: p.images?.map((i) => ({ imageUrl: i.image_url, sortOrder: i.sort_order })) || [],
           specs: p.specs?.map((s) => ({ label: s.label, value: s.value, sortOrder: s.sort_order })) || [],
           relatedProductIds: p.relatedProductIds || [],
+          availabilityStatus: p.availability_status || "available",
+          statusNote: p.status_note || "",
+          replacementProductId: p.replacement_product_id ? String(p.replacement_product_id) : "",
           // Preserve the product's existing position — otherwise saving
           // an unrelated edit would silently reset it and undo any
           // reordering done from the product list.
           sortOrder: p.sort_order ?? 0,
         };
         setForm(loaded);
+        setStatusUpdatedAt(p.status_updated_at || null);
         setInitialSnapshot(JSON.stringify(loaded));
       })
       .catch((err) => {
@@ -157,6 +167,8 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     if (!form.slug.trim()) return "Please enter a slug.";
     if (!form.brandId) return "Please select a brand.";
     if (!form.categoryId) return "Please select a category.";
+    if (form.availabilityStatus === "replacement_available" && !form.replacementProductId)
+      return "Please select the replacement product, or choose a different availability status.";
     return "";
   };
 
@@ -177,6 +189,13 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
       brandId: Number(form.brandId),
       categoryId: Number(form.categoryId),
       seriesId: form.seriesId ? Number(form.seriesId) : null,
+      // Replacement is only sent for statuses that can have one, and only
+      // when the admin picked it — nothing is inferred.
+      statusNote: form.statusNote.trim(),
+      replacementProductId:
+        REPLACEMENT_STATUSES.includes(form.availabilityStatus) && form.replacementProductId
+          ? Number(form.replacementProductId)
+          : null,
       // New product: append to the end of the current order instead of
       // defaulting to 0, which would jump it in front of every existing
       // product (and collide with whichever product already sits at 0).
@@ -201,6 +220,22 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
       setSaving(false);
     }
   };
+
+  const canHaveReplacement = REPLACEMENT_STATUSES.includes(form.availabilityStatus);
+  const filterText = replacementFilter.trim().toLowerCase();
+  const replacementChoices = allProducts.filter((p) => {
+    if (String(p.id) === String(id)) return false; // never itself
+    if (String(p.id) === form.replacementProductId) return true; // keep current pick visible
+    if (!filterText) return true;
+    return [p.model, p.name, p.brand].filter(Boolean).join(" ").toLowerCase().includes(filterText);
+  });
+
+  const handleStatusChange = (value) =>
+    setForm((f) => ({
+      ...f,
+      availabilityStatus: value,
+      replacementProductId: REPLACEMENT_STATUSES.includes(value) ? f.replacementProductId : "",
+    }));
 
   const formId = "product-edit-form";
 
@@ -320,6 +355,67 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
               <span>Mark as "NEW"</span>
             </label>
           </div>
+        </div>
+
+        <div className="admin-form__section panel">
+          <h3>Availability</h3>
+          <div className="admin-form__row">
+            <label className="contact-form__field">
+              <span>Status</span>
+              <select value={form.availabilityStatus} onChange={(e) => handleStatusChange(e.target.value)}>
+                {AVAILABILITY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="contact-form__field">
+              <span>Status note (optional)</span>
+              <input
+                maxLength={500}
+                value={form.statusNote}
+                onChange={(e) => updateField("statusNote", e.target.value)}
+                placeholder="e.g. Last-time buy until Dec 2026"
+              />
+            </label>
+          </div>
+
+          {canHaveReplacement && (
+            <div className="admin-form__row">
+              <label className="contact-form__field">
+                <span>Find replacement product</span>
+                <input
+                  value={replacementFilter}
+                  onChange={(e) => setReplacementFilter(e.target.value)}
+                  placeholder="Search model, name or brand"
+                />
+              </label>
+              <label className="contact-form__field">
+                <span>Replacement product{form.availabilityStatus === "replacement_available" ? " *" : ""}</span>
+                <select
+                  value={form.replacementProductId}
+                  onChange={(e) => updateField("replacementProductId", e.target.value)}
+                >
+                  <option value="">No replacement selected</option>
+                  {replacementChoices.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.model ? `${p.model} — ${p.name}` : p.name} ({p.brand})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
+          {isEdit && (
+            <p className="admin-list-table__muted">
+              Status last updated:{" "}
+              {statusUpdatedAt
+                ? new Date(statusUpdatedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
+                : "not recorded yet"}
+            </p>
+          )}
         </div>
 
         <div className="admin-form__section panel">

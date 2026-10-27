@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
+import ProductImage from "../../components/ProductImage.jsx";
+import AvailabilityBadge from "../../components/AvailabilityBadge.jsx";
+import { productHref } from "../../utils/productAvailability.js";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
 
@@ -77,11 +80,7 @@ export default function ProductDetail() {
         <div className="product-detail__layout">
           <div className="product-detail__gallery">
             <div className="product-detail__main-image">
-              {images[activeImage]?.image_url ? (
-                <img src={images[activeImage].image_url} alt={product.name} />
-              ) : (
-                <span className="product-detail__image-placeholder">{product.model}</span>
-              )}
+              <ProductImage src={images[activeImage]?.image_url} alt={product.name} loading="eager" />
             </div>
             {images.length > 1 && (
               <div className="product-detail__thumbs">
@@ -91,7 +90,7 @@ export default function ProductDetail() {
                     className={`product-detail__thumb ${i === activeImage ? "is-active" : ""}`}
                     onClick={() => setActiveImage(i)}
                   >
-                    {img.image_url ? <img src={img.image_url} alt="" /> : product.model}
+                    <ProductImage src={img.image_url} />
                   </button>
                 ))}
               </div>
@@ -102,7 +101,25 @@ export default function ProductDetail() {
             <span className="hero__meta">{product.brand}</span>
             <h1>{product.name}</h1>
             {product.series && <p className="product-detail__series">{product.series}</p>}
+            {product.model && (
+              <p className="product-detail__model">
+                {t("products.modelNumber")}: <strong>{product.model}</strong>
+              </p>
+            )}
             {product.short_description && <p className="lede">{product.short_description}</p>}
+
+            <div className="product-detail__status">
+              <AvailabilityBadge status={product.availability_status} />
+              {product.status_note && <p className="product-detail__status-note">{product.status_note}</p>}
+              {product.replacementProduct && (
+                <p className="product-detail__replacement">
+                  {t("products.replacementModel")}:{" "}
+                  <Link to={productHref(product.replacementProduct)}>
+                    {product.replacementProduct.model || product.replacementProduct.name}
+                  </Link>
+                </p>
+              )}
+            </div>
 
             <div className="product-detail__actions">
               <Link to="/contacts" className="btn btn-primary">
@@ -198,7 +215,7 @@ export default function ProductDetail() {
                   className="grid-cell product-card"
                 >
                   <div className="product-card__image" aria-hidden="true">
-                    <span className="product-card__image-placeholder">{rp.model || rp.name}</span>
+                    <ProductImage src={rp.image_url} />
                   </div>
                   <h3>{rp.name}</h3>
                   {rp.model && <span className="product-card__model">{rp.model}</span>}

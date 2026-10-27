@@ -141,15 +141,6 @@
   object-fit: contain;
 }
 
-.product-card__image-placeholder {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-faint);
-  letter-spacing: 0.06em;
-  text-align: center;
-  padding: 0 12px;
-}
-
 .badge-new {
   position: absolute;
   top: 10px;
@@ -359,12 +350,6 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-
-.product-detail__image-placeholder {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  color: var(--text-faint);
 }
 
 .product-detail__thumbs {
@@ -1498,4 +1483,90 @@
    Latest Products pages only). Scales smoothly across breakpoints. */
 .section.product-listing-section {
   padding-top: clamp(40px, 6vw, 72px);
+}
+
+/* =========================================================
+   Missing-image placeholder + availability status
+   ========================================================= */
+.product-image-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel);
+  color: var(--text-faint);
+}
+
+.product-image-placeholder svg {
+  max-width: 96px;
+  max-height: 96px;
+  opacity: 0.7;
+}
+
+.product-detail__main-image .product-image-placeholder {
+  min-height: 280px;
+}
+
+.availability-badge {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  background: #e8f5ec;
+  color: #1d6b3a;
+}
+
+.availability-badge--unavailable {
+  background: #fdf1dc;
+  color: #8a5a00;
+}
+
+.availability-badge--discontinued {
+  background: #eceef2;
+  color: #4a4f5c;
+}
+
+.availability-badge--replacement-available {
+  background: #e6effc;
+  color: #1f4fa3;
+}
+
+.product-detail__model {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+}
+
+.product-detail__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 28px;
+}
+
+.product-detail__status .availability-badge {
+  margin-top: 0;
+}
+
+.product-detail__status-note,
+.product-detail__replacement {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.product-detail__replacement a {
+  color: var(--accent-tech);
+  font-weight: 700;
+}
+
+.product-detail__replacement a:hover {
+  text-decoration: underline;
 }

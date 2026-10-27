@@ -225,6 +225,7 @@ export async function getSeries(req, res) {
 
 const PRODUCT_LIST_SELECT = `
   SELECT p.id, p.name, p.slug, p.model, p.short_description, p.image_url, p.is_new,
+         p.availability_status,
          b.name AS brand, b.slug AS brand_slug,
          c.id AS category_id, c.name AS category, c.slug AS category_slug,
          s.name AS series, s.slug AS series_slug
@@ -257,7 +258,10 @@ export async function listProducts(req, res) {
   }
   if (q) {
     values.push(`%${q}%`);
-    conditions.push(`(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length})`);
+    // model number, product name or brand — never filtered by image/availability
+    conditions.push(
+      `(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length} OR b.name ILIKE $${values.length})`
+    );
   }
   query += " WHERE " + conditions.join(" AND ");
   // sort=newest → most recently added first (opt-in; default order unchanged)
@@ -311,6 +315,22 @@ export async function getProductBySlug(req, res) {
     }
     const product = productRes.rows[0];
 
+    // Replacement is whatever an admin explicitly linked (never inferred).
+    let replacementProduct = null;
+    if (product.replacement_product_id) {
+      const rep = await pool.query(
+        `SELECT p.id, p.name, p.slug, p.model,
+                s.slug AS series_slug, b.slug AS brand_slug, c.slug AS category_slug
+         FROM products p
+         LEFT JOIN series s ON s.id = p.series_id
+         JOIN brands b ON b.id = p.brand_id
+         JOIN categories c ON c.id = p.category_id
+         WHERE p.id = $1`,
+        [product.replacement_product_id]
+      );
+      replacementProduct = rep.rows[0] || null;
+    }
+
     const [images, specs, documents, related] = await Promise.all([
       pool.query(
         "SELECT id, image_url, sort_order FROM product_images WHERE product_id = $1 ORDER BY sort_order",
@@ -345,6 +365,7 @@ export async function getProductBySlug(req, res) {
       specs: specs.rows,
       documents: documents.rows,
       relatedProducts: related.rows,
+      replacementProduct,
     });
   } catch (err) {
     console.error(err);

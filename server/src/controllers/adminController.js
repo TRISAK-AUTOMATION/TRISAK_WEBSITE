@@ -533,6 +533,7 @@ export async function listProductsAdmin(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT p.id, p.name, p.slug, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
+              p.availability_status, p.status_updated_at,
               b.name AS brand, c.name AS category, s.name AS series,
               EXISTS (
                 SELECT 1 FROM product_documents d
@@ -596,6 +597,7 @@ export async function getProductAdmin(req, res) {
  *   name, slug, brandId, categoryId, seriesId, model,
  *   shortDescription, description, features: string[], imageUrl,
  *   isNew, sortOrder,
+ *   availabilityStatus, statusNote, replacementProductId   (all optional)
  *   images: [{ imageUrl, sortOrder }],
  *   specs: [{ label, value, sortOrder }],
  *   relatedProductIds: number[],
@@ -603,12 +605,55 @@ export async function getProductAdmin(req, res) {
  *   -- via /admin/products/:productId/documents, see productDocumentsController.js
  * }
  */
+const AVAILABILITY_STATUSES = ["available", "unavailable", "discontinued", "replacement_available"];
+// statuses that may point at a replacement product
+const REPLACEMENT_STATUSES = ["discontinued", "replacement_available"];
+const MAX_STATUS_NOTE = 500;
+
 function validateProductPayload(body) {
   const { name, slug, brandId, categoryId } = body || {};
   if (!name || !slug || !brandId || !categoryId) {
     return "name, slug, brandId, and categoryId are required";
   }
   return null;
+}
+
+/**
+ * Availability fields: availabilityStatus, statusNote, replacementProductId.
+ * Returns { error } or { provided, status, note, replacementId }.
+ * `provided` is false when the payload doesn't mention availability at all
+ * (then existing values are left untouched). The replacement is only ever
+ * what the admin picked — never inferred.
+ */
+async function resolveAvailability(client, body, ownId) {
+  if (body.availabilityStatus === undefined) return { provided: false };
+  const status = body.availabilityStatus;
+  if (!AVAILABILITY_STATUSES.includes(status)) {
+    return { error: `availabilityStatus must be one of: ${AVAILABILITY_STATUSES.join(", ")}` };
+  }
+  const note = typeof body.statusNote === "string" ? body.statusNote.trim() : "";
+  if (note.length > MAX_STATUS_NOTE) {
+    return { error: `statusNote must be at most ${MAX_STATUS_NOTE} characters` };
+  }
+  let replacementId = null;
+  if (body.replacementProductId !== undefined && body.replacementProductId !== null && body.replacementProductId !== "") {
+    replacementId = Number(body.replacementProductId);
+    if (!Number.isInteger(replacementId) || replacementId <= 0) {
+      return { error: "replacementProductId must be a valid product id" };
+    }
+    if (!REPLACEMENT_STATUSES.includes(status)) {
+      return { error: "A replacement product can only be set for Discontinued or Replacement Available products" };
+    }
+    if (ownId != null && replacementId === Number(ownId)) {
+      return { error: "A product cannot be its own replacement" };
+    }
+    const exists = await client.query("SELECT 1 FROM products WHERE id = $1", [replacementId]);
+    if (!exists.rows.length) return { error: "The selected replacement product does not exist" };
+  }
+  if (status === "replacement_available" && replacementId == null) {
+    return { error: "Select the replacement product for a Replacement Available status" };
+  }
+  return { provided: true, status, note: note || null, replacementId };
 }
 
 // Product documents (PDFs) are NOT touched here — they're managed
@@ -655,10 +700,16 @@ export async function createProduct(req, res) {
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    const avail = await resolveAvailability(client, body, null);
+    if (avail.error) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: avail.error });
+    }
     const { rows } = await client.query(
       `INSERT INTO products
-        (name, slug, brand_id, category_id, series_id, model, short_description, description, features, image_url, is_new, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        (name, slug, brand_id, category_id, series_id, model, short_description, description, features, image_url, is_new, sort_order,
+         availability_status, status_note, replacement_product_id, status_updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now())
        RETURNING id`,
       [
         body.name,
@@ -673,6 +724,9 @@ export async function createProduct(req, res) {
         body.imageUrl || null,
         body.isNew || false,
         body.sortOrder || 0,
+        avail.provided ? avail.status : "available",
+        avail.provided ? avail.note : null,
+        avail.provided ? avail.replacementId : null,
       ]
     );
     const productId = rows[0].id;
@@ -699,11 +753,37 @@ export async function updateProduct(req, res) {
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    const current = await client.query(
+      "SELECT availability_status, status_note, replacement_product_id FROM products WHERE id = $1 FOR UPDATE",
+      [id]
+    );
+    if (!current.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Product not found" });
+    }
+    const avail = await resolveAvailability(client, body, id);
+    if (avail.error) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: avail.error });
+    }
+    // Availability not mentioned in the payload → keep what's stored.
+    const prev = current.rows[0];
+    const nextStatus = avail.provided ? avail.status : prev.availability_status;
+    const nextNote = avail.provided ? avail.note : prev.status_note;
+    const nextReplacement = avail.provided ? avail.replacementId : prev.replacement_product_id;
+    const statusChanged =
+      avail.provided &&
+      (nextStatus !== prev.availability_status ||
+        (nextNote || null) !== (prev.status_note || null) ||
+        (nextReplacement ?? null) !== (prev.replacement_product_id ?? null));
+
     const result = await client.query(
       `UPDATE products SET
         name = $1, slug = $2, brand_id = $3, category_id = $4, series_id = $5,
         model = $6, short_description = $7, description = $8, features = $9,
-        image_url = $10, is_new = $11, sort_order = $12, updated_at = now()
+        image_url = $10, is_new = $11, sort_order = $12, updated_at = now(),
+        availability_status = $14, status_note = $15, replacement_product_id = $16,
+        status_updated_at = CASE WHEN $17 THEN now() ELSE status_updated_at END
        WHERE id = $13`,
       [
         body.name,
@@ -719,6 +799,10 @@ export async function updateProduct(req, res) {
         body.isNew || false,
         body.sortOrder || 0,
         id,
+        nextStatus,
+        nextNote,
+        nextReplacement,
+        statusChanged,
       ]
     );
     if (result.rowCount === 0) {
