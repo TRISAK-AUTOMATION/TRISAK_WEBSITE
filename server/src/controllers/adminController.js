@@ -625,7 +625,7 @@ function validateProductPayload(body) {
  * (then existing values are left untouched). The replacement is only ever
  * what the admin picked — never inferred.
  */
-async function resolveAvailability(client, body, ownId) {
+async function resolveAvailability(client, body, ownId, prevReplacementId = null) {
   if (body.availabilityStatus === undefined) return { provided: false };
   const status = body.availabilityStatus;
   if (!AVAILABILITY_STATUSES.includes(status)) {
@@ -635,8 +635,11 @@ async function resolveAvailability(client, body, ownId) {
   if (note.length > MAX_STATUS_NOTE) {
     return { error: `statusNote must be at most ${MAX_STATUS_NOTE} characters` };
   }
-  let replacementId = null;
-  if (body.replacementProductId !== undefined && body.replacementProductId !== null && body.replacementProductId !== "") {
+  // Omitting replacementProductId keeps the stored link (e.g. while an
+  // imported status is Available); sending null/"" explicitly clears it.
+  const replacementProvided = body.replacementProductId !== undefined;
+  let replacementId = replacementProvided ? null : prevReplacementId;
+  if (replacementProvided && body.replacementProductId !== null && body.replacementProductId !== "") {
     replacementId = Number(body.replacementProductId);
     if (!Number.isInteger(replacementId) || replacementId <= 0) {
       return { error: "replacementProductId must be a valid product id" };
@@ -761,7 +764,7 @@ export async function updateProduct(req, res) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Product not found" });
     }
-    const avail = await resolveAvailability(client, body, id);
+    const avail = await resolveAvailability(client, body, id, current.rows[0].replacement_product_id);
     if (avail.error) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: avail.error });

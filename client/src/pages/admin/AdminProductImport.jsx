@@ -2,12 +2,15 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import { availabilityLabel } from "../../utils/productAvailability.js";
 
 const ACTION_LABELS = {
   add: { text: "เพิ่มใหม่", className: "admin-import-badge--add" },
   update: { text: "อัปเดต", className: "admin-import-badge--update" },
   error: { text: "ข้อผิดพลาด", className: "admin-import-badge--error" },
 };
+
+const STATUS_ORDER = ["available", "unavailable", "discontinued", "replacement_available"];
 
 export default function AdminProductImport() {
   const fileInputRef = useRef(null);
@@ -80,6 +83,10 @@ export default function AdminProductImport() {
         ระบุ Slug เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือ Slug ใหม่เพื่อสร้างสินค้าใหม่
         <br />
         <strong>รูปภาพสินค้าไม่ได้จัดการผ่านไฟล์นี้</strong> — เพิ่ม/แก้ไขรูปภาพได้จากหน้าแก้ไขสินค้าแต่ละรายการหลังนำเข้าแล้ว
+        <br />
+        <strong>สถานะสินค้า (ไม่บังคับ):</strong> หากไฟล์มีคอลัมน์ In Stock และ Item Status ระบบจะคำนวณสถานะให้อัตโนมัติ —
+        Inactive = Discontinued (สำคัญที่สุด), Active + In Stock &gt; 0 = Available, Active + In Stock = 0 = Unavailable
+        สถานะ Replacement Available และสินค้าทดแทนจัดการด้วยมือเท่านั้น และจะไม่ถูกเปลี่ยนจากการนำเข้า
       </div>
 
       {!preview && !result && (
@@ -87,7 +94,7 @@ export default function AdminProductImport() {
           <h3>1. เลือกไฟล์ Excel</h3>
           <p className="admin-list-table__submeta" style={{ marginBottom: 16 }}>
             คอลัมน์ที่ต้องมี: Name, Slug, Brand, Category, Series, Model, Short Description, Description,
-            Features, Specifications — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมาแล้วแก้ไขต่อ
+            Features, Specifications (คอลัมน์ไม่บังคับ: In Stock, Item Status — ต่อท้ายคอลัมน์ Specifications) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมาแล้วแก้ไขต่อ
             (Features/Specifications แต่ละรายการคั่นด้วย " | ", Specifications แต่ละช่องใช้รูปแบบ "ป้ายชื่อ: ค่า")
           </p>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -131,6 +138,33 @@ export default function AdminProductImport() {
               </div>
             </div>
 
+            {preview.statusSummary &&
+              (preview.statusSummary.columnsPresent ? (
+                <>
+                  <h4 style={{ margin: "24px 0 8px" }}>สถานะสินค้าหลังนำเข้า (ทั้งแคตตาล็อก)</h4>
+                  <div className="admin-import-summary">
+                    {STATUS_ORDER.map((st) => (
+                      <div key={st} className="admin-import-summary__stat">
+                        <strong>{preview.statusSummary.resulting[st]}</strong>
+                        <span>{availabilityLabel(st)}</span>
+                      </div>
+                    ))}
+                    <div className="admin-import-summary__stat admin-import-summary__stat--update">
+                      <strong>{preview.statusSummary.statusChanges}</strong>
+                      <span>สถานะที่จะเปลี่ยน</span>
+                    </div>
+                    <div className="admin-import-summary__stat admin-import-summary__stat--error">
+                      <strong>{preview.statusSummary.needsReview}</strong>
+                      <span>ต้องตรวจสอบ (In Stock / Item Status)</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="admin-list-table__submeta" style={{ marginTop: 16 }}>
+                  ไม่พบคอลัมน์ In Stock / Item Status — สถานะสินค้าทั้งหมดจะไม่ถูกเปลี่ยน
+                </p>
+              ))}
+
             {commitError && <p className="contact-form__status contact-form__status--error">{commitError}</p>}
 
             <div className="admin-list-table-wrap" style={{ marginTop: 20 }}>
@@ -142,6 +176,8 @@ export default function AdminProductImport() {
                     <th>Slug</th>
                     <th>ชื่อ</th>
                     <th>แบรนด์ / หมวดหมู่</th>
+                    {preview.statusSummary?.columnsPresent && <th>In Stock / Item Status</th>}
+                    {preview.statusSummary?.columnsPresent && <th>สถานะสินค้า</th>}
                     <th>รายละเอียด</th>
                   </tr>
                 </thead>
@@ -160,6 +196,27 @@ export default function AdminProductImport() {
                           {r.raw.Brand}
                           {r.raw.Category ? ` / ${r.raw.Category}` : ""}
                         </td>
+                        {preview.statusSummary?.columnsPresent && (
+                          <td className="admin-list-table__muted">
+                            {r.raw["In Stock"] || "—"} / {r.raw["Item Status"] || "—"}
+                          </td>
+                        )}
+                        {preview.statusSummary?.columnsPresent && (
+                          <td>
+                            {r.availability?.next ? (
+                              <>
+                                {r.availability.current && r.availability.changed
+                                  ? `${availabilityLabel(r.availability.current)} → `
+                                  : ""}
+                                {availabilityLabel(r.availability.next)}
+                              </>
+                            ) : r.availability?.needsReview ? (
+                              <span className="admin-import-issue admin-import-issue--error">ต้องตรวจสอบ</span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        )}
                         <td>
                           {r.errors.map((e, i) => (
                             <p key={`e${i}`} className="admin-import-issue admin-import-issue--error">
@@ -217,7 +274,43 @@ export default function AdminProductImport() {
               <strong>{result.skipped}</strong>
               <span>ข้าม</span>
             </div>
+            {typeof result.statusUpdated === "number" && (
+              <div className="admin-import-summary__stat">
+                <strong>{result.statusUpdated}</strong>
+                <span>อัปเดตสถานะสินค้า</span>
+              </div>
+            )}
           </div>
+
+          {result.reviewed?.length > 0 && (
+            <div className="admin-list-table-wrap" style={{ marginTop: 20 }}>
+              <h4 style={{ margin: "0 0 8px" }}>นำเข้าแล้ว แต่ต้องตรวจสอบข้อมูลสถานะ (สถานะเดิมไม่ถูกเปลี่ยน)</h4>
+              <table className="admin-list-table">
+                <thead>
+                  <tr>
+                    <th>แถว</th>
+                    <th>Slug</th>
+                    <th>รายละเอียด</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.reviewed.map((e) => (
+                    <tr key={e.rowNumber}>
+                      <td>{e.rowNumber}</td>
+                      <td>{e.slug || "—"}</td>
+                      <td>
+                        {e.messages.map((msg, i) => (
+                          <p key={i} className="admin-import-issue admin-import-issue--warning">
+                            ℹ {msg}
+                          </p>
+                        ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {result.errors.length > 0 && (
             <div className="admin-list-table-wrap" style={{ marginTop: 20 }}>

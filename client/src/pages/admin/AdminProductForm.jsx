@@ -73,6 +73,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
+  const [sourceData, setSourceData] = useState({ stock: null, itemStatus: null }); // read-only, set by Excel import
   const [replacementFilter, setReplacementFilter] = useState("");
 
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         };
         setForm(loaded);
         setStatusUpdatedAt(p.status_updated_at || null);
+        setSourceData({ stock: p.stock_quantity ?? null, itemStatus: p.item_status || null });
         setInitialSnapshot(JSON.stringify(loaded));
       })
       .catch((err) => {
@@ -192,10 +194,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
       // Replacement is only sent for statuses that can have one, and only
       // when the admin picked it — nothing is inferred.
       statusNote: form.statusNote.trim(),
-      replacementProductId:
-        REPLACEMENT_STATUSES.includes(form.availabilityStatus) && form.replacementProductId
-          ? Number(form.replacementProductId)
-          : null,
+      replacementProductId: form.replacementProductId ? Number(form.replacementProductId) : null,
       // New product: append to the end of the current order instead of
       // defaulting to 0, which would jump it in front of every existing
       // product (and collide with whichever product already sits at 0).
@@ -203,6 +202,9 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         ? form.sortOrder ?? 0
         : allProducts.reduce((max, p) => Math.max(max, p.sort_order ?? 0), -1) + 1,
     };
+    // Picker hidden (e.g. status Available after an import): don't send the
+    // field at all, so the stored replacement link is kept, not cleared.
+    if (!REPLACEMENT_STATUSES.includes(form.availabilityStatus)) delete payload.replacementProductId;
     try {
       if (isEdit) {
         await api.adminUpdateProduct(id, payload);
@@ -230,12 +232,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     return [p.model, p.name, p.brand].filter(Boolean).join(" ").toLowerCase().includes(filterText);
   });
 
-  const handleStatusChange = (value) =>
-    setForm((f) => ({
-      ...f,
-      availabilityStatus: value,
-      replacementProductId: REPLACEMENT_STATUSES.includes(value) ? f.replacementProductId : "",
-    }));
+  const handleStatusChange = (value) => updateField("availabilityStatus", value);
 
   const formId = "product-edit-form";
 
@@ -406,6 +403,14 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
                 </select>
               </label>
             </div>
+          )}
+
+          {isEdit && (
+            <p className="admin-list-table__muted">
+              Excel source data — In Stock: {sourceData.stock ?? "not set"}, Item Status:{" "}
+              {sourceData.itemStatus || "not set"} (set by Excel import; Available / Unavailable / Discontinued are
+              recalculated from these on each import).
+            </p>
           )}
 
           {isEdit && (
