@@ -41,6 +41,7 @@ export default function FilterableProductListing({
   initialBrandSlug = null,
   initialCategoryId = null,
   perCategoryLimit = null, // applied only while no filter is active
+  onSelectionChange = null, // ({ nodes, brands }) — lets the page title follow the filters
 }) {
   const { t } = useLanguage();
   const [status, setStatus] = useState("loading"); // loading | ready | error
@@ -137,6 +138,27 @@ export default function FilterableProductListing({
     setSelectedCats(new Set());
     setSelectedBrands(new Set());
   };
+
+  // Report the current selection upward: the outermost fully-selected
+  // categories (each as a root→node chain) and the selected brands.
+  useEffect(() => {
+    if (!onSelectionChange || !data) return;
+    const nodes = [];
+    for (const id of selectedCats) {
+      const parent = data.parentOf.get(id);
+      if (parent != null && selectedCats.has(parent)) continue; // covered by its parent
+      const chain = [];
+      for (let cur = id; cur != null; cur = data.parentOf.get(cur)) {
+        const n = data.byId.get(cur);
+        if (!n) break;
+        chain.unshift({ id: n.id, name: n.name, slug: n.slug });
+      }
+      if (chain.length) nodes.push(chain);
+    }
+    const brands = data.brands.filter((b) => selectedBrands.has(b.slug)).map((b) => ({ slug: b.slug, name: b.name }));
+    onSelectionChange({ nodes, brands });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, selectedCats, selectedBrands]);
 
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filtersActive = tokens.length > 0 || selectedCats.size > 0 || selectedBrands.size > 0;

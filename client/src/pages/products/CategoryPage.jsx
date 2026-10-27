@@ -18,12 +18,14 @@ export default function CategoryPage() {
   const [brand, setBrand] = useState(null);
   const [category, setCategory] = useState(null); // current node
   const [crumb, setCrumb] = useState([]); // [{id,name,slug}, ...] root..current
+  const [selection, setSelection] = useState(null); // live filter state from the listing
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setSelection(null); // new route → start from the route's own category
     setNotFound(false);
 
     async function run() {
@@ -63,26 +65,43 @@ export default function CategoryPage() {
 
   if (notFound) return <Navigate to={`/products/${brandSlug}`} replace />;
 
-  const crumbHref = (i) => categoryLevelHref(brandSlug, crumb, i);
+  // Hero title + breadcrumb follow the live filters. Until the listing has
+  // reported its selection, fall back to the category this route points at.
+  const nodes = selection ? selection.nodes : crumb.length ? [crumb] : [];
+  const selBrands = selection ? selection.brands : brand ? [{ slug: brand.slug, name: brand.name }] : [];
+  // exactly one brand → that brand; none/several → don't name a single brand
+  const activeBrand = selBrands.length === 1 ? selBrands[0] : null;
+  const linkBrandSlug = activeBrand?.slug || brandSlug;
+
+  // exactly one selected category/subcategory → name it; otherwise use the
+  // brand title so the heading never misrepresents the results
+  const single = nodes.length === 1 ? nodes[0] : null;
+  const title = single
+    ? single[single.length - 1].name
+    : activeBrand
+      ? t("products.brandPageTitle").replace("{brand}", activeBrand.name)
+      : t("nav.products");
+
+  const trail = [
+    { label: t("nav.home"), to: "/" },
+    { label: t("nav.products"), to: "/products" },
+    ...(activeBrand ? [{ label: activeBrand.name, to: `/products/${activeBrand.slug}` }] : []),
+    ...(single
+      ? single.map((c, i) => ({
+          label: c.name,
+          to: i === single.length - 1 ? undefined : categoryLevelHref(linkBrandSlug, single, i),
+        }))
+      : []),
+  ];
 
   return (
     <>
       <section className="hero hero--compact">
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
-          <Breadcrumb
-            items={[
-              { label: t("nav.home"), to: "/" },
-              { label: t("nav.products"), to: "/products" },
-              { label: brand?.name || brandSlug, to: `/products/${brandSlug}` },
-              ...crumb.map((c, i) => ({
-                label: c.name,
-                to: i === crumb.length - 1 ? undefined : crumbHref(i),
-              })),
-            ]}
-          />
-          <span className="hero__meta">{brand?.name}</span>
-          <h1>{category?.name || "…"}</h1>
+          <Breadcrumb items={trail} />
+          {activeBrand && <span className="hero__meta">{activeBrand.name}</span>}
+          <h1>{loading ? "…" : title}</h1>
         </div>
       </section>
 
@@ -94,6 +113,7 @@ export default function CategoryPage() {
               key={`${brandSlug}/${category.id}`}
               initialBrandSlug={brandSlug}
               initialCategoryId={category.id}
+              onSelectionChange={setSelection}
             />
           )}
         </div>
