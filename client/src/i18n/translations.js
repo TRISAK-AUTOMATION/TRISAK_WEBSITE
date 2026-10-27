@@ -156,6 +156,9 @@ export const translations = {
       allCategories: "All Categories",
       searchPlaceholder: "Search by model or name…",
       loadingProducts: "Loading products…",
+      noProductsFound: "No products found",
+      latestPageTitle: "All Latest Products",
+      latestPageSub: "The newest products across every category.",
       emptyState:
         "No products match those filters yet — connect the database and add products, or contact us for a full catalog.",
       ctaTitle: "Need Technical Support?",
@@ -476,6 +479,9 @@ export const translations = {
       allCategories: "ทุกหมวดหมู่",
       searchPlaceholder: "ค้นหาด้วยชื่อหรือรุ่นสินค้า…",
       loadingProducts: "กำลังโหลดสินค้า…",
+      noProductsFound: "ไม่พบสินค้า",
+      latestPageTitle: "สินค้าใหม่ทั้งหมด",
+      latestPageSub: "สินค้าใหม่ล่าสุดจากทุกหมวดหมู่",
       emptyState:
         "ยังไม่มีสินค้าที่ตรงกับตัวกรองนี้ — เชื่อมต่อฐานข้อมูลและเพิ่มสินค้า หรือติดต่อเราเพื่อขอแคตตาล็อกฉบับเต็ม",
       ctaTitle: "ต้องการความช่วยเหลือด้านเทคนิคใช่ไหม?",

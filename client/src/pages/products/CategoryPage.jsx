@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
+import ProductCard from "../../components/ProductCard.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { categoryLevelHref, categoryBreadcrumbItems } from "../../utils/categoryBreadcrumb.js";
-
-const PREVIEW_LIMIT = 5;
 
 export default function CategoryPage() {
   const params = useParams();
@@ -21,7 +20,6 @@ export default function CategoryPage() {
   const [crumb, setCrumb] = useState([]); // [{id,name,slug}, ...] root..current
   const [siblings, setSiblings] = useState([]); // same-level categories (sidebar)
   const [children, setChildren] = useState([]); // subcategories of current node
-  const [seriesList, setSeriesList] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -56,12 +54,17 @@ export default function CategoryPage() {
           : await api.getCategoriesForBrand(brandSlug);
         if (cancelled) return;
 
-        let series = [];
-        let prods = [];
-        [series, prods] = await Promise.all([
-          api.getSeriesList({ brand: brandSlug, categoryId: currentId }),
-          api.getProducts({ brand: brandSlug, categoryId: currentId }),
-        ]);
+        // Products of the selected category. When it only groups
+        // subcategories (no products of its own), include theirs too so the
+        // grid is never empty just because products live one level down.
+        let prods = await api.getProducts({ brand: brandSlug, categoryId: currentId });
+        if (prods.length === 0 && kids.length > 0) {
+          const groups = await Promise.all(
+            kids.map((k) => api.getProducts({ brand: brandSlug, categoryId: k.id }))
+          );
+          const seen = new Set();
+          prods = groups.flat().filter((p) => !seen.has(p.id) && seen.add(p.id));
+        }
         if (cancelled) return;
 
         setBrand(b);
@@ -69,7 +72,6 @@ export default function CategoryPage() {
         setCrumb(crumbChain);
         setChildren(kids);
         setSiblings(sibs);
-        setSeriesList(series);
         setProducts(prods);
       } catch {
         if (!cancelled) setNotFound(true);
@@ -99,17 +101,6 @@ export default function CategoryPage() {
     return `${basePath}/cat/${chain.join("/")}`;
   };
   const crumbHref = (i) => categoryLevelHref(brandSlug, crumb, i);
-
-  // group products under their series, so each series card can list its models
-  const productsBySeries = {};
-  const unseriesedProducts = [];
-  for (const p of products) {
-    if (p.series_slug) {
-      (productsBySeries[p.series_slug] ||= []).push(p);
-    } else {
-      unseriesedProducts.push(p);
-    }
-  }
 
   return (
     <>
@@ -148,14 +139,26 @@ export default function CategoryPage() {
                 </Link>
               ))}
               {siblings.map((s) => (
-                <Link
-                  key={s.id}
-                  to={siblingHref(s)}
-                  style={{ paddingLeft: 20 + Math.max(crumb.length - 1, 0) * 18 }}
-                  className={`category-sidebar__item ${s.id === category?.id ? "is-active" : ""}`}
-                >
-                  {s.name}
-                </Link>
+                <Fragment key={s.id}>
+                  <Link
+                    to={siblingHref(s)}
+                    style={{ paddingLeft: 20 + Math.max(crumb.length - 1, 0) * 18 }}
+                    className={`category-sidebar__item ${s.id === category?.id ? "is-active" : ""}`}
+                  >
+                    {s.name}
+                  </Link>
+                  {s.id === category?.id &&
+                    children.map((child) => (
+                      <Link
+                        key={child.id}
+                        to={childHref(child.id)}
+                        style={{ paddingLeft: 20 + Math.max(crumb.length, 1) * 18 }}
+                        className="category-sidebar__item category-sidebar__item--child"
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                </Fragment>
               ))}
             </nav>
           </aside>
@@ -163,48 +166,14 @@ export default function CategoryPage() {
           <div className="category-main">
             {loading && <p className="empty-state">{t("products.loadingProducts")}</p>}
 
-            {!loading && children.length > 0 && (
-              <div className="grid cols-3" style={{ marginBottom: seriesList.length || unseriesedProducts.length ? 48 : 0 }}>
-                {children.map((child) => (
-                  <Link key={child.id} to={childHref(child.id)} className="grid-cell subcategory-tile">
-                    <h3>{child.name}</h3>
-                    <span className="btn-arrow">→</span>
-                  </Link>
-                ))}
-              </div>
+            {!loading && products.length === 0 && (
+              <p className="empty-state">{t("products.noProductsFound")}</p>
             )}
 
-            {!loading && children.length === 0 && seriesList.length === 0 && unseriesedProducts.length === 0 && (
-              <p className="empty-state">{t("products.emptyState")}</p>
-            )}
-
-            {!loading && (seriesList.length > 0 || unseriesedProducts.length > 0) && (
-              <div className="series-card-grid">
-                {seriesList.map((s) => (
-                  <SeriesCard
-                    key={s.slug}
-                    series={s}
-                    products={productsBySeries[s.slug] || []}
-                    brandSlug={brandSlug}
-                    categorySlug={s.category_slug}
-                    t={t}
-                  />
-                ))}
-
-                {unseriesedProducts.map((p) => (
-                  <Link
-                    key={p.id}
-                    to={`/products/${p.brand_slug}/${p.category_slug}/${p.slug}`}
-                    className="series-card series-card--single"
-                  >
-                    <div className="series-card__header">
-                      <h3>{p.name}</h3>
-                      {p.is_new && <span className="badge-new badge-new--inline">NEW</span>}
-                    </div>
-                    {p.short_description && (
-                      <p className="series-card__desc">{p.short_description}</p>
-                    )}
-                  </Link>
+            {!loading && products.length > 0 && (
+              <div className="product-tile-grid">
+                {products.map((p) => (
+                  <ProductCard key={p.id} product={p} variant="plain" />
                 ))}
               </div>
             )}
@@ -221,40 +190,5 @@ export default function CategoryPage() {
         </div>
       </section>
     </>
-  );
-}
-
-function SeriesCard({ series, products, brandSlug, categorySlug, t }) {
-  const seriesHref = `/products/${brandSlug}/${categorySlug}/${series.slug}`;
-  const preview = products.slice(0, PREVIEW_LIMIT);
-  const remaining = products.length - preview.length;
-
-  return (
-    <div className="series-card">
-      <Link to={seriesHref} className="series-card__header">
-        <h3>{series.name}</h3>
-        {series.is_new && <span className="badge-new badge-new--inline">NEW</span>}
-      </Link>
-
-      {series.tagline && <p className="series-card__desc">{series.tagline}</p>}
-
-      {preview.length > 0 && (
-        <ul className="series-card__list">
-          {preview.map((p) => (
-            <li key={p.id}>
-              <Link to={`/products/${p.brand_slug}/${p.category_slug}/${p.series_slug}/${p.slug}`}>
-                {p.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Link to={seriesHref} className="series-card__view-all">
-        {remaining > 0
-          ? `${t("products.viewAll")} (${products.length}) →`
-          : `${t("products.viewSeries")} →`}
-      </Link>
-    </div>
   );
 }

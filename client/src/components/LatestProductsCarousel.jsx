@@ -8,7 +8,7 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 const AUTOPLAY_MS = 3000;
 const SLIDE_MS = 600;
 const FETCH_LIMIT = 12;
-const VIEW_MORE_HREF = "/products/omron";
+const VIEW_MORE_HREF = "/products/latest";
 
 // Cards per view: 4 desktop, 2 tablet, 1 mobile (breakpoints match the
 // existing .product-grid rules in components.css).

@@ -6,7 +6,7 @@ import { useLanguage } from "../../i18n/LanguageContext.jsx";
 /**
  * The Brand page itself has no distinct content to show — it forwards
  * straight into the brand's first category, which renders the
- * sidebar + series-cards layout (CategoryPage.jsx). This matches "Browse
+ * sidebar + product grid layout (CategoryPage.jsx). This matches "Browse
  * by Brand" landing directly in a browsable category view rather than an
  * intermediate empty page.
  */

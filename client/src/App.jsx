@@ -15,6 +15,7 @@ import Contacts from "./pages/Contacts.jsx";
 import ProductsOverview from "./pages/products/ProductsOverview.jsx";
 import BrandPage from "./pages/products/BrandPage.jsx";
 import CategoryPage from "./pages/products/CategoryPage.jsx";
+import LatestProducts from "./pages/products/LatestProducts.jsx";
 import BrandCategoryChild from "./pages/products/BrandCategoryChild.jsx";
 import ProductDetail from "./pages/products/ProductDetail.jsx";
 
@@ -78,6 +79,8 @@ export default function App() {
 
         {/* 01 — products overview */}
         <Route path="/products" element={<ProductsOverview />} />
+        {/* all latest products, grouped by category (static path wins over :brandSlug) */}
+        <Route path="/products/latest" element={<LatestProducts />} />
         {/* 02 — brand page */}
         <Route path="/products/:brandSlug" element={<BrandPage />} />
         {/* 03 — category page (scoped to brand) */}
