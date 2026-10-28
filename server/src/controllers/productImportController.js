@@ -13,15 +13,27 @@ import { logActivity } from "../utils/activityLog.js";
 // Slug/Model without touching this format.
 //
 // Slug is the import's primary key: a row whose Slug already exists
-// updates that product; a new Slug creates one. Only the columns
+// updates that product; a new Slug creates one.
+//
+// SLUG = ITEM NO. The Slug of a product is its ITEM NO, taken from the
+// file exactly as written (letters, numbers and hyphens; case kept) and
+// never generated from, or altered to match, the product name. A file may
+// carry the value in a column named "Slug" (the export format) or "ITEM NO";
+// ITEM NO is mapped to the internal Slug field (it wins if both exist).
+// Per row it must be non-empty, <= 150 chars, letters/numbers/hyphens only,
+// unique within the file (case-insensitive), and must not collide with an
+// existing slug that differs only by letter case. An exact match with an
+// existing slug is the normal "update that product" path. Invalid values
+// are reported in the preview and are never "fixed" silently. Only the columns
 // below are ever written — image_url, product_images,
 // product_documents, related_products, is_new, and sort_order are
 // left exactly as they were on update, and default to empty/false/
 // next-in-line on create.
 //
-// AVAILABILITY (optional columns "In Stock" and "Item Status", appended
-// after Specifications; both are stored on the product so they export again):
-//   Item Status = Inactive                → Discontinued  (always wins)
+// AVAILABILITY (optional columns "In Stock" and "Item Status", located by
+// header name — wherever they sit in the file; both are stored on the product
+// so they export again):
+//   Item Status = Discontinued            → Discontinued  (always wins, any stock)
 //   Item Status = Active, In Stock > 0    → Available
 //   Item Status = Active, In Stock = 0    → Unavailable
 // Invalid / missing source values are flagged for review and never
@@ -33,13 +45,19 @@ import { logActivity } from "../utils/activityLog.js";
 // status untouched.
 // ============================================================
 
-// Appended to the export after Specifications; optional on import so older
-// files without them keep working (statuses simply stay untouched).
+// The optional source columns behind the derived availability status. They are
+// optional on import so older files without them keep working (statuses
+// simply stay untouched).
 export const AVAILABILITY_EXPORT_COLUMNS = ["In Stock", "Item Status"];
 
-export const IMPORT_COLUMNS = [
+// Single source of truth for the column ORDER of the Excel export, the
+// downloadable import template and the import preview. Import never relies on
+// it: values are mapped by column header, so files with any column order (or
+// "ITEM NO" in place of "Slug") still import.
+export const PRODUCT_EXCEL_COLUMNS = [
+  "Slug", // = ITEM NO
   "Name",
-  "Slug",
+  "In Stock", // numeric, non-negative
   "Brand",
   "Category",
   "Series",
@@ -48,21 +66,32 @@ export const IMPORT_COLUMNS = [
   "Description",
   "Features",
   "Specifications",
+  "Item Status", // Active | Discontinued
 ];
+
+// Columns that must be present on import (everything except the optional
+// availability source columns).
+export const IMPORT_COLUMNS = PRODUCT_EXCEL_COLUMNS.filter((c) => !AVAILABILITY_EXPORT_COLUMNS.includes(c));
 
 // Optional availability columns (header aliases, matched case-insensitively).
 const AVAILABILITY_COLUMNS = {
   "In Stock": ["in stock", "instock", "in-stock"],
   "Item Status": ["item status", "itemstatus", "item_status"],
 };
-const ITEM_STATUSES = ["active", "inactive"];
+const ITEM_STATUSES = ["active", "discontinued"];
 const MANUAL_STATUS = "replacement_available"; // admin-managed, never derived
 
 // Multiple Features / Specifications entries live in one cell,
 // separated by " | " — easier to type and read in a spreadsheet cell
 // than embedded line breaks. Each Specifications entry is "Label: Value".
 const LIST_SEPARATOR = " | ";
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// ITEM NO used verbatim as the slug: letters (either case), numbers, hyphens.
+const SLUG_RE = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
+const SLUG_MAX_LENGTH = 150; // products.slug is VARCHAR(150)
+// Header aliases (matched case-insensitively, whitespace collapsed) that map to the
+// internal Slug field. ITEM NO is preferred over a plain "Slug" column.
+const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
+const SLUG_COLUMN_LABEL = "Slug (ITEM NO)";
 
 function normalizeHeader(s) {
   return (s || "").toString().trim().toLowerCase();
@@ -118,8 +147,9 @@ function formatSpecsField(specs) {
  *            cannot be determined (then `problems` says why)
  *   itemStatus / stock   the validated source values (null when invalid)
  *   problems blocking issues (missing/invalid values)
- *   warnings non-blocking notes (e.g. bad Instock on an Inactive item)
- * Inactive outranks stock quantity.
+ *   warnings non-blocking notes (e.g. bad In Stock on a Discontinued item)
+ * Item Status (source) and the derived availability status are separate
+ * things; Discontinued outranks stock quantity.
  */
 export function deriveAvailability(instockRaw, itemStatusRaw) {
   const problems = [];
@@ -127,13 +157,17 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
 
   const itemStatusText = (itemStatusRaw ?? "").toString().trim();
   const itemStatusKey = itemStatusText.toLowerCase();
-  let itemStatus = null; // "Active" | "Inactive" when valid
+  let itemStatus = null; // "Active" | "Discontinued" when valid
   if (!itemStatusText) {
     problems.push("Item Status is missing");
   } else if (!ITEM_STATUSES.includes(itemStatusKey)) {
-    problems.push(`Item Status "${itemStatusText}" is not supported (use Active or Inactive)`);
+    problems.push(
+      itemStatusKey === "inactive"
+        ? 'Item Status "Inactive" is no longer supported (use Active or Discontinued)'
+        : `Item Status "${itemStatusText}" is not supported (use Active or Discontinued)`
+    );
   } else {
-    itemStatus = itemStatusKey === "active" ? "Active" : "Inactive";
+    itemStatus = itemStatusKey === "active" ? "Active" : "Discontinued";
   }
 
   const instockText = (instockRaw ?? "").toString().trim().replace(/[,\s]/g, "");
@@ -144,9 +178,9 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
     stockProblem = `In Stock "${(instockRaw ?? "").toString().trim()}" must be a non-negative number`;
   } else stock = Number(instockText);
 
-  if (itemStatus === "Inactive") {
-    // stock quantity is irrelevant for Inactive items — only mention a bad value
-    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Inactive)`);
+  if (itemStatus === "Discontinued") {
+    // stock quantity is irrelevant for Discontinued items — only mention a bad value
+    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Discontinued)`);
     return { status: "discontinued", itemStatus, stock, problems, warnings };
   }
   if (stockProblem) problems.push(stockProblem);
@@ -172,22 +206,41 @@ async function loadLookups() {
       seriesRes.rows.map((s) => [`${s.brand_id}::${s.category_id}::${normalizeHeader(s.name)}`, s.id])
     ),
     productIdBySlug: new Map(productsRes.rows.map((p) => [p.slug, p.id])),
+    // lower-cased slug -> stored slug, to catch case-only collisions
+    slugByKey: new Map(productsRes.rows.map((p) => [p.slug.toLowerCase(), p.slug])),
     statusBySlug: new Map(productsRes.rows.map((p) => [p.slug, p.availability_status])),
   };
+}
+
+// Map of lower-cased ITEM NO -> every row number that uses it (valid-looking
+// values only; blanks are reported per row as required-field errors).
+function indexSlugRows(entries) {
+  const map = new Map();
+  for (const { rowNumber, raw } of entries) {
+    const value = ((raw && raw.Slug) || "").toString().trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(rowNumber);
+  }
+  return map;
 }
 
 /**
  * Validates + resolves one Excel row against the current DB state.
  * `seenSlugs` is shared across a whole import batch so duplicate Slugs
- * within the same file are caught (only the first occurrence proceeds).
+ * (ITEM NO values) within the same file are caught (only the first
+ * occurrence proceeds). `slugRows` (from indexSlugRows) lists every row that
+ * uses each ITEM NO so the messages can name them all.
  */
-function resolveRow(rowNumber, raw, lookups, seenSlugs) {
+function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
   const errors = [];
   const warnings = [];
 
   const name = (raw.Name || "").toString().trim();
   const slugInput = (raw.Slug || "").toString().trim();
-  const slug = slugInput.toLowerCase();
+  const slug = slugInput; // ITEM NO exactly as written — never lower-cased or regenerated
+  const slugKey = slug.toLowerCase(); // comparison key only (duplicate / collision checks)
   const brandName = (raw.Brand || "").toString().trim();
   const categoryName = (raw.Category || "").toString().trim();
   const seriesName = (raw.Series || "").toString().trim();
@@ -201,16 +254,39 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs) {
 
   let slugValid = false;
   if (!slugInput) {
-    errors.push("Slug is required");
-  } else if (!SLUG_RE.test(slug)) {
-    errors.push('Slug must contain only lowercase letters, numbers, and hyphens (e.g. "my-product-name")');
+    errors.push("ITEM NO (Slug) is required");
+  } else if (slugInput.length > SLUG_MAX_LENGTH) {
+    errors.push(`ITEM NO (Slug) is too long (${slugInput.length} characters, maximum ${SLUG_MAX_LENGTH})`);
+  } else if (!SLUG_RE.test(slugInput)) {
+    errors.push(
+      `ITEM NO "${slugInput}" can contain only letters, numbers, and hyphens (it is used as the product URL slug exactly as written, so it is not modified)`
+    );
   } else {
     slugValid = true;
-    if (seenSlugs.has(slug)) {
-      errors.push(`Duplicate Slug in file (already used by row ${seenSlugs.get(slug)})`);
+    const rowsUsing = slugRows.get(slugKey) || [rowNumber];
+    if (seenSlugs.has(slugKey)) {
+      errors.push(
+        `Duplicate ITEM NO "${slugInput}" in file (first used by row ${seenSlugs.get(slugKey)}; appears in rows ${rowsUsing.join(", ")})`
+      );
     } else {
-      seenSlugs.set(slug, rowNumber);
+      seenSlugs.set(slugKey, rowNumber);
+      const others = rowsUsing.filter((n) => n !== rowNumber);
+      if (others.length) {
+        warnings.push(`ITEM NO "${slugInput}" is repeated in row(s) ${others.join(", ")} — only this first row will be imported`);
+      }
     }
+    // An exact match with an existing slug is the normal "update" path. A match
+    // that differs only by letter case is a different URL for what is almost
+    // certainly the same item, so it is reported instead of silently updating.
+    const storedSlug = lookups.slugByKey.get(slugKey);
+    if (storedSlug !== undefined && storedSlug !== slugInput) {
+      errors.push(
+        `ITEM NO "${slugInput}" conflicts with existing product slug "${storedSlug}" (differs only by letter case)`
+      );
+    }
+  }
+  if (raw._slugColumn && raw._slugColumn !== slugInput) {
+    warnings.push(`The file has both ITEM NO and Slug columns — ITEM NO "${slugInput}" is used, Slug "${raw._slugColumn}" is ignored`);
   }
 
   let brandId = null;
@@ -283,8 +359,11 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs) {
   return {
     rowNumber,
     raw: {
-      Name: name,
+      // same order as the Excel columns (PRODUCT_EXCEL_COLUMNS)
       Slug: slugInput,
+      ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
+      Name: name,
+      ...(availabilityProvided ? { "In Stock": (raw["In Stock"] ?? "").toString().trim() } : {}),
       Brand: brandName,
       Category: categoryName,
       Series: seriesName,
@@ -293,9 +372,7 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs) {
       Description: description,
       Features: (raw.Features || "").toString(),
       Specifications: (raw.Specifications || "").toString(),
-      ...(availabilityProvided
-        ? { "In Stock": (raw["In Stock"] ?? "").toString().trim(), "Item Status": (raw["Item Status"] ?? "").toString().trim() }
-        : {}),
+      ...(availabilityProvided ? { "Item Status": (raw["Item Status"] ?? "").toString().trim() } : {}),
     },
     resolved: {
       name,
@@ -320,14 +397,22 @@ async function readWorkbookRows(buffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
   const sheet = workbook.worksheets[0];
-  if (!sheet) return { missingColumns: IMPORT_COLUMNS, rows: [], availabilityColumns: false };
+  if (!sheet) return { missingColumns: IMPORT_COLUMNS, rows: [], slugSource: "Slug", availabilityColumns: false };
 
   const headerMap = {}; // normalized header -> column index
   sheet.getRow(1).eachCell({ includeEmpty: false }, (cell, colNumber) => {
-    headerMap[normalizeHeader(cellText(cell.value))] = colNumber;
+    headerMap[normalizeHeader(cellText(cell.value)).replace(/\s+/g, " ")] = colNumber;
   });
 
-  const missingColumns = IMPORT_COLUMNS.filter((col) => !(normalizeHeader(col) in headerMap));
+  // ITEM NO (preferred) or Slug supplies the internal Slug field.
+  const itemNoKey = ITEM_NO_ALIASES.find((a) => a in headerMap);
+  const slugColIdx = itemNoKey ? headerMap[itemNoKey] : headerMap.slug;
+  const otherSlugColIdx = itemNoKey && "slug" in headerMap ? headerMap.slug : null;
+  const slugSource = itemNoKey ? "ITEM NO" : "Slug";
+
+  const missingColumns = IMPORT_COLUMNS.filter((col) =>
+    col === "Slug" ? slugColIdx === undefined : !(normalizeHeader(col) in headerMap)
+  ).map((col) => (col === "Slug" ? "Slug (or ITEM NO)" : col));
   if (missingColumns.length) return { missingColumns, rows: [], availabilityColumns: false };
 
   // Optional availability columns → their column index (if present)
@@ -343,17 +428,19 @@ async function readWorkbookRows(buffer) {
     const raw = {};
     let hasAny = false;
     for (const col of IMPORT_COLUMNS) {
-      const val = cellText(row.getCell(headerMap[normalizeHeader(col)]).value);
+      const idx = col === "Slug" ? slugColIdx : headerMap[normalizeHeader(col)];
+      const val = cellText(row.getCell(idx).value);
       raw[col] = val;
       if (val) hasAny = true;
     }
     if (hasAny) {
+      if (otherSlugColIdx) raw._slugColumn = cellText(row.getCell(otherSlugColIdx).value);
       for (const [col, idx] of Object.entries(availabilityCols)) raw[col] = cellText(row.getCell(idx).value);
       rows.push({ rowNumber, raw });
     }
   });
 
-  return { missingColumns: [], rows, availabilityColumns: Object.keys(availabilityCols).length > 0 };
+  return { missingColumns: [], rows, slugSource, availabilityColumns: Object.keys(availabilityCols).length > 0 };
 }
 
 // ---------------- export ----------------
@@ -402,15 +489,22 @@ export async function exportProductsExcel(req, res) {
     workbook.creator = "TRISAK GROUP Admin";
     workbook.created = new Date();
     const sheet = workbook.addWorksheet("Products");
-    const exportColumns = [...IMPORT_COLUMNS, ...AVAILABILITY_EXPORT_COLUMNS];
-    sheet.columns = exportColumns.map((header) => ({ header, key: header, width: columnWidth(header) }));
+    sheet.columns = PRODUCT_EXCEL_COLUMNS.map((header) => ({
+      header,
+      key: header,
+      width: columnWidth(header),
+      // ITEM NO is text: keeps leading zeros when the file is edited and re-imported
+      ...(header === "Slug" ? { style: { numFmt: "@" } } : {}),
+    }));
     sheet.getRow(1).font = { bold: true };
     sheet.views = [{ state: "frozen", ySplit: 1 }];
 
     for (const p of productsRes.rows) {
       sheet.addRow({
-        Name: p.name,
         Slug: p.slug,
+        Name: p.name,
+        // blank when never imported — nothing is inferred from the derived status
+        "In Stock": p.stock_quantity == null ? "" : Number(p.stock_quantity),
         Brand: p.brand,
         Category: p.category,
         Series: p.series || "",
@@ -419,8 +513,6 @@ export async function exportProductsExcel(req, res) {
         Description: p.description || "",
         Features: formatListField(p.features),
         Specifications: formatSpecsField(specsByProduct.get(p.id) || []),
-        // blank when never imported — nothing is inferred from the derived status
-        "In Stock": p.stock_quantity == null ? "" : Number(p.stock_quantity),
         "Item Status": p.item_status || "",
       });
     }
@@ -436,12 +528,84 @@ export async function exportProductsExcel(req, res) {
   }
 }
 
+// ---------------- import template (headers only, no data rows) ----------------
+
+const TEMPLATE_ROWS = 2000; // rows that get the number / dropdown rules
+
+export async function downloadProductImportTemplate(req, res) {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "TRISAK GROUP Admin";
+    workbook.created = new Date();
+
+    // First sheet = the one the import reads. Headers only: no sample row, so
+    // nothing placeholder can be imported by accident.
+    const sheet = workbook.addWorksheet("Products");
+    sheet.columns = PRODUCT_EXCEL_COLUMNS.map((header) => ({
+      header,
+      key: header,
+      width: columnWidth(header),
+      ...(header === "Slug" ? { style: { numFmt: "@" } } : {}), // text: keep leading zeros
+    }));
+    sheet.getRow(1).font = { bold: true };
+    sheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    const col = (header) => PRODUCT_EXCEL_COLUMNS.indexOf(header) + 1;
+    for (let r = 2; r <= TEMPLATE_ROWS + 1; r += 1) {
+      sheet.getCell(r, col("In Stock")).dataValidation = {
+        type: "decimal",
+        operator: "greaterThanOrEqual",
+        formulae: [0],
+        allowBlank: true,
+        showErrorMessage: true,
+        errorTitle: "In Stock",
+        error: "In Stock must be a number of 0 or more.",
+      };
+      sheet.getCell(r, col("Item Status")).dataValidation = {
+        type: "list",
+        formulae: ['"Active,Discontinued"'],
+        allowBlank: true,
+        showErrorMessage: true,
+        errorTitle: "Item Status",
+        error: "Item Status must be Active or Discontinued.",
+      };
+    }
+
+    const help = workbook.addWorksheet("Instructions");
+    help.columns = [{ width: 24 }, { width: 100 }];
+    const notes = [
+      ["Slug", "Required. The product's ITEM NO, used exactly as written as the product URL slug (letters, numbers and hyphens only; a column named ITEM NO is also accepted). Must be unique in the file. An existing Slug updates that product; a new Slug creates one."],
+      ["Name", "Required."],
+      ["In Stock", "Stock quantity: a number, 0 or more."],
+      ["Brand / Category", "Required. Must match an existing brand / category name."],
+      ["Series / Model", "Optional. Series must exist for that Brand/Category, otherwise it is left blank."],
+      ["Short Description / Description", "Optional text."],
+      ["Features", 'Separate entries with " | ".'],
+      ["Specifications", 'Separate entries with " | "; each entry is "Label: Value".'],
+      ["Item Status", "Active or Discontinued."],
+      ["Availability status", "Calculated on import (never read from the file): Item Status Discontinued → Discontinued (any stock); Active and In Stock > 0 → Available; Active and In Stock = 0 → Unavailable. Replacement Available and replacement products are managed by admins and are never changed by an import."],
+      ["Column order", "Columns are matched by header name, so their order in your file does not matter. In Stock and Item Status are optional columns, but if you include them, fill both."],
+    ];
+    notes.forEach((n) => help.addRow(n));
+    help.getColumn(1).font = { bold: true };
+    help.getColumn(2).alignment = { wrapText: true, vertical: "top" };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", 'attachment; filename="trisak-products-import-template.xlsx"');
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create the import template" });
+  }
+}
+
 // ---------------- import: preview (dry run — no DB writes) ----------------
 
 export async function parseProductImport(req, res) {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   try {
-    const { missingColumns, rows, availabilityColumns } = await readWorkbookRows(req.file.buffer);
+    const { missingColumns, rows, slugSource, availabilityColumns } = await readWorkbookRows(req.file.buffer);
     if (missingColumns.length) {
       return res.status(400).json({
         error: `The file is missing required column(s): ${missingColumns.join(", ")}`,
@@ -454,7 +618,18 @@ export async function parseProductImport(req, res) {
 
     const lookups = await loadLookups();
     const seenSlugs = new Map();
-    const results = rows.map(({ rowNumber, raw }) => resolveRow(rowNumber, raw, lookups, seenSlugs));
+    const slugRows = indexSlugRows(rows);
+    const results = rows.map(({ rowNumber, raw }) => resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows));
+
+    // ITEM NO values repeated inside the file — surfaced up front, before anything is committed
+    const duplicateItemNos = [...slugRows.entries()]
+      .filter(([, nums]) => nums.length > 1)
+      .map(([key, nums]) => ({
+        itemNo: rows.find((r) => r.rowNumber === nums[0]).raw.Slug,
+        rows: nums,
+        key,
+      }))
+      .map(({ itemNo, rows: nums }) => ({ itemNo, rows: nums }));
 
     const summary = results.reduce(
       (acc, r) => {
@@ -488,6 +663,8 @@ export async function parseProductImport(req, res) {
 
     res.json({
       summary,
+      slugSource,
+      duplicateItemNos,
       rows: results,
       statusSummary: { columnsPresent: availabilityColumns, resulting, fromFile, needsReview, statusChanges },
     });
@@ -517,11 +694,14 @@ export async function commitProductImport(req, res) {
     // other products may have changed since the preview was shown).
     const lookups = await loadLookups();
     const seenSlugs = new Map();
+    const slugRows = indexSlugRows(
+      items.map((item) => ({ rowNumber: item?.rowNumber, raw: item && typeof item === "object" && item.raw ? item.raw : item }))
+    );
 
     for (const item of items) {
       const raw = item && typeof item === "object" && item.raw ? item.raw : item;
       const rowNumber = item?.rowNumber;
-      const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seenSlugs);
+      const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seenSlugs, slugRows);
 
       if (rowErrors.length) {
         skipped += 1;
@@ -607,6 +787,7 @@ export async function commitProductImport(req, res) {
 
         await client.query("COMMIT");
         lookups.productIdBySlug.set(r.slug, productId); // keep lookups fresh within this batch
+        lookups.slugByKey.set(r.slug.toLowerCase(), r.slug);
         if (existingId) updated += 1;
         else added += 1;
         if (availability.provided && availability.next && availability.changed) statusUpdated += 1;
