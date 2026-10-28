@@ -30,9 +30,14 @@ import { logActivity } from "../utils/activityLog.js";
 // left exactly as they were on update, and default to empty/false/
 // next-in-line on create.
 //
+<<<<<<< HEAD
 // AVAILABILITY (optional columns "In Stock" and "Item Status", located by
 // header name — wherever they sit in the file; both are stored on the product
 // so they export again):
+=======
+// AVAILABILITY (optional columns "In Stock" and "Item Status", appended
+// after Specifications; both are stored on the product so they export again):
+>>>>>>> a052e7ab529da4274a17aa275fdfc685561fdd7b
 //   Item Status = Discontinued            → Discontinued  (always wins, any stock)
 //   Item Status = Active, In Stock > 0    → Available
 //   Item Status = Active, In Stock = 0    → Unavailable
@@ -362,8 +367,11 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
       // same order as the Excel columns (PRODUCT_EXCEL_COLUMNS)
       Slug: slugInput,
       ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
+<<<<<<< HEAD
       Name: name,
       ...(availabilityProvided ? { "In Stock": (raw["In Stock"] ?? "").toString().trim() } : {}),
+=======
+>>>>>>> a052e7ab529da4274a17aa275fdfc685561fdd7b
       Brand: brandName,
       Category: categoryName,
       Series: seriesName,
