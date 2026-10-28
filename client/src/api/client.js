@@ -88,6 +88,35 @@ function qs(params = {}) {
   return s ? `?${s}` : "";
 }
 
+// Downloads an authenticated file via a blob (a plain <a href> can't attach
+// the Authorization header).
+async function downloadAdminFile(path, fallbackName) {
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: { Authorization: token ? `Bearer ${token}` : "" },
+  });
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error("Session expired — signing you out.");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Download failed: ${res.status}`);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : fallbackName;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   // ---- public catalog ----
   getBrands: () => request("/brands"),
@@ -252,32 +281,11 @@ export const api = {
 
   // Excel export — downloads the file via a blob so the Authorization
   // header can be sent (a plain <a href> can't attach auth headers).
-  adminExportProductsExcel: async () => {
-    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    const res = await fetch(`${API_URL}/admin/products/export`, {
-      headers: { Authorization: token ? `Bearer ${token}` : "" },
-    });
-    if (res.status === 401) {
-      handleUnauthorized();
-      throw new Error("Session expired — signing you out.");
-    }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Export failed: ${res.status}`);
-    }
-    const blob = await res.blob();
-    const disposition = res.headers.get("Content-Disposition") || "";
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match ? match[1] : "products-export.xlsx";
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  },
+  adminExportProductsExcel: () => downloadAdminFile("/admin/products/export", "products-export.xlsx"),
+
+  // Blank import template (headers in the same order as the export)
+  adminDownloadProductImportTemplate: () =>
+    downloadAdminFile("/admin/products/import-template", "products-import-template.xlsx"),
 
   // multipart upload — bypasses request()/authRequest() so fetch can set
   // its own multipart/form-data boundary instead of the JSON content type
