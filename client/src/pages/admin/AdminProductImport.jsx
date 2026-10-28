@@ -173,35 +173,6 @@ export default function AdminProductImport() {
               </div>
             </div>
 
-            <p className="admin-list-table__submeta" style={{ marginTop: 12 }}>
-              ใช้คอลัมน์ <strong>{preview.slugSource === "ITEM NO" ? "ITEM NO" : "Slug"}</strong> เป็น Slug ของสินค้า
-            </p>
-            {preview.duplicateSlugs?.length > 0 && (
-              <div className="admin-edit-notice" style={{ marginTop: 12 }}>
-                ⚠️ ITEM NO ที่ต่างกันแต่สร้าง URL Slug เดียวกัน — จะไม่ถูกรวมเป็นสินค้าเดียวกัน (นำเข้าเฉพาะแถวแรก):
-                <ul style={{ margin: "6px 0 0 18px" }}>
-                  {preview.duplicateSlugs.map((d) => (
-                    <li key={d.slug}>
-                      <strong>{d.slug}</strong> ←{" "}
-                      {d.items.map((i) => `"${i.itemNo}" (แถว ${i.rowNumber})`).join(", ")}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {preview.duplicateItemNos?.length > 0 && (
-              <div className="admin-edit-notice" style={{ marginTop: 12 }}>
-                ⚠️ พบ ITEM NO ซ้ำกันในไฟล์ — แถวที่ซ้ำ (ยกเว้นแถวแรก) จะถูกข้าม:
-                <ul style={{ margin: "6px 0 0 18px" }}>
-                  {preview.duplicateItemNos.map((d) => (
-                    <li key={d.itemNo}>
-                      <strong>{d.itemNo}</strong> — แถว {d.rows.join(", ")}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
             {preview.statusSummary &&
               (preview.statusSummary.columnsPresent ? (
                 <>
@@ -253,22 +224,17 @@ export default function AdminProductImport() {
                         <td>
                           <span className={`admin-import-badge ${badge.className}`}>{badge.text}</span>
                         </td>
-                        {PREVIEW_COLUMNS.filter((c) => !c.availability || preview.statusSummary?.columnsPresent).map((c) => {
-                          const value = r.raw[c.key];
-                          return (
-                            <td
-                              key={c.key}
-                              className={c.key === "Slug" || c.key === "Name" ? "" : "admin-list-table__muted"}
-                              style={c.long ? LONG_CELL_STYLE : undefined}
-                              title={c.long && value ? value : undefined}
-                            >
-                              {value || <span className="admin-list-table__muted">—</span>}
-                              {c.key === "Slug" && value && r.resolved?.slug && r.resolved.slug !== value && (
-                                <div className="admin-list-table__submeta">URL: {r.resolved.slug}</div>
-                              )}
-                            </td>
-                          );
-                        })}
+                        <td>{r.raw.Slug || <span className="admin-list-table__muted">—</span>}</td>
+                        <td>{r.raw.Name || <span className="admin-list-table__muted">—</span>}</td>
+                        <td className="admin-list-table__muted">
+                          {r.raw.Brand}
+                          {r.raw.Category ? ` / ${r.raw.Category}` : ""}
+                        </td>
+                        {preview.statusSummary?.columnsPresent && (
+                          <td className="admin-list-table__muted">
+                            {r.raw["In Stock"] || "—"} / {r.raw["Item Status"] || "—"}
+                          </td>
+                        )}
                         {preview.statusSummary?.columnsPresent && (
                           <td>
                             {r.availability?.next ? (
