@@ -176,6 +176,7 @@ export default function AdminProductImport() {
             <p className="admin-list-table__submeta" style={{ marginTop: 12 }}>
               ใช้คอลัมน์ <strong>{preview.slugSource === "ITEM NO" ? "ITEM NO" : "Slug"}</strong> เป็น Slug ของสินค้า
             </p>
+<<<<<<< HEAD
             {preview.duplicateSlugs?.length > 0 && (
               <div className="admin-edit-notice" style={{ marginTop: 12 }}>
                 ⚠️ ITEM NO ที่ต่างกันแต่สร้าง URL Slug เดียวกัน — จะไม่ถูกรวมเป็นสินค้าเดียวกัน (นำเข้าเฉพาะแถวแรก):
@@ -189,6 +190,8 @@ export default function AdminProductImport() {
                 </ul>
               </div>
             )}
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
             {preview.duplicateItemNos?.length > 0 && (
               <div className="admin-edit-notice" style={{ marginTop: 12 }}>
                 ⚠️ พบ ITEM NO ซ้ำกันในไฟล์ — แถวที่ซ้ำ (ยกเว้นแถวแรก) จะถูกข้าม:
@@ -263,9 +266,12 @@ export default function AdminProductImport() {
                               title={c.long && value ? value : undefined}
                             >
                               {value || <span className="admin-list-table__muted">—</span>}
+<<<<<<< HEAD
                               {c.key === "Slug" && value && r.resolved?.slug && r.resolved.slug !== value && (
                                 <div className="admin-list-table__submeta">URL: {r.resolved.slug}</div>
                               )}
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
                             </td>
                           );
                         })}

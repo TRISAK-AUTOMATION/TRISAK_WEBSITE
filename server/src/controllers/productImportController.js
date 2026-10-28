@@ -13,6 +13,7 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 // the door open for a future bulk-image workflow keyed by
 // Slug/Model without touching this format.
 //
+<<<<<<< HEAD
 // ITEM NO is the import's key. The first column (header "Slug", or "ITEM NO")
 // holds the product's ITEM NO, kept exactly as written in products.item_no
 // (spaces and letter case preserved). The product URL slug is generated from
@@ -37,6 +38,22 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 // In the file itself, duplicate ITEM NOs and different ITEM NOs that generate
 // the same slug are both reported (only the first row proceeds).
 // Only the columns below are ever written — image_url, product_images,
+=======
+// Slug is the import's primary key: a row whose Slug already exists
+// updates that product; a new Slug creates one.
+//
+// SLUG = ITEM NO. The Slug of a product is its ITEM NO, taken from the
+// file exactly as written (letters, numbers and hyphens; case kept) and
+// never generated from, or altered to match, the product name. A file may
+// carry the value in a column named "Slug" (the export format) or "ITEM NO";
+// ITEM NO is mapped to the internal Slug field (it wins if both exist).
+// Per row it must be non-empty, <= 150 chars, letters/numbers/hyphens only,
+// unique within the file (case-insensitive), and must not collide with an
+// existing slug that differs only by letter case. An exact match with an
+// existing slug is the normal "update that product" path. Invalid values
+// are reported in the preview and are never "fixed" silently. Only the columns
+// below are ever written — image_url, product_images,
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
 // product_documents, related_products, is_new, and sort_order are
 // left exactly as they were on update, and default to empty/false/
 // next-in-line on create.
@@ -96,9 +113,19 @@ const MANUAL_STATUS = "replacement_available"; // admin-managed, never derived
 // separated by " | " — easier to type and read in a spreadsheet cell
 // than embedded line breaks. Each Specifications entry is "Label: Value".
 const LIST_SEPARATOR = " | ";
+<<<<<<< HEAD
 // Header aliases (matched case-insensitively, whitespace collapsed) that map to the
 // internal Slug field. ITEM NO is preferred over a plain "Slug" column.
 const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
+=======
+// ITEM NO used verbatim as the slug: letters (either case), numbers, hyphens.
+const SLUG_RE = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
+const SLUG_MAX_LENGTH = 150; // products.slug is VARCHAR(150)
+// Header aliases (matched case-insensitively, whitespace collapsed) that map to the
+// internal Slug field. ITEM NO is preferred over a plain "Slug" column.
+const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
+const SLUG_COLUMN_LABEL = "Slug (ITEM NO)";
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
 
 function normalizeHeader(s) {
   return (s || "").toString().trim().toLowerCase();
@@ -237,6 +264,7 @@ async function loadLookups() {
   return lookups;
 }
 
+<<<<<<< HEAD
 // Index of the whole file, so messages can name every row involved:
 //   byItemNo  lower-cased ITEM NO       -> { itemNo, rows[] }
 //   bySlug    lower-cased generated slug -> { slug, items: [{ rowNumber, itemNo }] }
@@ -269,15 +297,45 @@ const newSeen = () => ({ itemNos: new Map(), slugs: new Map() });
  * slug so the messages can name them all.
  */
 function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map(), bySlug: new Map() }) {
+=======
+// Map of lower-cased ITEM NO -> every row number that uses it (valid-looking
+// values only; blanks are reported per row as required-field errors).
+function indexSlugRows(entries) {
+  const map = new Map();
+  for (const { rowNumber, raw } of entries) {
+    const value = ((raw && raw.Slug) || "").toString().trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(rowNumber);
+  }
+  return map;
+}
+
+/**
+ * Validates + resolves one Excel row against the current DB state.
+ * `seenSlugs` is shared across a whole import batch so duplicate Slugs
+ * (ITEM NO values) within the same file are caught (only the first
+ * occurrence proceeds). `slugRows` (from indexSlugRows) lists every row that
+ * uses each ITEM NO so the messages can name them all.
+ */
+function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
   const errors = [];
   const warnings = [];
 
   const name = (raw.Name || "").toString().trim();
+<<<<<<< HEAD
   // The first column is the ITEM NO, kept exactly as written; the URL slug is derived from it.
   const itemNo = normalizeItemNo(raw.Slug);
   const generatedSlug = generateSlugFromItemNo(itemNo);
   const itemKey = itemNo.toLowerCase(); // comparison keys only (duplicate / collision checks)
   const slugKey = generatedSlug.toLowerCase();
+=======
+  const slugInput = (raw.Slug || "").toString().trim();
+  const slug = slugInput; // ITEM NO exactly as written — never lower-cased or regenerated
+  const slugKey = slug.toLowerCase(); // comparison key only (duplicate / collision checks)
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
   const brandName = (raw.Brand || "").toString().trim();
   const categoryName = (raw.Category || "").toString().trim();
   const seriesName = (raw.Series || "").toString().trim();
@@ -289,6 +347,7 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
 
   if (!name) errors.push("Name is required");
 
+<<<<<<< HEAD
   // ---- ITEM NO / slug ----
   let target = null; // existing product this row updates
   const itemNoError = validateItemNo(itemNo);
@@ -364,8 +423,43 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
             `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") was previously used by another product and still redirects to its current page "${retired.current_slug}" — choose a different ITEM NO`
           );
         }
+=======
+  let slugValid = false;
+  if (!slugInput) {
+    errors.push("ITEM NO (Slug) is required");
+  } else if (slugInput.length > SLUG_MAX_LENGTH) {
+    errors.push(`ITEM NO (Slug) is too long (${slugInput.length} characters, maximum ${SLUG_MAX_LENGTH})`);
+  } else if (!SLUG_RE.test(slugInput)) {
+    errors.push(
+      `ITEM NO "${slugInput}" can contain only letters, numbers, and hyphens (it is used as the product URL slug exactly as written, so it is not modified)`
+    );
+  } else {
+    slugValid = true;
+    const rowsUsing = slugRows.get(slugKey) || [rowNumber];
+    if (seenSlugs.has(slugKey)) {
+      errors.push(
+        `Duplicate ITEM NO "${slugInput}" in file (first used by row ${seenSlugs.get(slugKey)}; appears in rows ${rowsUsing.join(", ")})`
+      );
+    } else {
+      seenSlugs.set(slugKey, rowNumber);
+      const others = rowsUsing.filter((n) => n !== rowNumber);
+      if (others.length) {
+        warnings.push(`ITEM NO "${slugInput}" is repeated in row(s) ${others.join(", ")} — only this first row will be imported`);
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
       }
     }
+    // An exact match with an existing slug is the normal "update" path. A match
+    // that differs only by letter case is a different URL for what is almost
+    // certainly the same item, so it is reported instead of silently updating.
+    const storedSlug = lookups.slugByKey.get(slugKey);
+    if (storedSlug !== undefined && storedSlug !== slugInput) {
+      errors.push(
+        `ITEM NO "${slugInput}" conflicts with existing product slug "${storedSlug}" (differs only by letter case)`
+      );
+    }
+  }
+  if (raw._slugColumn && raw._slugColumn !== slugInput) {
+    warnings.push(`The file has both ITEM NO and Slug columns — ITEM NO "${slugInput}" is used, Slug "${raw._slugColumn}" is ignored`);
   }
   if (raw._slugColumn && raw._slugColumn !== itemNo) {
     warnings.push(`The file has both ITEM NO and Slug columns — ITEM NO "${itemNo}" is used, Slug "${raw._slugColumn}" is ignored`);
@@ -444,10 +538,14 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
     rowNumber,
     raw: {
       // same order as the Excel columns (PRODUCT_EXCEL_COLUMNS)
+<<<<<<< HEAD
       Slug: itemNo,
       ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
       Name: name,
       ...(availabilityProvided ? { "In Stock": (raw["In Stock"] ?? "").toString().trim() } : {}),
+=======
+      Slug: slugInput,
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
       Brand: brandName,
       Category: categoryName,
       Series: seriesName,
@@ -587,9 +685,13 @@ export async function exportProductsExcel(req, res) {
 
     for (const p of productsRes.rows) {
       sheet.addRow({
+<<<<<<< HEAD
         // the original ITEM NO; legacy products without one fall back to their slug,
         // so the file still re-imports onto the same product
         Slug: p.item_no || p.slug,
+=======
+        Slug: p.slug,
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
         Name: p.name,
         // blank when never imported — nothing is inferred from the derived status
         "In Stock": p.stock_quantity == null ? "" : Number(p.stock_quantity),
@@ -662,7 +764,11 @@ export async function downloadProductImportTemplate(req, res) {
     const help = workbook.addWorksheet("Instructions");
     help.columns = [{ width: 24 }, { width: 100 }];
     const notes = [
+<<<<<<< HEAD
       ["Slug", "Required. The product's ITEM NO, stored exactly as written (a column named ITEM NO is also accepted). It may contain letters, numbers, spaces and hyphens only. The product's URL slug is generated from it: spaces become hyphens (CIMR JT2A0010BAA -> CIMR-JT2A0010BAA). Must be unique in the file, and so must the generated slug. A product with the same ITEM NO is updated; a new ITEM NO creates a product. Different ITEM NOs are never merged."],
+=======
+      ["Slug", "Required. The product's ITEM NO, used exactly as written as the product URL slug (letters, numbers and hyphens only; a column named ITEM NO is also accepted). Must be unique in the file. An existing Slug updates that product; a new Slug creates one."],
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
       ["Name", "Required."],
       ["In Stock", "Stock quantity: a number, 0 or more."],
       ["Brand / Category", "Required. Must match an existing brand / category name."],
@@ -705,6 +811,7 @@ export async function parseProductImport(req, res) {
     }
 
     const lookups = await loadLookups();
+<<<<<<< HEAD
     const seen = newSeen();
     const index = indexItemNoRows(rows);
     const results = rows.map(({ rowNumber, raw }) => resolveRow(rowNumber, raw, lookups, seen, index));
@@ -717,6 +824,21 @@ export async function parseProductImport(req, res) {
     const duplicateSlugs = [...index.bySlug.values()]
       .filter((v) => new Set(v.items.map((i) => i.itemNo.toLowerCase())).size > 1)
       .map((v) => ({ slug: v.slug, items: v.items }));
+=======
+    const seenSlugs = new Map();
+    const slugRows = indexSlugRows(rows);
+    const results = rows.map(({ rowNumber, raw }) => resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows));
+
+    // ITEM NO values repeated inside the file — surfaced up front, before anything is committed
+    const duplicateItemNos = [...slugRows.entries()]
+      .filter(([, nums]) => nums.length > 1)
+      .map(([key, nums]) => ({
+        itemNo: rows.find((r) => r.rowNumber === nums[0]).raw.Slug,
+        rows: nums,
+        key,
+      }))
+      .map(({ itemNo, rows: nums }) => ({ itemNo, rows: nums }));
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
 
     const summary = results.reduce(
       (acc, r) => {
@@ -752,7 +874,10 @@ export async function parseProductImport(req, res) {
       summary,
       slugSource,
       duplicateItemNos,
+<<<<<<< HEAD
       duplicateSlugs,
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
       rows: results,
       statusSummary: { columnsPresent: availabilityColumns, resulting, fromFile, needsReview, statusChanges },
     });
@@ -781,15 +906,24 @@ export async function commitProductImport(req, res) {
     // trust anything the client resolved earlier — brands/categories/
     // other products may have changed since the preview was shown).
     const lookups = await loadLookups();
+<<<<<<< HEAD
     const seen = newSeen();
     const index = indexItemNoRows(
+=======
+    const seenSlugs = new Map();
+    const slugRows = indexSlugRows(
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
       items.map((item) => ({ rowNumber: item?.rowNumber, raw: item && typeof item === "object" && item.raw ? item.raw : item }))
     );
 
     for (const item of items) {
       const raw = item && typeof item === "object" && item.raw ? item.raw : item;
       const rowNumber = item?.rowNumber;
+<<<<<<< HEAD
       const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seen, index);
+=======
+      const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seenSlugs, slugRows);
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
 
       if (rowErrors.length) {
         skipped += 1;
@@ -876,8 +1010,13 @@ export async function commitProductImport(req, res) {
         }
 
         await client.query("COMMIT");
+<<<<<<< HEAD
         // keep lookups fresh within this batch (a later row can then see this product)
         registerProduct(lookups, { id: productId, slug: r.slug, item_no: r.itemNo, availability_status: "available" });
+=======
+        lookups.productIdBySlug.set(r.slug, productId); // keep lookups fresh within this batch
+        lookups.slugByKey.set(r.slug.toLowerCase(), r.slug);
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
         if (existingId) updated += 1;
         else added += 1;
         if (availability.provided && availability.next && availability.changed) statusUpdated += 1;
