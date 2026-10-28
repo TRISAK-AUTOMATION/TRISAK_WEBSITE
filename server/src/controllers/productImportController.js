@@ -30,10 +30,9 @@ import { logActivity } from "../utils/activityLog.js";
 // left exactly as they were on update, and default to empty/false/
 // next-in-line on create.
 //
-// AVAILABILITY (optional columns "In Stock" and "Item Status", located by
-// header name — wherever they sit in the file; both are stored on the product
-// so they export again):
-//   Item Status = Discontinued            → Discontinued  (always wins, any stock)
+// AVAILABILITY (optional columns "In Stock" and "Item Status", appended
+// after Specifications; both are stored on the product so they export again):
+//   Item Status = Inactive                → Discontinued  (always wins)
 //   Item Status = Active, In Stock > 0    → Available
 //   Item Status = Active, In Stock = 0    → Unavailable
 // Invalid / missing source values are flagged for review and never
@@ -147,9 +146,8 @@ function formatSpecsField(specs) {
  *            cannot be determined (then `problems` says why)
  *   itemStatus / stock   the validated source values (null when invalid)
  *   problems blocking issues (missing/invalid values)
- *   warnings non-blocking notes (e.g. bad In Stock on a Discontinued item)
- * Item Status (source) and the derived availability status are separate
- * things; Discontinued outranks stock quantity.
+ *   warnings non-blocking notes (e.g. bad Instock on an Inactive item)
+ * Inactive outranks stock quantity.
  */
 export function deriveAvailability(instockRaw, itemStatusRaw) {
   const problems = [];
@@ -157,17 +155,13 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
 
   const itemStatusText = (itemStatusRaw ?? "").toString().trim();
   const itemStatusKey = itemStatusText.toLowerCase();
-  let itemStatus = null; // "Active" | "Discontinued" when valid
+  let itemStatus = null; // "Active" | "Inactive" when valid
   if (!itemStatusText) {
     problems.push("Item Status is missing");
   } else if (!ITEM_STATUSES.includes(itemStatusKey)) {
-    problems.push(
-      itemStatusKey === "inactive"
-        ? 'Item Status "Inactive" is no longer supported (use Active or Discontinued)'
-        : `Item Status "${itemStatusText}" is not supported (use Active or Discontinued)`
-    );
+    problems.push(`Item Status "${itemStatusText}" is not supported (use Active or Inactive)`);
   } else {
-    itemStatus = itemStatusKey === "active" ? "Active" : "Discontinued";
+    itemStatus = itemStatusKey === "active" ? "Active" : "Inactive";
   }
 
   const instockText = (instockRaw ?? "").toString().trim().replace(/[,\s]/g, "");
@@ -178,9 +172,9 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
     stockProblem = `In Stock "${(instockRaw ?? "").toString().trim()}" must be a non-negative number`;
   } else stock = Number(instockText);
 
-  if (itemStatus === "Discontinued") {
-    // stock quantity is irrelevant for Discontinued items — only mention a bad value
-    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Discontinued)`);
+  if (itemStatus === "Inactive") {
+    // stock quantity is irrelevant for Inactive items — only mention a bad value
+    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Inactive)`);
     return { status: "discontinued", itemStatus, stock, problems, warnings };
   }
   if (stockProblem) problems.push(stockProblem);
@@ -361,9 +355,6 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
     raw: {
       // same order as the Excel columns (PRODUCT_EXCEL_COLUMNS)
       Slug: slugInput,
-      ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
-      Name: name,
-      ...(availabilityProvided ? { "In Stock": (raw["In Stock"] ?? "").toString().trim() } : {}),
       Brand: brandName,
       Category: categoryName,
       Series: seriesName,
@@ -372,7 +363,9 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
       Description: description,
       Features: (raw.Features || "").toString(),
       Specifications: (raw.Specifications || "").toString(),
-      ...(availabilityProvided ? { "Item Status": (raw["Item Status"] ?? "").toString().trim() } : {}),
+      ...(availabilityProvided
+        ? { "In Stock": (raw["In Stock"] ?? "").toString().trim(), "Item Status": (raw["Item Status"] ?? "").toString().trim() }
+        : {}),
     },
     resolved: {
       name,
