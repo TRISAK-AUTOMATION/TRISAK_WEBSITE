@@ -232,14 +232,14 @@ export default function AdminProducts() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={6} className="empty-state">
                   กำลังโหลด…
                 </td>
               </tr>
             )}
             {!loading && pageItems.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={6} className="empty-state">
                   ยังไม่มีสินค้า — เพิ่มรายการแรกได้เลย
                 </td>
               </tr>
