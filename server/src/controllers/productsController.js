@@ -224,7 +224,7 @@ export async function getSeries(req, res) {
 }
 
 const PRODUCT_LIST_SELECT = `
-  SELECT p.id, p.name, p.slug, p.model, p.short_description, p.image_url, p.is_new,
+  SELECT p.id, p.name, p.slug, p.item_no, p.model, p.short_description, p.image_url, p.is_new,
          p.availability_status,
          b.name AS brand, b.slug AS brand_slug,
          c.id AS category_id, c.name AS category, c.slug AS category_slug,
@@ -258,9 +258,11 @@ export async function listProducts(req, res) {
   }
   if (q) {
     values.push(`%${q}%`);
-    // model number, product name or brand — never filtered by image/availability
+    // model number, ITEM NO (as entered, or as it appears in the URL), product name or
+    // brand — never filtered by image/availability
     conditions.push(
-      `(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length} OR b.name ILIKE $${values.length})`
+      `(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length} OR b.name ILIKE $${values.length}
+        OR p.item_no ILIKE $${values.length} OR p.slug ILIKE $${values.length})`
     );
   }
   query += " WHERE " + conditions.join(" AND ");
@@ -311,6 +313,19 @@ export async function getProductBySlug(req, res) {
       [slug]
     );
     if (!productRes.rows.length) {
+      // A product whose ITEM NO (and so URL slug) was changed keeps its old URL as a
+      // redirect. The client navigates to the new URL (replace) when it sees this.
+      const moved = await pool.query(
+        `SELECT p.slug, b.slug AS brand_slug, c.slug AS category_slug, s.slug AS series_slug
+         FROM product_slug_history h
+         JOIN products p ON p.id = h.product_id
+         JOIN brands b ON b.id = p.brand_id
+         JOIN categories c ON c.id = p.category_id
+         LEFT JOIN series s ON s.id = p.series_id
+         WHERE h.old_slug = $1`,
+        [slug]
+      );
+      if (moved.rows.length) return res.json({ redirectTo: moved.rows[0] });
       return res.status(404).json({ error: "Product not found" });
     }
     const product = productRes.rows[0];

@@ -48,7 +48,11 @@ export default function AdminProducts() {
   }, []);
 
   const filtered = products
-    .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((p) =>
+      [p.name, p.item_no, p.slug, p.model]
+        .filter(Boolean)
+        .some((v) => v.toLowerCase().includes(search.toLowerCase()))
+    )
     .filter((p) => {
       if (issue === "missing-image") return !p.image_url;
       if (issue === "missing-datasheet") return !p.has_datasheet;
@@ -202,6 +206,9 @@ export default function AdminProducts() {
                   <td>
                     {p.name} {p.is_new && <span className="admin-badge-new">NEW</span>}
                     <div className="admin-list-table__submeta">{p.model}</div>
+                    <div className="admin-list-table__submeta">
+                      ITEM NO: {p.item_no || <em>not set</em>} · URL slug: {p.slug}
+                    </div>
                     {p.availability_status && p.availability_status !== "available" && (
                       <span
                         className={`availability-badge availability-badge--${p.availability_status.replace(/_/g, "-")}`}
