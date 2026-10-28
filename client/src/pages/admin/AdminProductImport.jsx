@@ -125,8 +125,8 @@ export default function AdminProductImport() {
         <div className="admin-form__section panel">
           <h3>1. เลือกไฟล์ Excel</h3>
           <p className="admin-list-table__submeta" style={{ marginBottom: 16 }}>
-            ลำดับคอลัมน์: Slug (= ITEM NO), Name, In Stock, Brand, Category, Series, Model, Short Description, Description,
-            Features, Specifications, Item Status (In Stock และ Item Status ไม่บังคับ; ระบบอ่านข้อมูลตามชื่อหัวคอลัมน์ ไม่ขึ้นกับตำแหน่งคอลัมน์) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมา หรือดาวน์โหลดเทมเพลตด้านล่างแล้วแก้ไขต่อ
+            คอลัมน์ที่ต้องมี: Name, Slug, Brand, Category, Series, Model, Short Description, Description,
+            Features, Specifications (คอลัมน์ไม่บังคับ: In Stock, Item Status — ต่อท้ายคอลัมน์ Specifications) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมาแล้วแก้ไขต่อ
             (Features/Specifications แต่ละรายการคั่นด้วย " | ", Specifications แต่ละช่องใช้รูปแบบ "ป้ายชื่อ: ค่า")
           </p>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
