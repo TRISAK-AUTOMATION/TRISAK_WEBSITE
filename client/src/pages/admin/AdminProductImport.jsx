@@ -176,6 +176,10 @@ export default function AdminProductImport() {
             <p className="admin-list-table__submeta" style={{ marginTop: 12 }}>
               ใช้คอลัมน์ <strong>{preview.slugSource === "ITEM NO" ? "ITEM NO" : "Slug"}</strong> เป็น Slug ของสินค้า
             </p>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
             {preview.duplicateSlugs?.length > 0 && (
               <div className="admin-edit-notice" style={{ marginTop: 12 }}>
                 ⚠️ ITEM NO ที่ต่างกันแต่สร้าง URL Slug เดียวกัน — จะไม่ถูกรวมเป็นสินค้าเดียวกัน (นำเข้าเฉพาะแถวแรก):
@@ -189,6 +193,11 @@ export default function AdminProductImport() {
                 </ul>
               </div>
             )}
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
             {preview.duplicateItemNos?.length > 0 && (
               <div className="admin-edit-notice" style={{ marginTop: 12 }}>
                 ⚠️ พบ ITEM NO ซ้ำกันในไฟล์ — แถวที่ซ้ำ (ยกเว้นแถวแรก) จะถูกข้าม:
@@ -263,9 +272,18 @@ export default function AdminProductImport() {
                               title={c.long && value ? value : undefined}
                             >
                               {value || <span className="admin-list-table__muted">—</span>}
+<<<<<<< HEAD
                               {c.key === "Slug" && value && r.resolved?.slug && r.resolved.slug !== value && (
                                 <div className="admin-list-table__submeta">URL: {r.resolved.slug}</div>
                               )}
+=======
+<<<<<<< HEAD
+                              {c.key === "Slug" && value && r.resolved?.slug && r.resolved.slug !== value && (
+                                <div className="admin-list-table__submeta">URL: {r.resolved.slug}</div>
+                              )}
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
                             </td>
                           );
                         })}
