@@ -21,7 +21,7 @@ import { logActivity } from "../utils/activityLog.js";
 //
 // AVAILABILITY (optional columns "In Stock" and "Item Status", appended
 // after Specifications; both are stored on the product so they export again):
-//   Item Status = Inactive                → Discontinued  (always wins)
+//   Item Status = Discontinued            → Discontinued  (always wins, any stock)
 //   Item Status = Active, In Stock > 0    → Available
 //   Item Status = Active, In Stock = 0    → Unavailable
 // Invalid / missing source values are flagged for review and never
@@ -55,7 +55,7 @@ const AVAILABILITY_COLUMNS = {
   "In Stock": ["in stock", "instock", "in-stock"],
   "Item Status": ["item status", "itemstatus", "item_status"],
 };
-const ITEM_STATUSES = ["active", "inactive"];
+const ITEM_STATUSES = ["active", "discontinued"];
 const MANUAL_STATUS = "replacement_available"; // admin-managed, never derived
 
 // Multiple Features / Specifications entries live in one cell,
@@ -118,8 +118,9 @@ function formatSpecsField(specs) {
  *            cannot be determined (then `problems` says why)
  *   itemStatus / stock   the validated source values (null when invalid)
  *   problems blocking issues (missing/invalid values)
- *   warnings non-blocking notes (e.g. bad Instock on an Inactive item)
- * Inactive outranks stock quantity.
+ *   warnings non-blocking notes (e.g. bad In Stock on a Discontinued item)
+ * Item Status (source) and the derived availability status are separate
+ * things; Discontinued outranks stock quantity.
  */
 export function deriveAvailability(instockRaw, itemStatusRaw) {
   const problems = [];
@@ -127,13 +128,17 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
 
   const itemStatusText = (itemStatusRaw ?? "").toString().trim();
   const itemStatusKey = itemStatusText.toLowerCase();
-  let itemStatus = null; // "Active" | "Inactive" when valid
+  let itemStatus = null; // "Active" | "Discontinued" when valid
   if (!itemStatusText) {
     problems.push("Item Status is missing");
   } else if (!ITEM_STATUSES.includes(itemStatusKey)) {
-    problems.push(`Item Status "${itemStatusText}" is not supported (use Active or Inactive)`);
+    problems.push(
+      itemStatusKey === "inactive"
+        ? 'Item Status "Inactive" is no longer supported (use Active or Discontinued)'
+        : `Item Status "${itemStatusText}" is not supported (use Active or Discontinued)`
+    );
   } else {
-    itemStatus = itemStatusKey === "active" ? "Active" : "Inactive";
+    itemStatus = itemStatusKey === "active" ? "Active" : "Discontinued";
   }
 
   const instockText = (instockRaw ?? "").toString().trim().replace(/[,\s]/g, "");
@@ -144,9 +149,9 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
     stockProblem = `In Stock "${(instockRaw ?? "").toString().trim()}" must be a non-negative number`;
   } else stock = Number(instockText);
 
-  if (itemStatus === "Inactive") {
-    // stock quantity is irrelevant for Inactive items — only mention a bad value
-    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Inactive)`);
+  if (itemStatus === "Discontinued") {
+    // stock quantity is irrelevant for Discontinued items — only mention a bad value
+    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Discontinued)`);
     return { status: "discontinued", itemStatus, stock, problems, warnings };
   }
   if (stockProblem) problems.push(stockProblem);

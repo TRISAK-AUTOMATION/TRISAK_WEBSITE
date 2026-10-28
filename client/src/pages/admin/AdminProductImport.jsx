@@ -85,7 +85,7 @@ export default function AdminProductImport() {
         <strong>รูปภาพสินค้าไม่ได้จัดการผ่านไฟล์นี้</strong> — เพิ่ม/แก้ไขรูปภาพได้จากหน้าแก้ไขสินค้าแต่ละรายการหลังนำเข้าแล้ว
         <br />
         <strong>สถานะสินค้า (ไม่บังคับ):</strong> หากไฟล์มีคอลัมน์ In Stock และ Item Status ระบบจะคำนวณสถานะให้อัตโนมัติ —
-        Inactive = Discontinued (สำคัญที่สุด), Active + In Stock &gt; 0 = Available, Active + In Stock = 0 = Unavailable
+        Item Status = Discontinued → Discontinued (สำคัญที่สุด ไม่สนใจจำนวนสต็อก), Active + In Stock &gt; 0 = Available, Active + In Stock = 0 = Unavailable
         สถานะ Replacement Available และสินค้าทดแทนจัดการด้วยมือเท่านั้น และจะไม่ถูกเปลี่ยนจากการนำเข้า
       </div>
 
