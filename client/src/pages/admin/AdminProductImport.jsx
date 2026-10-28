@@ -80,12 +80,12 @@ export default function AdminProductImport() {
 
       <div className="admin-edit-notice" style={{ marginBottom: 20 }}>
         📄 อัปโหลดไฟล์ Excel (.xlsx) เพื่อเพิ่ม/อัปเดตสินค้าหลายรายการพร้อมกัน — ระบบจะตรวจสอบข้อมูลและแสดงตัวอย่างก่อนบันทึกจริง
-        ระบุ Slug เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือ Slug ใหม่เพื่อสร้างสินค้าใหม่
+        ระบุ Slug (= ITEM NO) เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือค่าใหม่เพื่อสร้างสินค้าใหม่ — ใช้ ITEM NO ตามที่ระบุในไฟล์ทุกตัวอักษร (ตัวอักษร ตัวเลข และเครื่องหมาย - เท่านั้น) ไม่สร้างหรือแก้ไขจากชื่อสินค้า
         <br />
         <strong>รูปภาพสินค้าไม่ได้จัดการผ่านไฟล์นี้</strong> — เพิ่ม/แก้ไขรูปภาพได้จากหน้าแก้ไขสินค้าแต่ละรายการหลังนำเข้าแล้ว
         <br />
         <strong>สถานะสินค้า (ไม่บังคับ):</strong> หากไฟล์มีคอลัมน์ In Stock และ Item Status ระบบจะคำนวณสถานะให้อัตโนมัติ —
-        Inactive = Discontinued (สำคัญที่สุด), Active + In Stock &gt; 0 = Available, Active + In Stock = 0 = Unavailable
+        Item Status = Discontinued → Discontinued (สำคัญที่สุด ไม่สนใจจำนวนสต็อก), Active + In Stock &gt; 0 = Available, Active + In Stock = 0 = Unavailable
         สถานะ Replacement Available และสินค้าทดแทนจัดการด้วยมือเท่านั้น และจะไม่ถูกเปลี่ยนจากการนำเข้า
       </div>
 
@@ -93,7 +93,7 @@ export default function AdminProductImport() {
         <div className="admin-form__section panel">
           <h3>1. เลือกไฟล์ Excel</h3>
           <p className="admin-list-table__submeta" style={{ marginBottom: 16 }}>
-            คอลัมน์ที่ต้องมี: Name, Slug, Brand, Category, Series, Model, Short Description, Description,
+            คอลัมน์ที่ต้องมี: Name, Slug (หรือ ITEM NO), Brand, Category, Series, Model, Short Description, Description,
             Features, Specifications (คอลัมน์ไม่บังคับ: In Stock, Item Status — ต่อท้ายคอลัมน์ Specifications) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมาแล้วแก้ไขต่อ
             (Features/Specifications แต่ละรายการคั่นด้วย " | ", Specifications แต่ละช่องใช้รูปแบบ "ป้ายชื่อ: ค่า")
           </p>
@@ -137,6 +137,22 @@ export default function AdminProductImport() {
                 <span>ทั้งหมด</span>
               </div>
             </div>
+
+            <p className="admin-list-table__submeta" style={{ marginTop: 12 }}>
+              ใช้คอลัมน์ <strong>{preview.slugSource === "ITEM NO" ? "ITEM NO" : "Slug"}</strong> เป็น Slug ของสินค้า
+            </p>
+            {preview.duplicateItemNos?.length > 0 && (
+              <div className="admin-edit-notice" style={{ marginTop: 12 }}>
+                ⚠️ พบ ITEM NO ซ้ำกันในไฟล์ — แถวที่ซ้ำ (ยกเว้นแถวแรก) จะถูกข้าม:
+                <ul style={{ margin: "6px 0 0 18px" }}>
+                  {preview.duplicateItemNos.map((d) => (
+                    <li key={d.itemNo}>
+                      <strong>{d.itemNo}</strong> — แถว {d.rows.join(", ")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {preview.statusSummary &&
               (preview.statusSummary.columnsPresent ? (

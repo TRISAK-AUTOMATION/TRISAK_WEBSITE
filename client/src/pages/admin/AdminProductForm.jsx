@@ -408,8 +408,9 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           {isEdit && (
             <p className="admin-list-table__muted">
               Excel source data — In Stock: {sourceData.stock ?? "not set"}, Item Status:{" "}
-              {sourceData.itemStatus || "not set"} (set by Excel import; Available / Unavailable / Discontinued are
-              recalculated from these on each import).
+              {sourceData.itemStatus || "not set"} (set by Excel import; the availability status is a separate field,
+              recalculated from these on each import: Active + stock > 0 = Available, Active + stock = 0 =
+              Unavailable, Item Status Discontinued = Discontinued).
             </p>
           )}
 
