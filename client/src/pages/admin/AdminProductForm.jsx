@@ -6,10 +6,11 @@ import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import AdminModal, { ModalButton } from "../../components/AdminModal.jsx";
 import ProductDocumentsPanel from "../../components/ProductDocumentsPanel.jsx";
 import { AVAILABILITY_OPTIONS, REPLACEMENT_STATUSES } from "../../utils/productAvailability.js";
+import { generateSlugFromItemNo } from "../../utils/productSlug.js";
 
 const emptyForm = {
   name: "",
-  slug: "",
+  itemNo: "", // original ITEM NO; the URL slug is generated from it (never typed)
   brandId: "",
   categoryId: "",
   seriesId: "",
@@ -27,19 +28,11 @@ const emptyForm = {
   replacementProductId: "",
 };
 
-function slugify(text) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
 // Turn a raw API/database error into something an admin can act on.
 function saveErrorMessage(err) {
   const msg = (err && err.message) || "";
   if (/duplicate key|unique constraint/i.test(msg)) {
-    return "The product could not be saved because this slug is already used by another product. Please use a different slug and try again.";
+    return "The product could not be saved because this ITEM NO or its URL slug is already used by another product. Please use a different ITEM NO and try again.";
   }
   if (/failed to fetch|networkerror|load failed/i.test(msg)) {
     return "The product could not be saved. Please check your connection and try again.";
@@ -66,7 +59,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const [categories, setCategories] = useState([]);
   const [seriesList, setSeriesList] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
-  const [slugTouched, setSlugTouched] = useState(isEdit);
+  const [stored, setStored] = useState({ itemNo: null, slug: "" }); // what is saved right now (edit mode)
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -90,7 +83,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
       .then((p) => {
         const loaded = {
           name: p.name || "",
-          slug: p.slug || "",
+          itemNo: p.item_no || "",
           brandId: String(p.brand_id || ""),
           categoryId: String(p.category_id || ""),
           seriesId: p.series_id ? String(p.series_id) : "",
@@ -112,6 +105,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           sortOrder: p.sort_order ?? 0,
         };
         setForm(loaded);
+        setStored({ itemNo: p.item_no || null, slug: p.slug || "" });
         setStatusUpdatedAt(p.status_updated_at || null);
         setSourceData({ stock: p.stock_quantity ?? null, itemStatus: p.item_status || null });
         setInitialSnapshot(JSON.stringify(loaded));
@@ -129,13 +123,13 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
 
   const updateField = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
-  const handleNameChange = (value) => {
-    setForm((f) => ({
-      ...f,
-      name: value,
-      slug: slugTouched ? f.slug : slugify(value),
-    }));
-  };
+  // The URL slug is never typed: it is generated from the ITEM NO (spaces -> hyphens).
+  // Products created before ITEM NO existed have none; they keep their slug until one is entered.
+  const itemNoTrimmed = form.itemNo.trim();
+  const legacyWithoutItemNo = isEdit && !stored.itemNo;
+  const generatedSlug = itemNoTrimmed ? generateSlugFromItemNo(itemNoTrimmed) : stored.slug;
+  const itemNoChanged = isEdit && itemNoTrimmed !== "" && itemNoTrimmed !== (stored.itemNo || "");
+  const slugWillChange = itemNoChanged && generatedSlug !== stored.slug;
 
   // ---- dynamic list helpers (features / specs / images) ----
   const addListItem = (field, item) =>
@@ -166,7 +160,9 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
 
   const validate = () => {
     if (!form.name.trim()) return "Please enter the product name.";
-    if (!form.slug.trim()) return "Please enter a slug.";
+    if (!itemNoTrimmed && !legacyWithoutItemNo) return "Please enter the ITEM NO.";
+    if (itemNoTrimmed && !/^[A-Za-z0-9 \t-]+$/.test(itemNoTrimmed))
+      return "ITEM NO can contain only letters, numbers, spaces and hyphens.";
     if (!form.brandId) return "Please select a brand.";
     if (!form.categoryId) return "Please select a category.";
     if (form.availabilityStatus === "replacement_available" && !form.replacementProductId)
@@ -187,7 +183,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     const payload = {
       ...form,
       name: form.name.trim(),
-      slug: form.slug.trim(),
+      itemNo: itemNoTrimmed,
       brandId: Number(form.brandId),
       categoryId: Number(form.categoryId),
       seriesId: form.seriesId ? Number(form.seriesId) : null,
@@ -205,6 +201,8 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     // Picker hidden (e.g. status Available after an import): don't send the
     // field at all, so the stored replacement link is kept, not cleared.
     if (!REPLACEMENT_STATUSES.includes(form.availabilityStatus)) delete payload.replacementProductId;
+    // Legacy product with no ITEM NO entered: leave ITEM NO and URL slug untouched.
+    if (!itemNoTrimmed) delete payload.itemNo;
     try {
       if (isEdit) {
         await api.adminUpdateProduct(id, payload);
@@ -243,20 +241,42 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           <div className="admin-form__row">
             <label className="contact-form__field">
               <span>Name *</span>
-              <input required value={form.name} onChange={(e) => handleNameChange(e.target.value)} />
+              <input required value={form.name} onChange={(e) => updateField("name", e.target.value)} />
             </label>
             <label className="contact-form__field">
-              <span>Slug *</span>
+              <span>ITEM NO {legacyWithoutItemNo ? "" : "*"}</span>
               <input
-                required
-                value={form.slug}
-                onChange={(e) => {
-                  setSlugTouched(true);
-                  updateField("slug", e.target.value);
-                }}
+                required={!legacyWithoutItemNo}
+                value={form.itemNo}
+                placeholder="e.g. CIMR JT2A0010BAA"
+                onChange={(e) => updateField("itemNo", e.target.value)}
               />
             </label>
           </div>
+
+          <div className="admin-form__row">
+            <label className="contact-form__field">
+              <span>URL slug (generated from ITEM NO)</span>
+              <input value={generatedSlug} readOnly disabled />
+            </label>
+          </div>
+          {legacyWithoutItemNo && (
+            <p className="admin-list-table__muted">
+              This product has no ITEM NO recorded yet. Its URL slug stays "{stored.slug}" until you enter an ITEM NO;
+              the slug is then generated from it (the old URL keeps redirecting).
+            </p>
+          )}
+          {slugWillChange && (
+            <p className="admin-import-issue admin-import-issue--warning">
+              ℹ Saving will change this product's URL slug from "{stored.slug}" to "{generatedSlug}". The old URL
+              will redirect to the new one.
+            </p>
+          )}
+          {!isEdit && itemNoTrimmed && (
+            <p className="admin-list-table__muted">
+              The product URL will end in "/{generatedSlug}" (spaces in the ITEM NO become hyphens).
+            </p>
+          )}
 
           <div className="admin-form__row">
             <label className="contact-form__field">
@@ -409,7 +429,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
             <p className="admin-list-table__muted">
               Excel source data — In Stock: {sourceData.stock ?? "not set"}, Item Status:{" "}
               {sourceData.itemStatus || "not set"} (set by Excel import; the availability status is a separate field,
-              recalculated from these on each import: Active + stock > 0 = Available, Active + stock = 0 =
+              recalculated from these on each import: Active + stock &gt; 0 = Available, Active + stock = 0 =
               Unavailable, Item Status Discontinued = Discontinued).
             </p>
           )}

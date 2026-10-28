@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import pool from "../config/db.js";
 import { logActivity } from "../utils/activityLog.js";
+import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../utils/productSlug.js";
 
 // ============================================================
 // Product Management — Excel Import/Export.
@@ -12,6 +13,37 @@ import { logActivity } from "../utils/activityLog.js";
 // the door open for a future bulk-image workflow keyed by
 // Slug/Model without touching this format.
 //
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+// ITEM NO is the import's key. The first column (header "Slug", or "ITEM NO")
+// holds the product's ITEM NO, kept exactly as written in products.item_no
+// (spaces and letter case preserved). The product URL slug is generated from
+// it: trimmed, whitespace runs -> one hyphen ("CIMR JT2A0010BAA" ->
+// "CIMR-JT2A0010BAA"); see utils/productSlug.js. Nothing is generated from the
+// product name. An ITEM NO may contain only letters, numbers, spaces and
+// hyphens; anything else is reported and the row is skipped, never "fixed".
+//
+// Matching a row to an existing product (never merged silently):
+//   1. same ITEM NO as a product's stored item_no          -> update that product
+//      (its slug / URL is left as it is)
+//   2. no item_no match, but the ITEM NO equals the slug of a legacy product
+//      that has no ITEM NO recorded yet                     -> update it and
+//      record the ITEM NO (old exports, whose Slug column held the slug, keep
+//      working; the URL does not change)
+//   3. anything else that would collide is an error, reported in the preview:
+//      ITEM NO differing only by letter case from an existing one; a generated
+//      slug already used by another product (different ITEM NO, or a legacy
+//      product whose slug differs from this ITEM NO), also case-insensitively;
+//      a slug that is a retired URL of another product (it redirects there).
+//   4. otherwise                                            -> new product
+// In the file itself, duplicate ITEM NOs and different ITEM NOs that generate
+// the same slug are both reported (only the first row proceeds).
+// Only the columns below are ever written — image_url, product_images,
+<<<<<<< HEAD
+=======
+=======
 // Slug is the import's primary key: a row whose Slug already exists
 // updates that product; a new Slug creates one.
 //
@@ -26,13 +58,16 @@ import { logActivity } from "../utils/activityLog.js";
 // existing slug is the normal "update that product" path. Invalid values
 // are reported in the preview and are never "fixed" silently. Only the columns
 // below are ever written — image_url, product_images,
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
 // product_documents, related_products, is_new, and sort_order are
 // left exactly as they were on update, and default to empty/false/
 // next-in-line on create.
 //
-// AVAILABILITY (optional columns "In Stock" and "Item Status", appended
-// after Specifications; both are stored on the product so they export again):
-//   Item Status = Inactive                → Discontinued  (always wins)
+// AVAILABILITY (optional columns "In Stock" and "Item Status", located by
+// header name — wherever they sit in the file; both are stored on the product
+// so they export again):
+//   Item Status = Discontinued            → Discontinued  (always wins, any stock)
 //   Item Status = Active, In Stock > 0    → Available
 //   Item Status = Active, In Stock = 0    → Unavailable
 // Invalid / missing source values are flagged for review and never
@@ -84,6 +119,16 @@ const MANUAL_STATUS = "replacement_available"; // admin-managed, never derived
 // separated by " | " — easier to type and read in a spreadsheet cell
 // than embedded line breaks. Each Specifications entry is "Label: Value".
 const LIST_SEPARATOR = " | ";
+<<<<<<< HEAD
+// Header aliases (matched case-insensitively, whitespace collapsed) that map to the
+// internal Slug field. ITEM NO is preferred over a plain "Slug" column.
+const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
+=======
+<<<<<<< HEAD
+// Header aliases (matched case-insensitively, whitespace collapsed) that map to the
+// internal Slug field. ITEM NO is preferred over a plain "Slug" column.
+const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
+=======
 // ITEM NO used verbatim as the slug: letters (either case), numbers, hyphens.
 const SLUG_RE = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
 const SLUG_MAX_LENGTH = 150; // products.slug is VARCHAR(150)
@@ -91,6 +136,8 @@ const SLUG_MAX_LENGTH = 150; // products.slug is VARCHAR(150)
 // internal Slug field. ITEM NO is preferred over a plain "Slug" column.
 const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
 const SLUG_COLUMN_LABEL = "Slug (ITEM NO)";
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
 
 function normalizeHeader(s) {
   return (s || "").toString().trim().toLowerCase();
@@ -146,8 +193,9 @@ function formatSpecsField(specs) {
  *            cannot be determined (then `problems` says why)
  *   itemStatus / stock   the validated source values (null when invalid)
  *   problems blocking issues (missing/invalid values)
- *   warnings non-blocking notes (e.g. bad Instock on an Inactive item)
- * Inactive outranks stock quantity.
+ *   warnings non-blocking notes (e.g. bad In Stock on a Discontinued item)
+ * Item Status (source) and the derived availability status are separate
+ * things; Discontinued outranks stock quantity.
  */
 export function deriveAvailability(instockRaw, itemStatusRaw) {
   const problems = [];
@@ -155,13 +203,17 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
 
   const itemStatusText = (itemStatusRaw ?? "").toString().trim();
   const itemStatusKey = itemStatusText.toLowerCase();
-  let itemStatus = null; // "Active" | "Inactive" when valid
+  let itemStatus = null; // "Active" | "Discontinued" when valid
   if (!itemStatusText) {
     problems.push("Item Status is missing");
   } else if (!ITEM_STATUSES.includes(itemStatusKey)) {
-    problems.push(`Item Status "${itemStatusText}" is not supported (use Active or Inactive)`);
+    problems.push(
+      itemStatusKey === "inactive"
+        ? 'Item Status "Inactive" is no longer supported (use Active or Discontinued)'
+        : `Item Status "${itemStatusText}" is not supported (use Active or Discontinued)`
+    );
   } else {
-    itemStatus = itemStatusKey === "active" ? "Active" : "Inactive";
+    itemStatus = itemStatusKey === "active" ? "Active" : "Discontinued";
   }
 
   const instockText = (instockRaw ?? "").toString().trim().replace(/[,\s]/g, "");
@@ -172,9 +224,9 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
     stockProblem = `In Stock "${(instockRaw ?? "").toString().trim()}" must be a non-negative number`;
   } else stock = Number(instockText);
 
-  if (itemStatus === "Inactive") {
-    // stock quantity is irrelevant for Inactive items — only mention a bad value
-    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Inactive)`);
+  if (itemStatus === "Discontinued") {
+    // stock quantity is irrelevant for Discontinued items — only mention a bad value
+    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Discontinued)`);
     return { status: "discontinued", itemStatus, stock, problems, warnings };
   }
   if (stockProblem) problems.push(stockProblem);
@@ -186,26 +238,80 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
 // Used by both the dry-run preview and the real commit, so the two can
 // never disagree about what's valid.
 
+// Keeps every product-lookup map in step. Used when loading and again after a
+// row of the current batch inserts a product, so later rows see it.
+function registerProduct(lookups, p) {
+  const entry = { id: p.id, slug: p.slug, item_no: p.item_no ?? null };
+  lookups.bySlug.set(p.slug, entry);
+  lookups.bySlugKey.set(p.slug.toLowerCase(), entry);
+  if (entry.item_no) lookups.byItemNoKey.set(entry.item_no.toLowerCase(), entry);
+  lookups.statusBySlug.set(p.slug, p.availability_status);
+}
+
 async function loadLookups() {
-  const [brandsRes, categoriesRes, seriesRes, productsRes] = await Promise.all([
+  const [brandsRes, categoriesRes, seriesRes, productsRes, historyRes] = await Promise.all([
     pool.query("SELECT id, name FROM brands"),
     pool.query("SELECT id, name FROM categories"),
     pool.query("SELECT id, name, brand_id, category_id FROM series"),
-    pool.query("SELECT id, slug, availability_status FROM products"),
+    pool.query("SELECT id, slug, item_no, availability_status FROM products"),
+    pool.query(
+      `SELECT h.old_slug, p.slug AS current_slug, p.item_no
+       FROM product_slug_history h JOIN products p ON p.id = h.product_id`
+    ),
   ]);
-  return {
+  const lookups = {
     brandsByName: new Map(brandsRes.rows.map((b) => [normalizeHeader(b.name), b.id])),
     categoriesByName: new Map(categoriesRes.rows.map((c) => [normalizeHeader(c.name), c.id])),
     seriesByKey: new Map(
       seriesRes.rows.map((s) => [`${s.brand_id}::${s.category_id}::${normalizeHeader(s.name)}`, s.id])
     ),
-    productIdBySlug: new Map(productsRes.rows.map((p) => [p.slug, p.id])),
-    // lower-cased slug -> stored slug, to catch case-only collisions
-    slugByKey: new Map(productsRes.rows.map((p) => [p.slug.toLowerCase(), p.slug])),
-    statusBySlug: new Map(productsRes.rows.map((p) => [p.slug, p.availability_status])),
+    byItemNoKey: new Map(), // lower-cased item_no -> { id, slug, item_no }
+    bySlug: new Map(), // exact slug -> { id, slug, item_no }
+    bySlugKey: new Map(), // lower-cased slug -> same entry (case-only collisions)
+    statusBySlug: new Map(),
+    // retired slugs that still redirect to a product
+    historyBySlugKey: new Map(historyRes.rows.map((h) => [h.old_slug.toLowerCase(), h])),
   };
+  productsRes.rows.forEach((p) => registerProduct(lookups, p));
+  return lookups;
+<<<<<<< HEAD
+=======
 }
 
+<<<<<<< HEAD
+// Index of the whole file, so messages can name every row involved:
+//   byItemNo  lower-cased ITEM NO       -> { itemNo, rows[] }
+//   bySlug    lower-cased generated slug -> { slug, items: [{ rowNumber, itemNo }] }
+// Only ITEM NOs that pass validation are indexed; invalid / blank values are
+// reported per row.
+function indexItemNoRows(entries) {
+  const byItemNo = new Map();
+  const bySlug = new Map();
+  for (const { rowNumber, raw } of entries) {
+    const itemNo = normalizeItemNo(raw && raw.Slug);
+    if (!itemNo || validateItemNo(itemNo)) continue;
+    const slug = generateSlugFromItemNo(itemNo);
+    const itemKey = itemNo.toLowerCase();
+    const slugKey = slug.toLowerCase();
+    if (!byItemNo.has(itemKey)) byItemNo.set(itemKey, { itemNo, rows: [] });
+    byItemNo.get(itemKey).rows.push(rowNumber);
+    if (!bySlug.has(slugKey)) bySlug.set(slugKey, { slug, items: [] });
+    bySlug.get(slugKey).items.push({ rowNumber, itemNo });
+  }
+  return { byItemNo, bySlug };
+}
+
+const newSeen = () => ({ itemNos: new Map(), slugs: new Map() });
+
+/**
+ * Validates + resolves one Excel row against the current DB state.
+ * `seen` is shared across a whole import batch (see newSeen) so duplicates
+ * within the same file are caught — only the first occurrence proceeds.
+ * `index` (from indexItemNoRows) lists every row using each ITEM NO / generated
+ * slug so the messages can name them all.
+ */
+function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map(), bySlug: new Map() }) {
+=======
 // Map of lower-cased ITEM NO -> every row number that uses it (valid-looking
 // values only; blanks are reported per row as required-field errors).
 function indexSlugRows(entries) {
@@ -218,23 +324,72 @@ function indexSlugRows(entries) {
     map.get(key).push(rowNumber);
   }
   return map;
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
 }
+
+// Index of the whole file, so messages can name every row involved:
+//   byItemNo  lower-cased ITEM NO       -> { itemNo, rows[] }
+//   bySlug    lower-cased generated slug -> { slug, items: [{ rowNumber, itemNo }] }
+// Only ITEM NOs that pass validation are indexed; invalid / blank values are
+// reported per row.
+function indexItemNoRows(entries) {
+  const byItemNo = new Map();
+  const bySlug = new Map();
+  for (const { rowNumber, raw } of entries) {
+    const itemNo = normalizeItemNo(raw && raw.Slug);
+    if (!itemNo || validateItemNo(itemNo)) continue;
+    const slug = generateSlugFromItemNo(itemNo);
+    const itemKey = itemNo.toLowerCase();
+    const slugKey = slug.toLowerCase();
+    if (!byItemNo.has(itemKey)) byItemNo.set(itemKey, { itemNo, rows: [] });
+    byItemNo.get(itemKey).rows.push(rowNumber);
+    if (!bySlug.has(slugKey)) bySlug.set(slugKey, { slug, items: [] });
+    bySlug.get(slugKey).items.push({ rowNumber, itemNo });
+  }
+  return { byItemNo, bySlug };
+}
+
+const newSeen = () => ({ itemNos: new Map(), slugs: new Map() });
 
 /**
  * Validates + resolves one Excel row against the current DB state.
+<<<<<<< HEAD
+ * `seen` is shared across a whole import batch (see newSeen) so duplicates
+ * within the same file are caught — only the first occurrence proceeds.
+ * `index` (from indexItemNoRows) lists every row using each ITEM NO / generated
+ * slug so the messages can name them all.
+ */
+function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map(), bySlug: new Map() }) {
+=======
  * `seenSlugs` is shared across a whole import batch so duplicate Slugs
  * (ITEM NO values) within the same file are caught (only the first
  * occurrence proceeds). `slugRows` (from indexSlugRows) lists every row that
  * uses each ITEM NO so the messages can name them all.
  */
 function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
   const errors = [];
   const warnings = [];
 
   const name = (raw.Name || "").toString().trim();
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+  // The first column is the ITEM NO, kept exactly as written; the URL slug is derived from it.
+  const itemNo = normalizeItemNo(raw.Slug);
+  const generatedSlug = generateSlugFromItemNo(itemNo);
+  const itemKey = itemNo.toLowerCase(); // comparison keys only (duplicate / collision checks)
+  const slugKey = generatedSlug.toLowerCase();
+<<<<<<< HEAD
+=======
+=======
   const slugInput = (raw.Slug || "").toString().trim();
   const slug = slugInput; // ITEM NO exactly as written — never lower-cased or regenerated
   const slugKey = slug.toLowerCase(); // comparison key only (duplicate / collision checks)
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
   const brandName = (raw.Brand || "").toString().trim();
   const categoryName = (raw.Category || "").toString().trim();
   const seriesName = (raw.Series || "").toString().trim();
@@ -246,6 +401,161 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
 
   if (!name) errors.push("Name is required");
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+  // ---- ITEM NO / slug ----
+  let target = null; // existing product this row updates
+  const itemNoError = validateItemNo(itemNo);
+  if (itemNoError) {
+    errors.push(itemNoError);
+<<<<<<< HEAD
+  } else {
+    // 1) duplicates inside the file
+    let fileConflict = false;
+    const rowsUsing = index.byItemNo.get(itemKey)?.rows || [rowNumber];
+    const slugItems = index.bySlug.get(slugKey)?.items || [{ rowNumber, itemNo }];
+    if (seen.itemNos.has(itemKey)) {
+      fileConflict = true;
+      errors.push(
+        `Duplicate ITEM NO "${itemNo}" in file (first used by row ${seen.itemNos.get(itemKey)}; appears in rows ${rowsUsing.join(", ")})`
+      );
+    } else if (seen.slugs.has(slugKey)) {
+      fileConflict = true;
+      const first = seen.slugs.get(slugKey);
+      errors.push(
+        `Generated URL slug "${generatedSlug}" is the same for different ITEM NOs: "${first.itemNo}" (row ${first.rowNumber}) and "${itemNo}" (row ${rowNumber}). They would share one product URL, so this row is skipped — give them distinct ITEM NOs`
+      );
+    } else {
+      seen.itemNos.set(itemKey, rowNumber);
+      seen.slugs.set(slugKey, { rowNumber, itemNo });
+      const sameItem = rowsUsing.filter((n) => n !== rowNumber);
+      const sameSlug = slugItems.filter((i) => i.itemNo.toLowerCase() !== itemKey);
+      if (sameItem.length) {
+        warnings.push(`ITEM NO "${itemNo}" is repeated in row(s) ${sameItem.join(", ")} — only this first row will be imported`);
+      }
+      if (sameSlug.length) {
+        warnings.push(
+          `URL slug "${generatedSlug}" is also generated by ITEM NO ${sameSlug.map((i) => `"${i.itemNo}" (row ${i.rowNumber})`).join(", ")} — only this first row will be imported`
+        );
+      }
+    }
+
+    // 2) existing products — never merged on a normalised-slug match alone
+    if (!fileConflict) {
+      const byItem = lookups.byItemNoKey.get(itemKey);
+      if (byItem) {
+        if (byItem.item_no === itemNo) {
+          target = byItem; // same ITEM NO -> update; its URL is not touched
+          if (byItem.slug !== generatedSlug) {
+            warnings.push(`Existing URL slug "${byItem.slug}" is kept (the slug generated from this ITEM NO would be "${generatedSlug}")`);
+          }
+        } else {
+          errors.push(
+            `ITEM NO "${itemNo}" conflicts with existing product ITEM NO "${byItem.item_no}" (differs only by letter case)`
+          );
+        }
+      } else {
+        const bySlugExact = lookups.bySlug.get(generatedSlug);
+        const bySlugCase = lookups.bySlugKey.get(slugKey);
+        const retired = lookups.historyBySlugKey.get(slugKey);
+        if (bySlugExact && bySlugExact.item_no == null && itemNo === bySlugExact.slug) {
+          // legacy product (no ITEM NO recorded): matched by its current slug, as old exports did
+          target = bySlugExact;
+          warnings.push(`Matched existing product by its current slug "${bySlugExact.slug}"; ITEM NO "${itemNo}" will be recorded on it (its URL does not change)`);
+        } else if (bySlugExact && bySlugExact.item_no == null) {
+          errors.push(
+            `URL slug "${generatedSlug}" is already used by an existing product that has no ITEM NO recorded. It is not merged with ITEM NO "${itemNo}" — to update that product use its current slug "${bySlugExact.slug}" as the ITEM NO, otherwise choose a different ITEM NO`
+          );
+        } else if (bySlugExact) {
+          errors.push(
+            `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") is already used by existing product ITEM NO "${bySlugExact.item_no}". Different ITEM NOs are not merged — choose a different ITEM NO`
+          );
+        } else if (bySlugCase) {
+          errors.push(
+            `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") differs only by letter case from existing product slug "${bySlugCase.slug}"`
+          );
+        } else if (retired) {
+          errors.push(
+            `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") was previously used by another product and still redirects to its current page "${retired.current_slug}" — choose a different ITEM NO`
+          );
+        }
+      }
+    }
+  }
+=======
+  } else {
+    // 1) duplicates inside the file
+    let fileConflict = false;
+    const rowsUsing = index.byItemNo.get(itemKey)?.rows || [rowNumber];
+    const slugItems = index.bySlug.get(slugKey)?.items || [{ rowNumber, itemNo }];
+    if (seen.itemNos.has(itemKey)) {
+      fileConflict = true;
+      errors.push(
+        `Duplicate ITEM NO "${itemNo}" in file (first used by row ${seen.itemNos.get(itemKey)}; appears in rows ${rowsUsing.join(", ")})`
+      );
+    } else if (seen.slugs.has(slugKey)) {
+      fileConflict = true;
+      const first = seen.slugs.get(slugKey);
+      errors.push(
+        `Generated URL slug "${generatedSlug}" is the same for different ITEM NOs: "${first.itemNo}" (row ${first.rowNumber}) and "${itemNo}" (row ${rowNumber}). They would share one product URL, so this row is skipped — give them distinct ITEM NOs`
+      );
+    } else {
+      seen.itemNos.set(itemKey, rowNumber);
+      seen.slugs.set(slugKey, { rowNumber, itemNo });
+      const sameItem = rowsUsing.filter((n) => n !== rowNumber);
+      const sameSlug = slugItems.filter((i) => i.itemNo.toLowerCase() !== itemKey);
+      if (sameItem.length) {
+        warnings.push(`ITEM NO "${itemNo}" is repeated in row(s) ${sameItem.join(", ")} — only this first row will be imported`);
+      }
+      if (sameSlug.length) {
+        warnings.push(
+          `URL slug "${generatedSlug}" is also generated by ITEM NO ${sameSlug.map((i) => `"${i.itemNo}" (row ${i.rowNumber})`).join(", ")} — only this first row will be imported`
+        );
+      }
+    }
+
+    // 2) existing products — never merged on a normalised-slug match alone
+    if (!fileConflict) {
+      const byItem = lookups.byItemNoKey.get(itemKey);
+      if (byItem) {
+        if (byItem.item_no === itemNo) {
+          target = byItem; // same ITEM NO -> update; its URL is not touched
+          if (byItem.slug !== generatedSlug) {
+            warnings.push(`Existing URL slug "${byItem.slug}" is kept (the slug generated from this ITEM NO would be "${generatedSlug}")`);
+          }
+        } else {
+          errors.push(
+            `ITEM NO "${itemNo}" conflicts with existing product ITEM NO "${byItem.item_no}" (differs only by letter case)`
+          );
+        }
+      } else {
+        const bySlugExact = lookups.bySlug.get(generatedSlug);
+        const bySlugCase = lookups.bySlugKey.get(slugKey);
+        const retired = lookups.historyBySlugKey.get(slugKey);
+        if (bySlugExact && bySlugExact.item_no == null && itemNo === bySlugExact.slug) {
+          // legacy product (no ITEM NO recorded): matched by its current slug, as old exports did
+          target = bySlugExact;
+          warnings.push(`Matched existing product by its current slug "${bySlugExact.slug}"; ITEM NO "${itemNo}" will be recorded on it (its URL does not change)`);
+        } else if (bySlugExact && bySlugExact.item_no == null) {
+          errors.push(
+            `URL slug "${generatedSlug}" is already used by an existing product that has no ITEM NO recorded. It is not merged with ITEM NO "${itemNo}" — to update that product use its current slug "${bySlugExact.slug}" as the ITEM NO, otherwise choose a different ITEM NO`
+          );
+        } else if (bySlugExact) {
+          errors.push(
+            `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") is already used by existing product ITEM NO "${bySlugExact.item_no}". Different ITEM NOs are not merged — choose a different ITEM NO`
+          );
+        } else if (bySlugCase) {
+          errors.push(
+            `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") differs only by letter case from existing product slug "${bySlugCase.slug}"`
+          );
+        } else if (retired) {
+          errors.push(
+            `URL slug "${generatedSlug}" (from ITEM NO "${itemNo}") was previously used by another product and still redirects to its current page "${retired.current_slug}" — choose a different ITEM NO`
+          );
+        }
+=======
   let slugValid = false;
   if (!slugInput) {
     errors.push("ITEM NO (Slug) is required");
@@ -267,6 +577,7 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
       const others = rowsUsing.filter((n) => n !== rowNumber);
       if (others.length) {
         warnings.push(`ITEM NO "${slugInput}" is repeated in row(s) ${others.join(", ")} — only this first row will be imported`);
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
       }
     }
     // An exact match with an existing slug is the normal "update" path. A match
@@ -282,6 +593,12 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
   if (raw._slugColumn && raw._slugColumn !== slugInput) {
     warnings.push(`The file has both ITEM NO and Slug columns — ITEM NO "${slugInput}" is used, Slug "${raw._slugColumn}" is ignored`);
   }
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+  if (raw._slugColumn && raw._slugColumn !== itemNo) {
+    warnings.push(`The file has both ITEM NO and Slug columns — ITEM NO "${itemNo}" is used, Slug "${raw._slugColumn}" is ignored`);
+  }
+  // An updated product keeps its own slug (URL); a new one gets the generated slug.
+  const slug = target ? target.slug : generatedSlug;
 
   let brandId = null;
   if (!brandName) errors.push("Brand is required");
@@ -307,7 +624,7 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
     }
   }
 
-  const exists = slugValid && lookups.productIdBySlug.has(slug);
+  const exists = Boolean(target);
 
   // ---- availability (only when the file carries the source columns) ----
   const availabilityProvided = raw["In Stock"] !== undefined || raw["Item Status"] !== undefined;
@@ -354,7 +671,20 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
     rowNumber,
     raw: {
       // same order as the Excel columns (PRODUCT_EXCEL_COLUMNS)
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+      Slug: itemNo,
+      ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
+      Name: name,
+      ...(availabilityProvided ? { "In Stock": (raw["In Stock"] ?? "").toString().trim() } : {}),
+<<<<<<< HEAD
+=======
+=======
       Slug: slugInput,
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
       Brand: brandName,
       Category: categoryName,
       Series: seriesName,
@@ -363,13 +693,13 @@ function resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows = new Map()) {
       Description: description,
       Features: (raw.Features || "").toString(),
       Specifications: (raw.Specifications || "").toString(),
-      ...(availabilityProvided
-        ? { "In Stock": (raw["In Stock"] ?? "").toString().trim(), "Item Status": (raw["Item Status"] ?? "").toString().trim() }
-        : {}),
+      ...(availabilityProvided ? { "Item Status": (raw["Item Status"] ?? "").toString().trim() } : {}),
     },
     resolved: {
       name,
+      itemNo,
       slug,
+      existingId: target ? target.id : null,
       brandId,
       categoryId,
       seriesId,
@@ -460,7 +790,7 @@ export async function exportProductsExcel(req, res) {
   try {
     const [productsRes, specsRes] = await Promise.all([
       pool.query(
-        `SELECT p.id, p.name, p.slug, p.model, p.short_description, p.description, p.features,
+        `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.short_description, p.description, p.features,
                 p.stock_quantity, p.item_status,
                 b.name AS brand, c.name AS category, s.name AS series
          FROM products p
@@ -494,7 +824,19 @@ export async function exportProductsExcel(req, res) {
 
     for (const p of productsRes.rows) {
       sheet.addRow({
+<<<<<<< HEAD
+        // the original ITEM NO; legacy products without one fall back to their slug,
+        // so the file still re-imports onto the same product
+        Slug: p.item_no || p.slug,
+=======
+<<<<<<< HEAD
+        // the original ITEM NO; legacy products without one fall back to their slug,
+        // so the file still re-imports onto the same product
+        Slug: p.item_no || p.slug,
+=======
         Slug: p.slug,
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
         Name: p.name,
         // blank when never imported — nothing is inferred from the derived status
         "In Stock": p.stock_quantity == null ? "" : Number(p.stock_quantity),
@@ -567,7 +909,15 @@ export async function downloadProductImportTemplate(req, res) {
     const help = workbook.addWorksheet("Instructions");
     help.columns = [{ width: 24 }, { width: 100 }];
     const notes = [
+<<<<<<< HEAD
+      ["Slug", "Required. The product's ITEM NO, stored exactly as written (a column named ITEM NO is also accepted). It may contain letters, numbers, spaces and hyphens only. The product's URL slug is generated from it: spaces become hyphens (CIMR JT2A0010BAA -> CIMR-JT2A0010BAA). Must be unique in the file, and so must the generated slug. A product with the same ITEM NO is updated; a new ITEM NO creates a product. Different ITEM NOs are never merged."],
+=======
+<<<<<<< HEAD
+      ["Slug", "Required. The product's ITEM NO, stored exactly as written (a column named ITEM NO is also accepted). It may contain letters, numbers, spaces and hyphens only. The product's URL slug is generated from it: spaces become hyphens (CIMR JT2A0010BAA -> CIMR-JT2A0010BAA). Must be unique in the file, and so must the generated slug. A product with the same ITEM NO is updated; a new ITEM NO creates a product. Different ITEM NOs are never merged."],
+=======
       ["Slug", "Required. The product's ITEM NO, used exactly as written as the product URL slug (letters, numbers and hyphens only; a column named ITEM NO is also accepted). Must be unique in the file. An existing Slug updates that product; a new Slug creates one."],
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
       ["Name", "Required."],
       ["In Stock", "Stock quantity: a number, 0 or more."],
       ["Brand / Category", "Required. Must match an existing brand / category name."],
@@ -610,6 +960,25 @@ export async function parseProductImport(req, res) {
     }
 
     const lookups = await loadLookups();
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+    const seen = newSeen();
+    const index = indexItemNoRows(rows);
+    const results = rows.map(({ rowNumber, raw }) => resolveRow(rowNumber, raw, lookups, seen, index));
+
+    // Repeats inside the file — surfaced up front, before anything is committed
+    const duplicateItemNos = [...index.byItemNo.values()]
+      .filter((v) => v.rows.length > 1)
+      .map((v) => ({ itemNo: v.itemNo, rows: v.rows }));
+    // different ITEM NOs that generate the same URL slug
+    const duplicateSlugs = [...index.bySlug.values()]
+      .filter((v) => new Set(v.items.map((i) => i.itemNo.toLowerCase())).size > 1)
+      .map((v) => ({ slug: v.slug, items: v.items }));
+<<<<<<< HEAD
+=======
+=======
     const seenSlugs = new Map();
     const slugRows = indexSlugRows(rows);
     const results = rows.map(({ rowNumber, raw }) => resolveRow(rowNumber, raw, lookups, seenSlugs, slugRows));
@@ -623,6 +992,8 @@ export async function parseProductImport(req, res) {
         key,
       }))
       .map(({ itemNo, rows: nums }) => ({ itemNo, rows: nums }));
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
 
     const summary = results.reduce(
       (acc, r) => {
@@ -658,6 +1029,14 @@ export async function parseProductImport(req, res) {
       summary,
       slugSource,
       duplicateItemNos,
+<<<<<<< HEAD
+      duplicateSlugs,
+=======
+<<<<<<< HEAD
+      duplicateSlugs,
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
       rows: results,
       statusSummary: { columnsPresent: availabilityColumns, resulting, fromFile, needsReview, statusChanges },
     });
@@ -686,15 +1065,33 @@ export async function commitProductImport(req, res) {
     // trust anything the client resolved earlier — brands/categories/
     // other products may have changed since the preview was shown).
     const lookups = await loadLookups();
+<<<<<<< HEAD
+    const seen = newSeen();
+    const index = indexItemNoRows(
+=======
+<<<<<<< HEAD
+    const seen = newSeen();
+    const index = indexItemNoRows(
+=======
     const seenSlugs = new Map();
     const slugRows = indexSlugRows(
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
       items.map((item) => ({ rowNumber: item?.rowNumber, raw: item && typeof item === "object" && item.raw ? item.raw : item }))
     );
 
     for (const item of items) {
       const raw = item && typeof item === "object" && item.raw ? item.raw : item;
       const rowNumber = item?.rowNumber;
+<<<<<<< HEAD
+      const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seen, index);
+=======
+<<<<<<< HEAD
+      const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seen, index);
+=======
       const { resolved, errors: rowErrors, warnings: rowWarnings, availability } = resolveRow(rowNumber, raw || {}, lookups, seenSlugs, slugRows);
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
 
       if (rowErrors.length) {
         skipped += 1;
@@ -705,7 +1102,7 @@ export async function commitProductImport(req, res) {
       const r = resolved;
       try {
         await client.query("BEGIN");
-        const existingId = lookups.productIdBySlug.get(r.slug);
+        const existingId = r.existingId; // matched by ITEM NO (see resolveRow)
 
         let productId;
         if (existingId) {
@@ -716,8 +1113,8 @@ export async function commitProductImport(req, res) {
             `UPDATE products SET
                name = $1, brand_id = $2, category_id = $3, series_id = $4,
                model = $5, short_description = $6, description = $7, features = $8,
-               updated_at = now()
-             WHERE id = $9`,
+               item_no = $9, updated_at = now()
+             WHERE id = $10`,
             [
               r.name,
               r.brandId,
@@ -727,6 +1124,7 @@ export async function commitProductImport(req, res) {
               r.shortDescription || null,
               r.description || null,
               r.features,
+              r.itemNo, // same value on a normal update; recorded once on a legacy product
               existingId,
             ]
           );
@@ -738,8 +1136,8 @@ export async function commitProductImport(req, res) {
           );
           const insertRes = await client.query(
             `INSERT INTO products
-               (name, slug, brand_id, category_id, series_id, model, short_description, description, features, sort_order)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+               (name, slug, brand_id, category_id, series_id, model, short_description, description, features, sort_order, item_no)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
             [
               r.name,
               r.slug,
@@ -751,6 +1149,7 @@ export async function commitProductImport(req, res) {
               r.description || null,
               r.features,
               maxRows[0].n,
+              r.itemNo,
             ]
           );
           productId = insertRes.rows[0].id;
@@ -779,8 +1178,18 @@ export async function commitProductImport(req, res) {
         }
 
         await client.query("COMMIT");
+<<<<<<< HEAD
+        // keep lookups fresh within this batch (a later row can then see this product)
+        registerProduct(lookups, { id: productId, slug: r.slug, item_no: r.itemNo, availability_status: "available" });
+=======
+<<<<<<< HEAD
+        // keep lookups fresh within this batch (a later row can then see this product)
+        registerProduct(lookups, { id: productId, slug: r.slug, item_no: r.itemNo, availability_status: "available" });
+=======
         lookups.productIdBySlug.set(r.slug, productId); // keep lookups fresh within this batch
         lookups.slugByKey.set(r.slug.toLowerCase(), r.slug);
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
         if (existingId) updated += 1;
         else added += 1;
         if (availability.provided && availability.next && availability.changed) statusUpdated += 1;

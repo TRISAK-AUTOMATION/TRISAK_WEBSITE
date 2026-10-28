@@ -112,7 +112,7 @@ export default function AdminProductImport() {
 
       <div className="admin-edit-notice" style={{ marginBottom: 20 }}>
         📄 อัปโหลดไฟล์ Excel (.xlsx) เพื่อเพิ่ม/อัปเดตสินค้าหลายรายการพร้อมกัน — ระบบจะตรวจสอบข้อมูลและแสดงตัวอย่างก่อนบันทึกจริง
-        ระบุ Slug (= ITEM NO) เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือค่าใหม่เพื่อสร้างสินค้าใหม่ — ใช้ ITEM NO ตามที่ระบุในไฟล์ทุกตัวอักษร (ตัวอักษร ตัวเลข และเครื่องหมาย - เท่านั้น) ไม่สร้างหรือแก้ไขจากชื่อสินค้า
+        คอลัมน์ Slug (= ITEM NO) ใช้ ITEM NO เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือค่าใหม่เพื่อสร้างสินค้าใหม่ — ระบบเก็บ ITEM NO ตามที่ระบุในไฟล์ทุกตัวอักษร (ตัวอักษร ตัวเลข เว้นวรรค และเครื่องหมาย - เท่านั้น) และสร้าง URL Slug จาก ITEM NO โดยเปลี่ยนช่องว่างเป็น - (เช่น CIMR JT2A0010BAA → CIMR-JT2A0010BAA) ไม่สร้างจากชื่อสินค้า สินค้าที่มีอยู่แล้วจะไม่ถูกเปลี่ยน URL และ ITEM NO ที่ต่างกันจะไม่ถูกรวมเป็นสินค้าเดียวกัน
         <br />
         <strong>รูปภาพสินค้าไม่ได้จัดการผ่านไฟล์นี้</strong> — เพิ่ม/แก้ไขรูปภาพได้จากหน้าแก้ไขสินค้าแต่ละรายการหลังนำเข้าแล้ว
         <br />
@@ -176,6 +176,28 @@ export default function AdminProductImport() {
             <p className="admin-list-table__submeta" style={{ marginTop: 12 }}>
               ใช้คอลัมน์ <strong>{preview.slugSource === "ITEM NO" ? "ITEM NO" : "Slug"}</strong> เป็น Slug ของสินค้า
             </p>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
+            {preview.duplicateSlugs?.length > 0 && (
+              <div className="admin-edit-notice" style={{ marginTop: 12 }}>
+                ⚠️ ITEM NO ที่ต่างกันแต่สร้าง URL Slug เดียวกัน — จะไม่ถูกรวมเป็นสินค้าเดียวกัน (นำเข้าเฉพาะแถวแรก):
+                <ul style={{ margin: "6px 0 0 18px" }}>
+                  {preview.duplicateSlugs.map((d) => (
+                    <li key={d.slug}>
+                      <strong>{d.slug}</strong> ←{" "}
+                      {d.items.map((i) => `"${i.itemNo}" (แถว ${i.rowNumber})`).join(", ")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
             {preview.duplicateItemNos?.length > 0 && (
               <div className="admin-edit-notice" style={{ marginTop: 12 }}>
                 ⚠️ พบ ITEM NO ซ้ำกันในไฟล์ — แถวที่ซ้ำ (ยกเว้นแถวแรก) จะถูกข้าม:
@@ -250,6 +272,18 @@ export default function AdminProductImport() {
                               title={c.long && value ? value : undefined}
                             >
                               {value || <span className="admin-list-table__muted">—</span>}
+<<<<<<< HEAD
+                              {c.key === "Slug" && value && r.resolved?.slug && r.resolved.slug !== value && (
+                                <div className="admin-list-table__submeta">URL: {r.resolved.slug}</div>
+                              )}
+=======
+<<<<<<< HEAD
+                              {c.key === "Slug" && value && r.resolved?.slug && r.resolved.slug !== value && (
+                                <div className="admin-list-table__submeta">URL: {r.resolved.slug}</div>
+                              )}
+=======
+>>>>>>> 5797aedeef482cf903bfcbd113950167ef81a9cb
+>>>>>>> b9524415a30d7443145435e580650779d2c83530
                             </td>
                           );
                         })}
