@@ -20,6 +20,7 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [movedTo, setMovedTo] = useState(null); // product URL changed (ITEM NO edited): follow the redirect
 
   // productSlug may be undefined when the route has no series segment —
   // App.jsx registers both patterns and passes whichever slug is present.
@@ -28,11 +29,16 @@ export default function ProductDetail() {
   useEffect(() => {
     setLoading(true);
     setNotFound(false);
+    setMovedTo(null);
     setActiveTab("overview");
     setActiveImage(0);
     api
       .getProductBySlug(slug)
       .then(async (p) => {
+        if (p.redirectTo) {
+          setMovedTo(p.redirectTo);
+          return;
+        }
         const crumb = await api.getCategoryBreadcrumb(p.category_id);
         setProduct(p);
         setCategoryCrumb(crumb);
@@ -41,6 +47,7 @@ export default function ProductDetail() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  if (movedTo) return <Navigate to={productHref(movedTo)} replace />;
   if (notFound) return <Navigate to={`/products/${brandSlug}/${categorySlug}`} replace />;
   if (loading || !product) {
     return (
