@@ -170,7 +170,7 @@ export default function FilterableProductListing({
       if (selectedCats.size && !selectedCats.has(p.category_id)) return false;
       if (selectedBrands.size && !selectedBrands.has(p.brand_slug)) return false;
       if (tokens.length) {
-        const hay = [p.name, p.model, p.short_description, p.category, p.brand].filter(Boolean).join(" ").toLowerCase();
+        const hay = [p.name, p.model, p.item_no, p.slug, p.short_description, p.category, p.brand].filter(Boolean).join(" ").toLowerCase();
         if (!tokens.every((tk) => hay.includes(tk))) return false;
       }
       return true;

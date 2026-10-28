@@ -54,6 +54,7 @@ import {
 } from "../controllers/adminController.js";
 import {
   exportProductsExcel,
+  downloadProductImportTemplate,
   parseProductImport,
   commitProductImport,
 } from "../controllers/productImportController.js";
@@ -186,6 +187,7 @@ router.delete("/admin/series/:id", deleteSeries);
 
 router.get("/admin/products", listProductsAdmin);
 router.get("/admin/products/export", exportProductsExcel);
+router.get("/admin/products/import-template", downloadProductImportTemplate);
 router.post("/admin/products/import/parse", uploadExcel.single("file"), parseProductImport);
 router.post("/admin/products/import/commit", commitProductImport);
 router.get("/admin/products/:id", getProductAdmin);
