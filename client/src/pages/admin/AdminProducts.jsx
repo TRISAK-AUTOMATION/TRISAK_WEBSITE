@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import { availabilityLabel } from "../../utils/productAvailability.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
+import AdminProductFilter, {
+  EMPTY_FILTERS,
+  categoryScope,
+  countActiveFilters,
+  describeFilters,
+  matchesFilters,
+} from "../../components/AdminProductFilter.jsx";
 import { ConfirmModal, useToast } from "../../components/AdminModal.jsx";
 import AdminProductForm from "./AdminProductForm.jsx";
 
@@ -20,6 +27,11 @@ export default function AdminProducts() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+
+  // Filter dropdown: applied filters + the brand / category lists they use
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   // edit popup / delete confirmation popup / success notification
   const [editingId, setEditingId] = useState(null);
@@ -45,7 +57,17 @@ export default function AdminProducts() {
 
   useEffect(() => {
     load();
+    // filter options come straight from the database
+    api.adminGetBrands().then(setBrands).catch(() => {});
+    api.adminGetCategories().then(setCategories).catch(() => {});
   }, []);
+
+  const categoryIds = useMemo(
+    () => categoryScope(categories, filters.categoryId),
+    [categories, filters.categoryId]
+  );
+  const activeFilterCount = countActiveFilters(filters);
+  const filterChips = describeFilters(filters, brands, categories);
 
   const filtered = products
     .filter((p) =>
@@ -53,6 +75,7 @@ export default function AdminProducts() {
         .filter(Boolean)
         .some((v) => v.toLowerCase().includes(search.toLowerCase()))
     )
+    .filter((p) => matchesFilters(p, filters, categoryIds))
     .filter((p) => {
       if (issue === "missing-image") return !p.image_url;
       if (issue === "missing-datasheet") return !p.has_datasheet;
@@ -97,16 +120,6 @@ export default function AdminProducts() {
     load({ silent: true });
   };
 
-  const handleReorder = async (id, direction) => {
-    setError("");
-    try {
-      await api.adminReorderProduct(id, direction);
-      load();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
   const handleExport = async () => {
     setError("");
     setExporting(true);
@@ -140,15 +153,30 @@ export default function AdminProducts() {
       )}
 
       <div className="admin-list-toolbar">
-        <input
-          type="text"
-          placeholder="ค้นหา..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
+        <div className="admin-list-toolbar__search">
+          <input
+            type="text"
+            placeholder="ค้นหา..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+          <AdminProductFilter
+            applied={filters}
+            brands={brands}
+            categories={categories}
+            onApply={(next) => {
+              setFilters(next);
+              setPage(1);
+            }}
+            onReset={() => {
+              setFilters(EMPTY_FILTERS);
+              setPage(1);
+            }}
+          />
+        </div>
         <div className="admin-list-toolbar__actions">
           <button type="button" className="btn" onClick={handleExport} disabled={exporting}>
             {exporting ? "กำลัง Export…" : "⬇ Export Excel"}
@@ -162,6 +190,30 @@ export default function AdminProducts() {
         </div>
       </div>
 
+      {activeFilterCount > 0 && (
+        <div className="admin-filter-active">
+          <strong>
+            Filters active ({activeFilterCount}) · {filtered.length} result{filtered.length === 1 ? "" : "s"}
+          </strong>
+          {filterChips.map((c) => (
+            <span key={c} className="admin-filter-chip">
+              {c}
+            </span>
+          ))}
+          <button
+            type="button"
+            className="btn"
+            style={{ padding: "4px 12px", fontSize: 12 }}
+            onClick={() => {
+              setFilters(EMPTY_FILTERS);
+              setPage(1);
+            }}
+          >
+            Clear ✕
+          </button>
+        </div>
+      )}
+
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
 
       <div className="admin-list-table-wrap">
@@ -172,7 +224,6 @@ export default function AdminProducts() {
               <th>รูปภาพ</th>
               <th>ชื่อ</th>
               <th>แบรนด์ / หมวดหมู่ / ซีรีย์</th>
-              <th>จัดเรียง</th>
               <th>อัพเดท</th>
               <th>จัดการ</th>
             </tr>
@@ -180,14 +231,14 @@ export default function AdminProducts() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={6} className="empty-state">
                   กำลังโหลด…
                 </td>
               </tr>
             )}
             {!loading && pageItems.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={6} className="empty-state">
                   ยังไม่มีสินค้า — เพิ่มรายการแรกได้เลย
                 </td>
               </tr>
@@ -220,16 +271,6 @@ export default function AdminProducts() {
                   <td className="admin-list-table__muted">
                     {p.brand} / {p.category}
                     {p.series ? ` / ${p.series}` : ""}
-                  </td>
-                  <td>
-                    <div className="admin-sort-arrows">
-                      <button onClick={() => handleReorder(p.id, "up")} aria-label="เลื่อนขึ้น">
-                        ↑
-                      </button>
-                      <button onClick={() => handleReorder(p.id, "down")} aria-label="เลื่อนลง">
-                        ↓
-                      </button>
-                    </div>
                   </td>
                   <td className="admin-list-table__date">
                     {new Date(p.updated_at).toLocaleString("th-TH", {

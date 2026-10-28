@@ -535,6 +535,7 @@ export async function listProductsAdmin(req, res) {
     const { rows } = await pool.query(
       `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
               p.availability_status, p.status_updated_at,
+              p.brand_id, p.category_id, p.replacement_product_id,
               b.name AS brand, c.name AS category, s.name AS series,
               EXISTS (
                 SELECT 1 FROM product_documents d
@@ -915,22 +916,6 @@ export async function updateProduct(req, res) {
     res.status(err.status || 400).json({ error: err.message });
   } finally {
     if (client) client.release();
-  }
-}
-
-export async function reorderProduct(req, res) {
-  const direction = parseDirection(req, res);
-  if (!direction) return;
-  try {
-    // Unscoped (global): the admin product list is one flat table
-    // spanning every brand/category/series, so "up"/"down" swaps with
-    // whichever row is literally above/below it in that list — same
-    // model as brands, which also aren't grouped by anything.
-    const result = await reorderRow("products", req.params.id, direction, []);
-    if (result === "not-found") return res.status(404).json({ error: "Product not found" });
-    res.json({ success: true, moved: result === "ok" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 }
 
