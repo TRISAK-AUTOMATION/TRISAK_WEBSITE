@@ -535,6 +535,7 @@ export async function listProductsAdmin(req, res) {
     const { rows } = await pool.query(
       `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
               p.availability_status, p.status_updated_at,
+              p.brand_id, p.category_id, p.replacement_product_id,
               b.name AS brand, c.name AS category, s.name AS series,
               EXISTS (
                 SELECT 1 FROM product_documents d
