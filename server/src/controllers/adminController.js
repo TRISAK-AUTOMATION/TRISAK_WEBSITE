@@ -2,6 +2,7 @@ import pool from "../config/db.js";
 import { deleteAllProductDocumentFiles } from "./productDocumentsController.js";
 import { createSession, destroySession } from "../middleware/adminAuth.js";
 import { logActivity } from "../utils/activityLog.js";
+import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../utils/productSlug.js";
 
 // ---------------- auth ----------------
 
@@ -532,7 +533,7 @@ export async function uploadImage(req, res) {
 export async function listProductsAdmin(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT p.id, p.name, p.slug, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
+      `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
               p.availability_status, p.status_updated_at,
               b.name AS brand, c.name AS category, s.name AS series,
               EXISTS (
@@ -594,7 +595,10 @@ export async function getProductAdmin(req, res) {
 /**
  * Create/update payload shape:
  * {
- *   name, slug, brandId, categoryId, seriesId, model,
+ *   name, itemNo, brandId, categoryId, seriesId, model,
+ *   (itemNo is the product's original ITEM NO; the URL slug is always generated
+ *    from it — see utils/productSlug.js — and any `slug` in the payload is ignored,
+ *    except that create falls back to `slug` as the ITEM NO for older clients)
  *   shortDescription, description, features: string[], imageUrl,
  *   isNew, sortOrder,
  *   availabilityStatus, statusNote, replacementProductId   (all optional)
@@ -610,12 +614,86 @@ const AVAILABILITY_STATUSES = ["available", "unavailable", "discontinued", "repl
 const REPLACEMENT_STATUSES = ["discontinued", "replacement_available"];
 const MAX_STATUS_NOTE = 500;
 
-function validateProductPayload(body) {
-  const { name, slug, brandId, categoryId } = body || {};
-  if (!name || !slug || !brandId || !categoryId) {
-    return "name, slug, brandId, and categoryId are required";
+// `requireItemNo` is true on create. On update an omitted / blank itemNo means
+// "leave ITEM NO and the URL slug exactly as stored" (products created before
+// ITEM NO existed have none).
+function validateProductPayload(body, { requireItemNo }) {
+  const { name, brandId, categoryId } = body || {};
+  if (!name || !brandId || !categoryId) {
+    return "name, brandId, and categoryId are required";
+  }
+  if (requireItemNo && !normalizeItemNo(body.itemNo ?? body.slug)) {
+    return "itemNo (ITEM NO) is required";
   }
   return null;
+}
+
+class ProductIdentityError extends Error {
+  constructor(message, status = 409) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/**
+ * Works out the ITEM NO + URL slug to store.
+ *   create   ITEM NO from the payload; slug generated from it.
+ *   update   ITEM NO unchanged / not sent -> stored ITEM NO and slug are kept
+ *            untouched. ITEM NO changed    -> slug regenerated; if the slug
+ *            changes the old one is recorded in product_slug_history so the
+ *            old URL redirects.
+ * Every collision is reported, never resolved silently: another product with the
+ * same ITEM NO, or the same slug (also case-insensitively), or a slug that is a
+ * retired URL of another product.
+ * Returns { itemNo, slug, oldSlug } (oldSlug only when the slug changed).
+ */
+async function resolveProductIdentity(client, body, current = null) {
+  const sentRaw = body.itemNo !== undefined ? body.itemNo : current ? undefined : body.slug;
+  const sent = sentRaw === undefined || sentRaw === null ? "" : normalizeItemNo(sentRaw);
+
+  if (current) {
+    if (!sent) {
+      if (current.item_no) throw new ProductIdentityError("ITEM NO cannot be empty", 400);
+      return { itemNo: current.item_no, slug: current.slug }; // legacy product, nothing to change
+    }
+    if (sent === current.item_no) return { itemNo: current.item_no, slug: current.slug };
+  }
+
+  const problem = validateItemNo(sent);
+  if (problem) throw new ProductIdentityError(problem, 400);
+  const slug = generateSlugFromItemNo(sent);
+  const ownId = current ? current.id : null;
+
+  const sameItemNo = await client.query(
+    "SELECT id, item_no FROM products WHERE LOWER(item_no) = LOWER($1) AND ($2::int IS NULL OR id <> $2)",
+    [sent, ownId]
+  );
+  if (sameItemNo.rows.length) {
+    throw new ProductIdentityError(
+      `ITEM NO "${sent}" is already used by another product (ITEM NO "${sameItemNo.rows[0].item_no}")`
+    );
+  }
+  const sameSlug = await client.query(
+    "SELECT id, item_no, slug FROM products WHERE LOWER(slug) = LOWER($1) AND ($2::int IS NULL OR id <> $2)",
+    [slug, ownId]
+  );
+  if (sameSlug.rows.length) {
+    const other = sameSlug.rows[0];
+    throw new ProductIdentityError(
+      `The URL slug "${slug}" generated from ITEM NO "${sent}" is already used by another product${other.item_no ? ` (ITEM NO "${other.item_no}")` : ` (slug "${other.slug}")`}. Products are never merged — choose a different ITEM NO`
+    );
+  }
+  const retired = await client.query(
+    `SELECT p.slug AS current_slug FROM product_slug_history h JOIN products p ON p.id = h.product_id
+     WHERE LOWER(h.old_slug) = LOWER($1) AND ($2::int IS NULL OR h.product_id <> $2)`,
+    [slug, ownId]
+  );
+  if (retired.rows.length) {
+    throw new ProductIdentityError(
+      `The URL slug "${slug}" was previously used by another product and still redirects to "${retired.rows[0].current_slug}". Choose a different ITEM NO`
+    );
+  }
+  return { itemNo: sent, slug, oldSlug: current && current.slug !== slug ? current.slug : null };
 }
 
 /**
@@ -696,13 +774,14 @@ async function replaceProductChildren(client, productId, body) {
 
 export async function createProduct(req, res) {
   const body = req.body || {};
-  const validationError = validateProductPayload(body);
+  const validationError = validateProductPayload(body, { requireItemNo: true });
   if (validationError) return res.status(400).json({ error: validationError });
 
   let client;
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    const identity = await resolveProductIdentity(client, body);
     const avail = await resolveAvailability(client, body, null);
     if (avail.error) {
       await client.query("ROLLBACK");
@@ -711,12 +790,12 @@ export async function createProduct(req, res) {
     const { rows } = await client.query(
       `INSERT INTO products
         (name, slug, brand_id, category_id, series_id, model, short_description, description, features, image_url, is_new, sort_order,
-         availability_status, status_note, replacement_product_id, status_updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now())
+         availability_status, status_note, replacement_product_id, status_updated_at, item_no)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now(),$16)
        RETURNING id`,
       [
         body.name,
-        body.slug,
+        identity.slug,
         body.brandId,
         body.categoryId,
         body.seriesId || null,
@@ -730,17 +809,18 @@ export async function createProduct(req, res) {
         avail.provided ? avail.status : "available",
         avail.provided ? avail.note : null,
         avail.provided ? avail.replacementId : null,
+        identity.itemNo,
       ]
     );
     const productId = rows[0].id;
     await replaceProductChildren(client, productId, body);
     await client.query("COMMIT");
     logActivity("product_added", `เพิ่มสินค้า "${body.name}"`);
-    res.status(201).json({ id: productId });
+    res.status(201).json({ id: productId, itemNo: identity.itemNo, slug: identity.slug });
   } catch (err) {
     if (client) await client.query("ROLLBACK");
-    console.error(err);
-    res.status(400).json({ error: err.message });
+    if (!(err instanceof ProductIdentityError)) console.error(err);
+    res.status(err.status || 400).json({ error: err.message });
   } finally {
     if (client) client.release();
   }
@@ -749,7 +829,7 @@ export async function createProduct(req, res) {
 export async function updateProduct(req, res) {
   const { id } = req.params;
   const body = req.body || {};
-  const validationError = validateProductPayload(body);
+  const validationError = validateProductPayload(body, { requireItemNo: false });
   if (validationError) return res.status(400).json({ error: validationError });
 
   let client;
@@ -757,13 +837,14 @@ export async function updateProduct(req, res) {
     client = await pool.connect();
     await client.query("BEGIN");
     const current = await client.query(
-      "SELECT availability_status, status_note, replacement_product_id FROM products WHERE id = $1 FOR UPDATE",
+      "SELECT id, slug, item_no, availability_status, status_note, replacement_product_id FROM products WHERE id = $1 FOR UPDATE",
       [id]
     );
     if (!current.rows.length) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Product not found" });
     }
+    const identity = await resolveProductIdentity(client, body, current.rows[0]);
     const avail = await resolveAvailability(client, body, id, current.rows[0].replacement_product_id);
     if (avail.error) {
       await client.query("ROLLBACK");
@@ -786,11 +867,12 @@ export async function updateProduct(req, res) {
         model = $6, short_description = $7, description = $8, features = $9,
         image_url = $10, is_new = $11, sort_order = $12, updated_at = now(),
         availability_status = $14, status_note = $15, replacement_product_id = $16,
-        status_updated_at = CASE WHEN $17 THEN now() ELSE status_updated_at END
+        status_updated_at = CASE WHEN $17 THEN now() ELSE status_updated_at END,
+        item_no = $18
        WHERE id = $13`,
       [
         body.name,
-        body.slug,
+        identity.slug,
         body.brandId,
         body.categoryId,
         body.seriesId || null,
@@ -806,20 +888,31 @@ export async function updateProduct(req, res) {
         nextNote,
         nextReplacement,
         statusChanged,
+        identity.itemNo,
       ]
     );
     if (result.rowCount === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Product not found" });
     }
+    if (identity.oldSlug) {
+      // The URL changed: keep the old one so it redirects to the new one.
+      await client.query(
+        `INSERT INTO product_slug_history (product_id, old_slug) VALUES ($1, $2)
+         ON CONFLICT (old_slug) DO UPDATE SET product_id = EXCLUDED.product_id`,
+        [id, identity.oldSlug]
+      );
+    }
+    // a slug the product is using again no longer needs to redirect
+    await client.query("DELETE FROM product_slug_history WHERE product_id = $1 AND old_slug = $2", [id, identity.slug]);
     await replaceProductChildren(client, id, body);
     await client.query("COMMIT");
     logActivity("product_edited", `แก้ไขสินค้า "${body.name}"`);
-    res.json({ success: true });
+    res.json({ success: true, itemNo: identity.itemNo, slug: identity.slug, previousSlug: identity.oldSlug || null });
   } catch (err) {
     if (client) await client.query("ROLLBACK");
-    console.error(err);
-    res.status(400).json({ error: err.message });
+    if (!(err instanceof ProductIdentityError)) console.error(err);
+    res.status(err.status || 400).json({ error: err.message });
   } finally {
     if (client) client.release();
   }
