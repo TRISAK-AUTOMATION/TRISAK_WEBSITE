@@ -253,11 +253,6 @@ export const api = {
     authRequest("/admin/products", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateProduct: (id, payload) =>
     authRequest(`/admin/products/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
-  adminReorderProduct: (id, direction) =>
-    authRequest(`/admin/products/${id}/reorder`, {
-      method: "POST",
-      body: JSON.stringify({ direction }),
-    }),
   adminDeleteProduct: (id) => authRequest(`/admin/products/${id}`, { method: "DELETE" }),
 
   // ---- product PDF documents ----

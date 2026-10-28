@@ -31,7 +31,6 @@ import {
   getProductAdmin,
   createProduct,
   updateProduct,
-  reorderProduct,
   deleteProduct,
   listSolutionsAdmin,
   getSolutionAdmin,
@@ -193,7 +192,6 @@ router.post("/admin/products/import/commit", commitProductImport);
 router.get("/admin/products/:id", getProductAdmin);
 router.post("/admin/products", createProduct);
 router.put("/admin/products/:id", updateProduct);
-router.post("/admin/products/:id/reorder", reorderProduct);
 router.delete("/admin/products/:id", deleteProduct);
 router.post(
   "/admin/products/:productId/documents",
