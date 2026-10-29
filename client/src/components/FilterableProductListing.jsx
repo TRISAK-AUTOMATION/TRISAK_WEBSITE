@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import ProductCard from "./ProductCard.jsx";
 import ProductFilterSidebar from "./ProductFilterSidebar.jsx";
+import Pagination, { PRODUCTS_PER_PAGE } from "./Pagination.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { categoryLevelHref } from "../utils/categoryBreadcrumb.js";
 
@@ -53,6 +54,9 @@ export default function FilterableProductListing({
   const [selectedBrands, setSelectedBrands] = useState(() => new Set());
   const [expanded, setExpanded] = useState(() => new Set());
   const [panelOpen, setPanelOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const mainRef = useRef(null);
+  const pageChanged = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +210,51 @@ export default function FilterableProductListing({
     });
   }, [filtered, data]);
 
+  // Per-category cap only applies while no filter is active.
+  const limit = !filtersActive && perCategoryLimit ? perCategoryLimit : null;
+
+  // Back to page 1 whenever search / brand / category filters change.
+  useEffect(() => {
+    setPage(1);
+  }, [query, selectedCats, selectedBrands]);
+
+  // Pagination runs over the whole filtered list, not per category: flatten the
+  // category groups in display order, take one slice of PRODUCTS_PER_PAGE, then
+  // regroup that slice so headings and dividers still show. Each product falls
+  // in exactly one slice, so nothing is duplicated or dropped across pages.
+  const paged = useMemo(() => {
+    const flat = [];
+    for (const g of groups) {
+      const items = limit ? g.items.slice(0, limit) : g.items;
+      for (const p of items) flat.push({ g, p });
+    }
+    const totalPages = Math.max(1, Math.ceil(flat.length / PRODUCTS_PER_PAGE));
+    const current = Math.min(page, totalPages);
+    const start = (current - 1) * PRODUCTS_PER_PAGE;
+    const sections = [];
+    for (const { g, p } of flat.slice(start, start + PRODUCTS_PER_PAGE)) {
+      const last = sections[sections.length - 1];
+      if (last && last.g === g) last.items.push(p);
+      else sections.push({ g, items: [p] });
+    }
+    return { sections, totalPages, current };
+  }, [groups, limit, page]);
+
+  const goToPage = (n) => {
+    pageChanged.current = true;
+    setPage(n);
+  };
+
+  // After the user changes page, bring the top of the list back into view.
+  useEffect(() => {
+    if (!pageChanged.current) return;
+    pageChanged.current = false;
+    const el = mainRef.current;
+    if (el) {
+      window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 110), behavior: "smooth" });
+    }
+  }, [paged.current]);
+
   if (status === "loading") return <p className="empty-state">{t("products.loadingProducts")}</p>;
   if (status === "error") {
     return (
@@ -218,7 +267,6 @@ export default function FilterableProductListing({
     );
   }
 
-  const limit = !filtersActive && perCategoryLimit ? perCategoryLimit : null;
   const showHeadings = !(filtersActive && groups.length === 1);
 
   return (
@@ -241,14 +289,13 @@ export default function FilterableProductListing({
         onToggleOpen={() => setPanelOpen((o) => !o)}
       />
 
-      <div className="category-main">
+      <div className="category-main" ref={mainRef}>
         {groups.length === 0 && <p className="empty-state">{t("products.noProductsFound")}</p>}
 
-        {groups.map((g) => {
-          const shown = limit ? g.items.slice(0, limit) : g.items;
-          const more = g.items.length > shown.length;
+        {paged.sections.map(({ g, items }, i) => {
+          const more = limit != null && g.items.length > limit;
           return (
-            <section key={g.key} className="latest-group">
+            <section key={`${g.key}-${i}`} className="latest-group">
               {showHeadings && (
                 <div className="latest-group__head">
                   <h2 className="latest-group__title">
@@ -262,13 +309,15 @@ export default function FilterableProductListing({
                 </div>
               )}
               <div className="product-tile-grid">
-                {shown.map((p) => (
+                {items.map((p) => (
                   <ProductCard key={p.id} product={p} variant="plain" />
                 ))}
               </div>
             </section>
           );
         })}
+
+        <Pagination page={paged.current} totalPages={paged.totalPages} onChange={goToPage} />
       </div>
     </div>
   );

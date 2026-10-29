@@ -200,6 +200,10 @@ export const translations = {
       viewPdf: "View PDF",
       noRelated: "No related products yet.",
       viewAll: "View all",
+      prevPage: "Previous",
+      nextPage: "Next",
+      pageWord: "Page",
+      paginationLabel: "Product pages",
       viewSeries: "View series",
       tabs: {
         overview: "Overview",
@@ -539,6 +543,10 @@ export const translations = {
       viewPdf: "ดูเอกสาร PDF",
       noRelated: "ยังไม่มีสินค้าที่เกี่ยวข้อง",
       viewAll: "ดูทั้งหมด",
+      prevPage: "ก่อนหน้า",
+      nextPage: "ถัดไป",
+      pageWord: "หน้า",
+      paginationLabel: "หน้าสินค้า",
       viewSeries: "ดูซีรีย์นี้",
       tabs: {
         overview: "ภาพรวม",
