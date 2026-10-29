@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { useSiteSettings } from "../contexts/SiteSettingsContext.jsx";
@@ -29,6 +29,21 @@ export default function Header() {
   const headerLogo = siteSettings?.header_logo_url;
   const menu = useMenu();
   const navItems = menu?.header ?? FALLBACK_NAV_ITEMS;
+  const headerRef = useRef(null);
+
+  // Publish the header's real rendered height as --header-height so the page
+  // offset and the Home hero (100vh − header) track it if it ever changes.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return undefined;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty("--header-height", `${el.offsetHeight}px`);
+    publish();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -37,7 +52,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className={`site-header ${scrolled ? "is-scrolled" : ""}`}>
+    <header ref={headerRef} className={`site-header ${scrolled ? "is-scrolled" : ""}`}>
       <div className="container site-header__inner">
         <NavLink to="/" className="site-header__logo" onClick={() => setOpen(false)}>
           {headerLogo ? (

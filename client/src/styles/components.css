@@ -132,6 +132,101 @@
   flex-wrap: wrap;
 }
 
+/* Home hero only: fills exactly the viewport below the fixed header
+   (100vh − header), so there is no white strip under it and no extra scroll.
+   min-height (not height) so tall content on short screens is never clipped.
+   svh = visible height on mobile browsers whose URL bar collapses. */
+.hero--home {
+  min-height: calc(100vh - var(--header-offset, var(--header-height)));
+  min-height: calc(100svh - var(--header-offset, var(--header-height)));
+}
+
+.hero--home .hero__bg-image {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* Home hero content: left-aligned and vertically centered in the area below the
+   header (the hero already starts under the fixed header, so centering inside
+   the hero centers it in the visible area).
+   Root cause of the old look: .hero__content is also a .container, whose
+   `margin: 0 auto` + 760px max-width centered the block horizontally, and the
+   hero anchored it to the bottom (flex-end, 160px/100px padding). Now the
+   content spans the same container as the header, so its left edge lines up
+   with the logo; the text itself is capped by max-widths on the children. */
+.hero--home {
+  align-items: center;
+  padding-top: clamp(40px, 8vh, 96px);
+  padding-bottom: clamp(40px, 8vh, 96px);
+}
+
+.hero--home .hero__content {
+  width: 100%;
+  max-width: var(--page-max);
+  text-align: left;
+}
+
+/* Lighter scrim for the Home hero. This re-tunes the existing .hero__bg-scrim
+   element (no second overlay): the old gradient was 55% → 88% black-navy,
+   weighted to the bottom because the text used to sit there. The text now sits
+   on the left-middle, so the tint is strongest on the left (behind the text)
+   and fades toward the right, with a faint vertical wash. Other pages keep the
+   shared .hero__bg-scrim values. */
+.hero--home .hero__bg-scrim {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(10, 14, 32, 0.52) 0%,
+      rgba(10, 14, 32, 0.34) 55%,
+      rgba(10, 14, 32, 0.16) 100%
+    ),
+    linear-gradient(180deg, rgba(10, 14, 32, 0.08) 0%, rgba(10, 14, 32, 0.2) 100%);
+}
+
+/* Tablet / phone: the text spans most of the width, so use an even tint. */
+@media (max-width: 1024px) {
+  .hero--home .hero__bg-scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(10, 14, 32, 0.38) 0%,
+      rgba(10, 14, 32, 0.46) 100%
+    );
+  }
+}
+
+.hero--home .hero__content > h1 {
+  max-width: 760px;
+  overflow-wrap: break-word;
+}
+
+.hero--home .hero__actions {
+  justify-content: flex-start;
+}
+
+/* Phones: slightly smaller heading and compact buttons so both CTAs fit on one
+   row and nothing overflows (they only wrap on very narrow screens). */
+@media (max-width: 560px) {
+  .hero--home .hero__content > h1 {
+    font-size: clamp(2rem, 9vw, 2.6rem);
+  }
+
+  .hero--home .hero__sub {
+    margin-bottom: 28px;
+  }
+
+  .hero--home .hero__actions {
+    gap: 10px;
+  }
+
+  .hero--home .hero__actions .btn {
+    padding: 12px 14px;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+}
+
 .hero--compact {
   min-height: 52vh;
   padding: 150px 0 72px;
