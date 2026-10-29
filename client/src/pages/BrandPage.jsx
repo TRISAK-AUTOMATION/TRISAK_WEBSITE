@@ -1,112 +1,106 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { api } from "../api/client.js";
-import Breadcrumbs from "../components/Breadcrumbs.jsx";
-import ProductThumb from "../components/ProductThumb.jsx";
-import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { api } from "../../api/client.js";
+import Breadcrumb from "../../components/Breadcrumb.jsx";
+import FilterableProductListing from "../../components/FilterableProductListing.jsx";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { categoryLevelHref } from "../../utils/categoryBreadcrumb.js";
 
+// Same per-category cap as /products/latest (override with ?limit=, 1–24).
+const DEFAULT_PER_CATEGORY = 4;
+const MAX_PER_CATEGORY = 24;
+
+function resolveLimit(raw) {
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isInteger(n) || n < 1) return DEFAULT_PER_CATEGORY;
+  return Math.min(n, MAX_PER_CATEGORY);
+}
+
+/**
+ * Brand landing page ("Browse by Brand" → e.g. OMRON).
+ *
+ * Renders the brand's products with the exact same category-grouped listing
+ * used by /products/latest (FilterableProductListing: section heading per
+ * category, thin divider between sections, shared product cards/grid), just
+ * pre-filtered to this brand. Category headings and "View all" links go to
+ * the existing /products/:brand/:category URLs.
+ */
 export default function BrandPage() {
   const { brandSlug } = useParams();
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const limit = resolveLimit(searchParams.get("limit"));
 
   const [brand, setBrand] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState("");
-  const [q, setQ] = useState("");
+  const [selection, setSelection] = useState(null); // live filter state from the listing
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     setBrand(null);
-    api.getBrand(brandSlug).catch(() => null).then(setBrand);
+    setSelection(null);
+    setNotFound(false);
+    api
+      .getBrand(brandSlug)
+      .then((b) => {
+        if (!cancelled) setBrand(b);
+      })
+      .catch(() => {
+        if (!cancelled) setNotFound(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [brandSlug]);
 
-  useEffect(() => {
-    setLoading(true);
-    const params = { brand: brandSlug };
-    if (category) params.category = category;
-    if (q) params.q = q;
-    api
-      .getProducts(params)
-      .then(setProducts)
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false));
-  }, [brandSlug, category, q]);
+  if (notFound) return <Navigate to="/products" replace />;
 
-  const brandName = brand?.name || brandSlug?.toUpperCase();
+  // Hero title + breadcrumb follow the live filters (same rules as CategoryPage);
+  // until the listing reports its selection, fall back to the route's brand.
+  const nodes = selection ? selection.nodes : [];
+  const selBrands = selection ? selection.brands : brand ? [{ slug: brand.slug, name: brand.name }] : [];
+  const activeBrand = selBrands.length === 1 ? selBrands[0] : null;
+  const single = nodes.length === 1 ? nodes[0] : null;
+  const title = single
+    ? single[single.length - 1].name
+    : activeBrand
+      ? t("products.brandPageTitle").replace("{brand}", activeBrand.name)
+      : t("nav.products");
+
+  const trail = [
+    { label: t("nav.home"), to: "/" },
+    { label: t("nav.products"), to: "/products" },
+    ...(activeBrand ? [{ label: activeBrand.name, to: single ? `/products/${activeBrand.slug}` : undefined }] : []),
+    ...(single
+      ? single.map((c, i) => ({
+          label: c.name,
+          to: i === single.length - 1 ? undefined : categoryLevelHref(activeBrand?.slug || brandSlug, single, i),
+        }))
+      : []),
+  ];
 
   return (
     <>
       <section className="hero hero--compact">
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
-          <Breadcrumbs
-            items={[
-              { label: t("catalog.breadcrumbHome"), to: "/" },
-              { label: t("catalog.breadcrumbProducts"), to: "/products" },
-              { label: brandName },
-            ]}
-          />
-          <span className="hero__meta">{t("products.brandsEyebrow")}</span>
-          <h1>{brandName}</h1>
-          <p className="hero__sub">{t("products.heroSub")}</p>
+          <Breadcrumb items={trail} />
+          {activeBrand && <span className="hero__meta">{activeBrand.name}</span>}
+          <h1>{brand ? title : "…"}</h1>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section product-listing-section">
         <div className="container">
-          <div className="catalog-tabs">
-            <button
-              className={`catalog-tab ${!category ? "is-active" : ""}`}
-              onClick={() => setCategory("")}
-            >
-              {t("catalog.allProducts")}
-              {brand && <span className="catalog-tab__count">{brand.product_count}</span>}
-            </button>
-            {brand?.categories?.map((c) => (
-              <button
-                key={c.slug}
-                className={`catalog-tab ${category === c.slug ? "is-active" : ""}`}
-                onClick={() => setCategory(c.slug)}
-              >
-                {c.name}
-                <span className="catalog-tab__count">{c.product_count}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="product-finder">
-            <input
-              type="text"
-              placeholder={`${t("catalog.search")} ${brandName}…`}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+          {brand && (
+            <FilterableProductListing
+              key={brandSlug}
+              initialBrandSlug={brandSlug}
+              perCategoryLimit={limit}
+              onSelectionChange={setSelection}
             />
-          </div>
-
-          {loading && <p className="empty-state">{t("catalog.loading")}</p>}
-
-          {!loading && products.length === 0 && (
-            <div className="empty-state">
-              <p>{t("catalog.noResults")}</p>
-              <p>{t("catalog.noResultsHint")}</p>
-            </div>
           )}
-
-          {!loading && products.length > 0 && (
-            <div className="product-grid">
-              {products.map((p) => (
-                <Link to={`/products/item/${p.slug}`} className="grid-cell product-card" key={p.id}>
-                  <ProductThumb label={p.model || p.name} isNew={p.is_new} />
-                  <span className="product-card__brand">
-                    {p.brand}
-                    {p.series && <span className="product-card__series"> — {p.series}</span>}
-                  </span>
-                  <h3>{p.name}</h3>
-                  {p.model && <span className="product-card__model">{p.model}</span>}
-                </Link>
-              ))}
-            </div>
-          )}
+          {!brand && <p className="empty-state">{t("products.loadingProducts")}</p>}
         </div>
       </section>
 
