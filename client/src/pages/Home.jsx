@@ -90,7 +90,7 @@ export default function Home() {
   return (
     <>
       {/* 01 — HERO */}
-      <section className={`hero ${heroBgImage ? "hero--has-bg" : ""}`}>
+      <section className={`hero hero--home ${heroBgImage ? "hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
             <div

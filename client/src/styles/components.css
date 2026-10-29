@@ -132,6 +132,21 @@
   flex-wrap: wrap;
 }
 
+/* Home hero only: fills exactly the viewport below the fixed header
+   (100vh − header), so there is no white strip under it and no extra scroll.
+   min-height (not height) so tall content on short screens is never clipped.
+   svh = visible height on mobile browsers whose URL bar collapses. */
+.hero--home {
+  min-height: calc(100vh - var(--header-offset, var(--header-height)));
+  min-height: calc(100svh - var(--header-offset, var(--header-height)));
+}
+
+.hero--home .hero__bg-image {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
 .hero--compact {
   min-height: 52vh;
   padding: 150px 0 72px;
