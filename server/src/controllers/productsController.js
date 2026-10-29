@@ -235,6 +235,15 @@ const PRODUCT_LIST_SELECT = `
   LEFT JOIN series s ON s.id = p.series_id
 `;
 
+// SQL fragment: ids of the categories matching `where` plus all their descendants.
+const CATEGORY_SUBTREE_IDS = (where) => `
+  WITH RECURSIVE subtree AS (
+    SELECT id FROM categories WHERE ${where}
+    UNION
+    SELECT ch.id FROM categories ch JOIN subtree st ON ch.parent_id = st.id
+  )
+  SELECT id FROM subtree`;
+
 export async function listProducts(req, res) {
   const { brand, category, categoryId, series, q, sort, limit } = req.query;
   const conditions = ["b.is_active = true", "c.is_active = true", "(s.id IS NULL OR s.is_active = true)"];
@@ -245,24 +254,35 @@ export async function listProducts(req, res) {
     values.push(brand);
     conditions.push(`b.slug = $${values.length}`);
   }
+  // A category filter means "this category AND everything beneath it": products
+  // assigned directly to it plus products in any of its subcategories, at any
+  // depth. (Matching only c.id / c.slug returned nothing for a parent category
+  // whose products all live in subcategories, and dropped subcategory products
+  // for parents that have their own.) UNION (not UNION ALL) keeps the recursion
+  // finite even if the data ever contains a parent/child loop.
   if (categoryId) {
     values.push(categoryId);
-    conditions.push(`c.id = $${values.length}`);
+    conditions.push(`c.id IN (${CATEGORY_SUBTREE_IDS(`id = $${values.length}`)})`);
   } else if (category) {
     values.push(category);
-    conditions.push(`c.slug = $${values.length}`);
+    conditions.push(`c.id IN (${CATEGORY_SUBTREE_IDS(`slug = $${values.length}`)})`);
   }
   if (series) {
     values.push(series);
     conditions.push(`s.slug = $${values.length}`);
   }
-  if (q) {
-    values.push(`%${q}%`);
-    // model number, ITEM NO (as entered, or as it appears in the URL), product name or
-    // brand — never filtered by image/availability
+  // Search: split into words; every word must match at least one searchable field
+  // (AND across words, OR across fields) — the same rule the filter sidebar applies
+  // in the browser. Fields: product name, model, ITEM NO (as entered, or as it
+  // appears in the URL), short description, category, series and brand — never
+  // filtered by image/availability. LIKE wildcards typed by the user are escaped.
+  const words = String(q || "").trim().split(/\s+/).filter(Boolean).slice(0, 10);
+  for (const word of words) {
+    values.push(`%${word.replace(/[\\%_]/g, "\\$&")}%`);
+    const n = `$${values.length}`;
     conditions.push(
-      `(p.name ILIKE $${values.length} OR p.model ILIKE $${values.length} OR b.name ILIKE $${values.length}
-        OR p.item_no ILIKE $${values.length} OR p.slug ILIKE $${values.length})`
+      `(p.name ILIKE ${n} OR p.model ILIKE ${n} OR p.item_no ILIKE ${n} OR p.slug ILIKE ${n}
+        OR p.short_description ILIKE ${n} OR c.name ILIKE ${n} OR s.name ILIKE ${n} OR b.name ILIKE ${n})`
     );
   }
   query += " WHERE " + conditions.join(" AND ");

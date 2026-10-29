@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import SectionLabel from "../../components/SectionLabel.jsx";
@@ -7,6 +7,7 @@ import LatestProductsCarousel from "../../components/LatestProductsCarousel.jsx"
 import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
 import CategoryTileGrid from "../../components/CategoryTileGrid.jsx";
 import HeroSlideshow from "../../components/HeroSlideshow.jsx";
+import Pagination, { PRODUCTS_PER_PAGE } from "../../components/Pagination.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 export default function ProductsOverview() {
@@ -18,6 +19,9 @@ export default function ProductsOverview() {
   const [filters, setFilters] = useState({ brand: "", category: "", q: "" });
   const [searchParams] = useSearchParams();
   const [pageContent, setPageContent] = useState(null);
+  const [page, setPage] = useState(1);
+  const resultsRef = useRef(null);
+  const pageChanged = useRef(false);
 
   // pick up ?category=... or ?brand=... from links elsewhere on the site
   // (e.g. the header's catalog dropdown) on first load
@@ -62,13 +66,45 @@ export default function ProductsOverview() {
       setResults(null);
       return;
     }
+    // Ignore a response that arrives after the filters have changed again, so a
+    // slow earlier request can't overwrite the results of the current search.
+    let cancelled = false;
     setLoading(true);
     api
       .getProducts(filters)
-      .then(setResults)
-      .catch(() => setResults([]))
-      .finally(() => setLoading(false));
+      .then((rows) => {
+        if (!cancelled) setResults(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [filters.brand, filters.category, filters.q]);
+
+  // new search / brand / category → back to page 1
+  useEffect(() => {
+    setPage(1);
+  }, [filters.brand, filters.category, filters.q]);
+
+  const totalPages = Math.max(1, Math.ceil((results?.length || 0) / PRODUCTS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const pageResults = (results || []).slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
+
+  const goToPage = (n) => {
+    pageChanged.current = true;
+    setPage(n);
+  };
+  useEffect(() => {
+    if (!pageChanged.current) return;
+    pageChanged.current = false;
+    const el = resultsRef.current;
+    if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 110), behavior: "smooth" });
+  }, [currentPage]);
 
   return (
     <>
@@ -128,7 +164,7 @@ export default function ProductsOverview() {
       </section>
 
       {hasActiveFilters ? (
-        <section className="section">
+        <section className="section" ref={resultsRef}>
           <div className="container">
             <SectionLabel eyebrow={t("products.finderEyebrow")} title={t("products.resultsTitle")} />
             {loading && <p className="empty-state">{t("products.loadingProducts")}</p>}
@@ -137,10 +173,13 @@ export default function ProductsOverview() {
             )}
             {!loading && results?.length > 0 && (
               <div className="product-grid">
-                {results.map((p) => (
+                {pageResults.map((p) => (
                   <ProductCard product={p} key={p.id} />
                 ))}
               </div>
+            )}
+            {!loading && results?.length > 0 && (
+              <Pagination page={currentPage} totalPages={totalPages} onChange={goToPage} />
             )}
           </div>
         </section>
