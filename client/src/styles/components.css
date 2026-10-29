@@ -204,6 +204,22 @@
   justify-content: flex-start;
 }
 
+/* Home hero secondary CTA: white fill, blue text. Same size/shape as the
+   primary button (the shared .btn box: padding, border width, radius; weight
+   matched to .btn-primary). */
+.hero--home .btn-light {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--accent-signal);
+  font-weight: 600;
+}
+
+.hero--home .btn-light:hover {
+  background: #eef1fb;
+  border-color: #eef1fb;
+  color: var(--accent-signal);
+}
+
 /* Phones: slightly smaller heading and compact buttons so both CTAs fit on one
    row and nothing overflows (they only wrap on very narrow screens). */
 @media (max-width: 560px) {

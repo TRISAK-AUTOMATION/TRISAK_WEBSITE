@@ -114,7 +114,7 @@ export default function Home() {
             <Link to="/products" className="btn btn-primary">
               {t("common.viewProducts")} <span className="btn-arrow">→</span>
             </Link>
-            <Link to="/automation-solution" className="btn">
+            <Link to="/automation-solution" className="btn btn-light">
               {t("common.automationSolution")} <span className="btn-arrow">→</span>
             </Link>
           </div>
