@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import { useSiteSettings } from "./contexts/SiteSettingsContext.jsx";
@@ -13,9 +13,7 @@ import AutomationSolution from "./pages/AutomationSolution.jsx";
 import Contacts from "./pages/Contacts.jsx";
 
 import ProductsOverview from "./pages/products/ProductsOverview.jsx";
-import BrandPage from "./pages/products/BrandPage.jsx";
-import CategoryPage from "./pages/products/CategoryPage.jsx";
-import LatestProducts from "./pages/products/LatestProducts.jsx";
+import ProductListingPage from "./pages/products/ProductListingPage.jsx";
 import BrandCategoryChild from "./pages/products/BrandCategoryChild.jsx";
 import ProductDetail from "./pages/products/ProductDetail.jsx";
 
@@ -51,10 +49,22 @@ import AdminContactRequests from "./pages/admin/AdminContactRequests.jsx";
 import AdminPopup from "./pages/admin/AdminPopup.jsx";
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, state, key } = useLocation();
+  const keepScroll = Boolean(state?.keepScroll);
+  const last = useRef(null);
   useEffect(() => {
+    const prev = last.current;
+    last.current = { pathname, keepScroll };
+    if (prev) {
+      // query-only change (e.g. ?page=2, ?category=…): same page, keep the scroll position
+      if (prev.pathname === pathname) return;
+      // product filters rewrite the path as boxes are ticked (/products/omron →
+      // /products/omron/sensors…); stepping to or from such an entry (including
+      // with Back/Forward) is the same listing, so don't jump to the top
+      if (keepScroll || prev.keepScroll) return;
+    }
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [pathname, keepScroll, key]);
   return null;
 }
 
@@ -79,14 +89,18 @@ export default function App() {
 
         {/* 01 — products overview */}
         <Route path="/products" element={<ProductsOverview />} />
+        {/* The product listing. The four routes below are deliberately the SAME
+            element: the filter sidebar moves between these URL shapes as boxes are
+            ticked, and one shared element keeps the page mounted (no reload or
+            refetch) while the URL — the source of truth for the filters — changes. */}
         {/* all latest products, grouped by category (static path wins over :brandSlug) */}
-        <Route path="/products/latest" element={<LatestProducts />} />
+        <Route path="/products/latest" element={<ProductListingPage />} />
         {/* 02 — brand page */}
-        <Route path="/products/:brandSlug" element={<BrandPage />} />
+        <Route path="/products/:brandSlug" element={<ProductListingPage />} />
         {/* 03 — category page (scoped to brand) */}
-        <Route path="/products/:brandSlug/:categorySlug" element={<CategoryPage />} />
+        <Route path="/products/:brandSlug/:categorySlug" element={<ProductListingPage />} />
         {/* recursive subcategory drill-down (unlimited depth) */}
-        <Route path="/products/:brandSlug/:categorySlug/cat/*" element={<CategoryPage />} />
+        <Route path="/products/:brandSlug/:categorySlug/cat/*" element={<ProductListingPage />} />
         {/* 04 — series page, OR a series-less product detail (resolved at runtime) */}
         <Route path="/products/:brandSlug/:categorySlug/:seriesSlug" element={<BrandCategoryChild />} />
         {/* 05 — product detail (product that belongs to a series) */}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import ProductCard from "../../components/ProductCard.jsx";
@@ -9,6 +9,8 @@ import CategoryTileGrid from "../../components/CategoryTileGrid.jsx";
 import HeroSlideshow from "../../components/HeroSlideshow.jsx";
 import Pagination, { PRODUCTS_PER_PAGE } from "../../components/Pagination.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import useSyncedQuery from "../../hooks/useSyncedQuery.js";
+import { buildListingUrl, normalizeQuery } from "../../utils/productFilterUrl.js";
 
 export default function ProductsOverview() {
   const { t, lang } = useLanguage();
@@ -16,23 +18,39 @@ export default function ProductsOverview() {
   const [categories, setCategories] = useState([]);
   const [results, setResults] = useState(null); // null = not searching yet
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ brand: "", category: "", q: "" });
-  const [searchParams] = useSearchParams();
   const [pageContent, setPageContent] = useState(null);
-  const [page, setPage] = useState(1);
   const resultsRef = useRef(null);
   const pageChanged = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // pick up ?category=... or ?brand=... from links elsewhere on the site
-  // (e.g. the header's catalog dropdown) on first load
-  useEffect(() => {
-    const category = searchParams.get("category") || "";
-    const brand = searchParams.get("brand") || "";
-    if (category || brand) {
-      setFilters((f) => ({ ...f, category, brand }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // The search box and brand select live in the URL (/products?brand=…&q=…&page=…),
+  // so a refresh, copied link or Back/Forward reproduces the same results.
+  // Picking a category is different: it leaves this page for the product URL
+  // (/products/:brand/:category), where the full filter sidebar takes over.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const brandParam = searchParams.get("brand") || "";
+  const urlQuery = normalizeQuery(searchParams.get("q"));
+  const legacyCategory = searchParams.get("category") || ""; // old links: /products?category=…
+  const urlPage = Number.parseInt(searchParams.get("page"), 10);
+  const requestedPage = Number.isInteger(urlPage) && urlPage > 1 ? urlPage : 1;
+
+  const updateParams = (patch, options) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(patch)) {
+        if (value) next.set(key, value);
+        else next.delete(key);
+      }
+      return next;
+    }, options);
+
+  // typing writes ?q= after a short pause (replacing the entry, so Back skips the keystrokes)
+  const [queryDraft, setQueryDraft] = useSyncedQuery(
+    urlQuery,
+    (q) => updateParams({ q, page: "" }, { replace: true }),
+    location.key
+  );
 
   useEffect(() => {
     api.getBrands().then(setBrands).catch(() => setBrands([]));
@@ -52,7 +70,15 @@ export default function ProductsOverview() {
     return value || fallback;
   };
 
-  const hasActiveFilters = filters.brand || filters.category || filters.q;
+  // an unknown ?brand= is ignored rather than treated as "no results"
+  const brand = !brands.length || brands.some((b) => b.slug === brandParam) ? brandParam : "";
+  const filters = { brand, q: urlQuery };
+  const hasActiveFilters = Boolean(brand || urlQuery);
+
+  // Category → its product URL, carrying the brand picked here (if any) and the
+  // search keywords: e.g. OMRON + "Sensors & Identification" → /products/omron/sensors-identification
+  const openCategory = (category) =>
+    navigate(buildListingUrl({ brands: brand ? [brand] : [], chains: [[{ id: category.id, slug: category.slug }]], q: urlQuery }));
   // Slideshow images; falls back to the legacy single image if the list is empty.
   const heroBgImages = Array.isArray(pageContent?.hero_bg_images) && pageContent.hero_bg_images.length
     ? pageContent.hero_bg_images
@@ -84,20 +110,16 @@ export default function ProductsOverview() {
     return () => {
       cancelled = true;
     };
-  }, [filters.brand, filters.category, filters.q]);
+  }, [filters.brand, filters.q]);
 
-  // new search / brand / category → back to page 1
-  useEffect(() => {
-    setPage(1);
-  }, [filters.brand, filters.category, filters.q]);
-
+  // (a new search / brand drops ?page= from the URL, so it always starts on page 1)
   const totalPages = Math.max(1, Math.ceil((results?.length || 0) / PRODUCTS_PER_PAGE));
-  const currentPage = Math.min(page, totalPages);
+  const currentPage = Math.min(requestedPage, totalPages);
   const pageResults = (results || []).slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
 
   const goToPage = (n) => {
     pageChanged.current = true;
-    setPage(n);
+    updateParams({ page: n > 1 ? String(n) : "" });
   };
   useEffect(() => {
     if (!pageChanged.current) return;
@@ -105,6 +127,16 @@ export default function ProductsOverview() {
     const el = resultsRef.current;
     if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 110), behavior: "smooth" });
   }, [currentPage]);
+
+  // old links such as /products?category=plc (e.g. from the menu) → the product URL
+  if (legacyCategory) {
+    return (
+      <Navigate
+        to={buildListingUrl({ brands: brandParam ? [brandParam] : [], chains: [[{ slug: legacyCategory }]], q: urlQuery })}
+        replace
+      />
+    );
+  }
 
   return (
     <>
@@ -125,12 +157,12 @@ export default function ProductsOverview() {
             <input
               type="text"
               placeholder={t("products.searchPlaceholder")}
-              value={filters.q}
-              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+              value={queryDraft}
+              onChange={(e) => setQueryDraft(e.target.value)}
             />
             <select
               value={filters.brand}
-              onChange={(e) => setFilters((f) => ({ ...f, brand: e.target.value }))}
+              onChange={(e) => updateParams({ brand: e.target.value, page: "" })}
             >
               <option value="">{t("products.allBrands")}</option>
               {brands.map((b) => (
@@ -140,8 +172,11 @@ export default function ProductsOverview() {
               ))}
             </select>
             <select
-              value={filters.category}
-              onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
+              value=""
+              onChange={(e) => {
+                const category = categories.find((c) => c.slug === e.target.value);
+                if (category) openCategory(category);
+              }}
             >
               <option value="">{t("products.allCategories")}</option>
               {categories.map((c) => (
@@ -154,7 +189,7 @@ export default function ProductsOverview() {
               <button
                 type="button"
                 className="btn"
-                onClick={() => setFilters({ brand: "", category: "", q: "" })}
+                onClick={() => setSearchParams({})}
               >
                 {t("products.reset")}
               </button>
@@ -199,7 +234,7 @@ export default function ProductsOverview() {
               <SectionLabel eyebrow={pc("categories_eyebrow", t("products.categoriesEyebrow"))} title={t("products.browseByCategory")} />
               <CategoryTileGrid
                 categories={categories}
-                onSelect={(c) => setFilters((f) => ({ ...f, category: c.slug }))}
+                onSelect={openCategory}
               />
             </div>
           </section>

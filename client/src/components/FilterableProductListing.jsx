@@ -1,62 +1,55 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import ProductCard from "./ProductCard.jsx";
 import ProductFilterSidebar from "./ProductFilterSidebar.jsx";
 import Pagination, { PRODUCTS_PER_PAGE } from "./Pagination.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { categoryLevelHref } from "../utils/categoryBreadcrumb.js";
+import { KEEP_SCROLL_STATE, buildListingUrl, normalizeQuery, parseListingUrl } from "../utils/productFilterUrl.js";
+import {
+  buildTree,
+  chainOf,
+  chainsOf,
+  selectionFromCategories,
+  selectionKey,
+  subtreeIds,
+} from "../utils/productFilterTree.js";
+import useSyncedQuery from "../hooks/useSyncedQuery.js";
 
-// Builds the category hierarchy from the flat list, keeping only active
-// categories that are reachable from a root and that have products
-// (directly or through a descendant).
-function buildTree(rows, products) {
-  const direct = new Set(products.map((p) => p.category_id));
-  const kids = new Map();
-  for (const r of rows) {
-    const key = r.parent_id ?? null;
-    if (!kids.has(key)) kids.set(key, []);
-    kids.get(key).push(r);
-  }
-  const byId = new Map();
-  const parentOf = new Map();
-  const grow = (row, parent) => {
-    const children = (kids.get(row.id) || []).map((c) => grow(c, row.id)).filter(Boolean);
-    if (!direct.has(row.id) && children.length === 0) return null;
-    const node = { id: row.id, name: row.name, slug: row.slug, children };
-    byId.set(node.id, node);
-    parentOf.set(node.id, parent);
-    return node;
-  };
-  const roots = (kids.get(null) || []).map((r) => grow(r, null)).filter(Boolean);
-  return { roots, byId, parentOf };
-}
+const EMPTY_SET = new Set();
 
-function subtreeIds(node, out = []) {
-  out.push(node.id);
-  node.children.forEach((c) => subtreeIds(c, out));
-  return out;
-}
-
+/**
+ * Product listing with the filter sidebar.
+ *
+ * The URL is the single source of truth for the shareable filter state — the
+ * selected brands and categories, the search keywords and the page. Nothing of
+ * that is kept in component state: it is derived from the route on every render
+ * (see utils/productFilterUrl.js for the URL shapes), and every sidebar
+ * interaction just navigates to the matching URL. That is what makes refresh,
+ * copied links and Back/Forward reproduce exactly the same checkboxes and
+ * results. Products are fetched once and filtered in the browser, so changing a
+ * filter never reloads the page or refetches anything.
+ *
+ * Must be rendered by one of the product listing routes (it reads the route params).
+ */
 export default function FilterableProductListing({
-  initialBrandSlug = null,
-  initialCategoryId = null,
   perCategoryLimit = null, // applied only while no filter is active
   onSelectionChange = null, // ({ nodes, brands }) — lets the page title follow the filters
 }) {
   const { t } = useLanguage();
+  const params = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [status, setStatus] = useState("loading"); // loading | ready | error
   const [attempt, setAttempt] = useState(0);
   const [data, setData] = useState(null);
-
-  const [query, setQuery] = useState("");
-  const [selectedCats, setSelectedCats] = useState(() => new Set());
-  const [selectedBrands, setSelectedBrands] = useState(() => new Set());
-  const [expanded, setExpanded] = useState(() => new Set());
+  const [expanded, setExpanded] = useState(() => new Set()); // sidebar branches that are open (UI only)
   const [panelOpen, setPanelOpen] = useState(false);
-  const [page, setPage] = useState(1);
   const mainRef = useRef(null);
   const pageChanged = useRef(false);
+  const ownSelection = useRef(null); // selection produced by our own navigation (see reveal effect)
 
   useEffect(() => {
     let cancelled = false;
@@ -66,23 +59,14 @@ export default function FilterableProductListing({
         if (cancelled) return;
         const prods = Array.isArray(products) ? products : [];
         const tree = buildTree(Array.isArray(rows) ? rows : [], prods);
-        const used = new Set(prods.map((p) => p.brand_slug));
-        const brands = (Array.isArray(brandRows) ? brandRows : []).filter((b) => used.has(b.slug));
-
-        // Preselect the page's own brand / category (if any) and open the
-        // branches that lead to it.
-        const startCats = new Set();
-        const startOpen = new Set();
-        const startNode = initialCategoryId != null ? tree.byId.get(Number(initialCategoryId)) : null;
-        if (startNode) {
-          subtreeIds(startNode).forEach((id) => startCats.add(id));
-          if (startNode.children.length) startOpen.add(startNode.id);
-          for (let p = tree.parentOf.get(startNode.id); p != null; p = tree.parentOf.get(p)) startOpen.add(p);
-        }
-        setSelectedCats(startCats);
-        setExpanded(startOpen);
-        setSelectedBrands(new Set(initialBrandSlug && used.has(initialBrandSlug) ? [initialBrandSlug] : []));
-        setData({ products: prods, brands, ...tree });
+        const allBrands = Array.isArray(brandRows) ? brandRows : [];
+        setData({
+          products: prods,
+          allBrands,
+          brandBySlug: new Map(allBrands.map((b) => [b.slug, b])),
+          usedBrands: new Set(prods.map((p) => p.brand_slug)),
+          ...tree,
+        });
         setStatus("ready");
       })
       .catch(() => {
@@ -91,35 +75,90 @@ export default function FilterableProductListing({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
 
-  // checked = whole subtree selected; partial = only some of it
-  const subtreeState = useCallback(
-    (node) => {
-      const ids = subtreeIds(node);
-      const n = ids.filter((id) => selectedCats.has(id)).length;
-      return { checked: n === ids.length, partial: n > 0 && n < ids.length };
-    },
-    [selectedCats]
+  // ---- URL -> selection --------------------------------------------------
+  const splat = params["*"];
+  const urlState = useMemo(
+    () => parseListingUrl(params, location.search),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [params.brandSlug, params.categorySlug, splat, location.search]
   );
+  const currentUrl = location.pathname + location.search;
+
+  // What the URL means once the brand/category data is known. A brand or
+  // category in the path that doesn't exist redirects, as the old pages did.
+  const resolved = useMemo(() => {
+    if (!data) return null;
+    const { pathBrand, pathCategory, brandSlugs, categoryRefs } = urlState;
+    if (pathBrand && !data.brandBySlug.has(pathBrand)) return { redirect: "/products" };
+
+    const entries = [];
+    let pathMissing = Boolean(pathCategory?.invalid);
+    for (const ref of categoryRefs) {
+      const entry = ref.id != null ? data.full.byId.get(ref.id) : data.full.bySlug.get(ref.slug);
+      if (!entry) {
+        if (ref === pathCategory) pathMissing = true;
+        continue; // unknown ?category= values are dropped (and the URL tidied)
+      }
+      if (!entries.includes(entry)) entries.push(entry);
+    }
+    if (pathMissing) return { redirect: `/products/${encodeURIComponent(pathBrand)}` };
+
+    return {
+      cats: selectionFromCategories(data, entries),
+      brands: new Set(brandSlugs.filter((s) => data.brandBySlug.has(s))),
+    };
+  }, [data, urlState]);
+
+  const ready = Boolean(data && resolved && !resolved.redirect);
+  const selectedCats = ready ? resolved.cats : EMPTY_SET;
+  const selectedBrands = ready ? resolved.brands : EMPTY_SET;
+  const selKey = selectionKey(selectedCats, selectedBrands);
+  const selChains = useMemo(() => (ready ? chainsOf(data, selectedCats) : []), [ready, data, selectedCats]);
+
+  // Brand checkboxes: brands that have products, plus any brand the URL selected.
+  const sidebarBrands = useMemo(
+    () => (data ? data.allBrands.filter((b) => data.usedBrands.has(b.slug) || selectedBrands.has(b.slug)) : []),
+    [data, selectedBrands]
+  );
+  const orderedBrands = (set) => (data ? data.allBrands.filter((b) => set.has(b.slug)).map((b) => b.slug) : []);
+
+  // ---- selection -> URL --------------------------------------------------
+  // Every filter change goes through here. Pagination is not carried over, so a
+  // changed filter always lands on page 1.
+  // Returns whether it navigated (false when the URL would not change).
+  const go = ({ brands, cats, q, page = 1 }, { replace = false } = {}) => {
+    const url = buildListingUrl({ brands, chains: chainsOf(data, cats), q, page, extra: urlState.extra });
+    if (url === currentUrl) return false;
+    ownSelection.current = selectionKey(cats, brands);
+    navigate(url, { replace, state: KEEP_SCROLL_STATE });
+    return true;
+  };
 
   const toggleCat = (node) => {
-    setSelectedCats((prev) => {
-      const next = new Set(prev);
-      const ids = subtreeIds(node);
-      const allOn = ids.every((id) => next.has(id));
-      ids.forEach((id) => (allOn ? next.delete(id) : next.add(id)));
-      // keep ancestors in step: selected only when every child is fully selected
-      for (let p = data.parentOf.get(node.id); p != null; p = data.parentOf.get(p)) {
-        const parent = data.byId.get(p);
-        const full = parent.children.every((c) => subtreeIds(c).every((id) => next.has(id)));
-        if (full) next.add(p);
-        else next.delete(p);
-      }
-      return next;
-    });
+    const next = new Set(selectedCats);
+    const ids = subtreeIds(node);
+    const allOn = ids.every((id) => next.has(id));
+    ids.forEach((id) => (allOn ? next.delete(id) : next.add(id)));
+    // keep ancestors in step: selected only when every child is fully selected
+    for (let p = data.parentOf.get(node.id); p != null; p = data.parentOf.get(p)) {
+      const parent = data.byId.get(p);
+      const full = parent.children.every((c) => subtreeIds(c).every((id) => next.has(id)));
+      if (full) next.add(p);
+      else next.delete(p);
+    }
+    go({ brands: orderedBrands(selectedBrands), cats: next, q: draftQuery() });
   };
+
+  const toggleBrand = (slug) => {
+    const next = new Set(selectedBrands);
+    if (next.has(slug)) next.delete(slug);
+    else next.add(slug);
+    go({ brands: orderedBrands(next), cats: selectedCats, q: draftQuery() });
+  };
+
+  const clearAll = () => go({ brands: [], cats: EMPTY_SET, q: "" });
 
   const toggleExpand = (id) =>
     setExpanded((prev) => {
@@ -129,42 +168,44 @@ export default function FilterableProductListing({
       return next;
     });
 
-  const toggleBrand = (slug) =>
-    setSelectedBrands((prev) => {
+  // Search box: typing is written to the URL after a short pause, replacing the
+  // current history entry so Back doesn't step through every keystroke.
+  const [draft, setDraft] = useSyncedQuery(
+    urlState.q,
+    (q) => go({ brands: orderedBrands(selectedBrands), cats: selectedCats, q }, { replace: true }),
+    location.key
+  );
+  // Text typed but not yet written to the URL travels with the next filter change.
+  const draftQuery = () => normalizeQuery(draft);
+
+  // When a selection arrives from outside the sidebar (opened/refreshed link,
+  // Back/Forward), open the branches that lead to it so the checked boxes are
+  // visible. Clicks inside the sidebar skip this, so they never move things around.
+  useEffect(() => {
+    if (!ready || ownSelection.current === selKey) return;
+    setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
+      for (const chain of selChains) {
+        chain.slice(0, -1).forEach((c) => next.add(c.id));
+        const last = chain[chain.length - 1];
+        if (data.byId.get(last.id)?.children.length) next.add(last.id);
+      }
       return next;
     });
-
-  const clearAll = () => {
-    setQuery("");
-    setSelectedCats(new Set());
-    setSelectedBrands(new Set());
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, selKey]);
 
   // Report the current selection upward: the outermost fully-selected
   // categories (each as a root→node chain) and the selected brands.
   useEffect(() => {
-    if (!onSelectionChange || !data) return;
-    const nodes = [];
-    for (const id of selectedCats) {
-      const parent = data.parentOf.get(id);
-      if (parent != null && selectedCats.has(parent)) continue; // covered by its parent
-      const chain = [];
-      for (let cur = id; cur != null; cur = data.parentOf.get(cur)) {
-        const n = data.byId.get(cur);
-        if (!n) break;
-        chain.unshift({ id: n.id, name: n.name, slug: n.slug });
-      }
-      if (chain.length) nodes.push(chain);
-    }
-    const brands = data.brands.filter((b) => selectedBrands.has(b.slug)).map((b) => ({ slug: b.slug, name: b.name }));
-    onSelectionChange({ nodes, brands });
+    if (!onSelectionChange || !ready) return;
+    const brands = data.allBrands.filter((b) => selectedBrands.has(b.slug)).map((b) => ({ slug: b.slug, name: b.name }));
+    onSelectionChange({ nodes: selChains, brands });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, selectedCats, selectedBrands]);
+  }, [ready, selKey]);
 
-  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  // ---- results -----------------------------------------------------------
+  const tokens = urlState.q.toLowerCase().split(/\s+/).filter(Boolean);
   const filtersActive = tokens.length > 0 || selectedCats.size > 0 || selectedBrands.size > 0;
   const activeCount = (tokens.length ? 1 : 0) + selectedCats.size + selectedBrands.size;
 
@@ -180,7 +221,7 @@ export default function FilterableProductListing({
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, selectedCats, selectedBrands, query]);
+  }, [data, selectedCats, selectedBrands, urlState.q]);
 
   // Products are newest-first, so grouping in arrival order keeps each
   // section newest-first and orders sections by their newest product.
@@ -196,12 +237,7 @@ export default function FilterableProductListing({
     const nameCount = {};
     for (const g of list) nameCount[g.name] = (nameCount[g.name] || 0) + 1;
     return list.map((g) => {
-      const chain = [];
-      for (let id = g.categoryId; id != null; id = data.parentOf.get(id)) {
-        const n = data.byId.get(id);
-        if (!n) break;
-        chain.unshift({ id: n.id, name: n.name, slug: n.slug });
-      }
+      const chain = chainOf(data, g.categoryId);
       return {
         ...g,
         heading: nameCount[g.name] > 1 && g.brandName ? `${g.name} · ${g.brandName}` : g.name,
@@ -213,15 +249,11 @@ export default function FilterableProductListing({
   // Per-category cap only applies while no filter is active.
   const limit = !filtersActive && perCategoryLimit ? perCategoryLimit : null;
 
-  // Back to page 1 whenever search / brand / category filters change.
-  useEffect(() => {
-    setPage(1);
-  }, [query, selectedCats, selectedBrands]);
-
   // Pagination runs over the whole filtered list, not per category: flatten the
   // category groups in display order, take one slice of PRODUCTS_PER_PAGE, then
   // regroup that slice so headings and dividers still show. Each product falls
   // in exactly one slice, so nothing is duplicated or dropped across pages.
+  // The page number comes from the URL (?page=), and any filter change drops it.
   const paged = useMemo(() => {
     const flat = [];
     for (const g of groups) {
@@ -229,7 +261,7 @@ export default function FilterableProductListing({
       for (const p of items) flat.push({ g, p });
     }
     const totalPages = Math.max(1, Math.ceil(flat.length / PRODUCTS_PER_PAGE));
-    const current = Math.min(page, totalPages);
+    const current = Math.min(urlState.page, totalPages);
     const start = (current - 1) * PRODUCTS_PER_PAGE;
     const sections = [];
     for (const { g, p } of flat.slice(start, start + PRODUCTS_PER_PAGE)) {
@@ -238,11 +270,11 @@ export default function FilterableProductListing({
       else sections.push({ g, items: [p] });
     }
     return { sections, totalPages, current };
-  }, [groups, limit, page]);
+  }, [groups, limit, urlState.page]);
 
   const goToPage = (n) => {
     pageChanged.current = true;
-    setPage(n);
+    go({ brands: orderedBrands(selectedBrands), cats: selectedCats, q: draftQuery(), page: n });
   };
 
   // After the user changes page, bring the top of the list back into view.
@@ -255,6 +287,31 @@ export default function FilterableProductListing({
     }
   }, [paged.current]);
 
+  // Tidy the address bar: a URL that means the same thing as the selection but
+  // is spelled differently (/products/omron?category=x, unknown slugs, page=1,
+  // an out-of-range page, reordered lists…) is rewritten in place to its
+  // canonical form, so there is exactly one URL per filter state.
+  const canonicalUrl = useMemo(
+    () =>
+      ready
+        ? buildListingUrl({
+            brands: orderedBrands(selectedBrands),
+            chains: selChains,
+            q: urlState.q,
+            page: paged.current,
+            extra: urlState.extra,
+          })
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ready, selKey, urlState, paged.current]
+  );
+  useEffect(() => {
+    if (canonicalUrl && canonicalUrl !== currentUrl) {
+      navigate(canonicalUrl, { replace: true, state: KEEP_SCROLL_STATE });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canonicalUrl, currentUrl]);
+
   if (status === "loading") return <p className="empty-state">{t("products.loadingProducts")}</p>;
   if (status === "error") {
     return (
@@ -266,21 +323,26 @@ export default function FilterableProductListing({
       </p>
     );
   }
+  if (resolved?.redirect) return <Navigate to={resolved.redirect} replace />;
 
   const showHeadings = !(filtersActive && groups.length === 1);
 
   return (
     <div className="category-layout">
       <ProductFilterSidebar
-        query={query}
-        onQuery={setQuery}
+        query={draft}
+        onQuery={setDraft}
         roots={data.roots}
         selectedCats={selectedCats}
         expanded={expanded}
         onToggleCat={toggleCat}
         onToggleExpand={toggleExpand}
-        subtreeState={subtreeState}
-        brands={data.brands}
+        subtreeState={(node) => {
+          const ids = subtreeIds(node);
+          const n = ids.filter((id) => selectedCats.has(id)).length;
+          return { checked: n === ids.length, partial: n > 0 && n < ids.length };
+        }}
+        brands={sidebarBrands}
         selectedBrands={selectedBrands}
         onToggleBrand={toggleBrand}
         onClear={clearAll}
