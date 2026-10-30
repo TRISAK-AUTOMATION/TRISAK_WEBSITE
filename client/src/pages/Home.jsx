@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
 import SignalLine from "../components/SignalLine.jsx";
+import SolutionPillars from "../components/SolutionPillars.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
 import { translations } from "../i18n/translations.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
@@ -73,7 +74,6 @@ export default function Home() {
     title: hc(`strength${i + 1}_title`, s.title),
     body: hc(`strength${i + 1}_body`, s.body),
   }));
-  const pillars = t("home.pillars");
   const productTags = t("home.productTags");
   const fallbackIndustries = t("industries");
   // Both languages' plain-name lists, for the one case where the API has
@@ -202,21 +202,14 @@ export default function Home() {
       </section>
 
       {/* 04 — AUTOMATION SOLUTIONS */}
-      <section className="section">
+      <section className="section solutions-section">
         <div className="container">
           <SectionLabel
             eyebrow={t("home.solutionsEyebrow")}
             title={t("home.solutionsTitle")}
             lede={t("home.solutionsLede")}
           />
-          <div className="grid cols-2">
-            {pillars.map((name, i) => (
-              <Link to="/automation-solution" className="grid-cell pillar-card" key={name}>
-                <span className="pillar-card__num">0{i + 1}</span>
-                <h3>{name}</h3>
-              </Link>
-            ))}
-          </div>
+          <SolutionPillars />
         </div>
       </section>
 

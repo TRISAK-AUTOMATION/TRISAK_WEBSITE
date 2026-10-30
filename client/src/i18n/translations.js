@@ -62,6 +62,25 @@ export const translations = {
         "Robotic Solutions",
         "Smart Factory",
       ],
+      // Card copy for the four pillars (same order as `pillars`).
+      pillarItems: [
+        {
+          desc: "Intuitive interfaces and reliable control systems for smarter, more efficient operations.",
+          features: ["HMI", "PLC", "SCADA"],
+        },
+        {
+          desc: "Precision motion control for higher productivity and optimal performance.",
+          features: ["Servo Drive", "Servo Motor", "Motion Control"],
+        },
+        {
+          desc: "Flexible and intelligent robots for assembly, handling, and advanced manufacturing.",
+          features: ["Industrial Robots", "Collaborative Robots", "System Integration"],
+        },
+        {
+          desc: "Connected technologies for real-time data, greater visibility, and a smarter production floor.",
+          features: ["IoT & IIoT", "Data Analytics", "MES Integration"],
+        },
+      ],
       industriesEyebrow: "Who We Serve",
       industriesTitle: "Industries",
       ctaTitleLine1: "Ready to Improve",
@@ -404,6 +423,24 @@ export const translations = {
         "ระบบขับเคลื่อนและมอเตอร์",
         "โซลูชันหุ่นยนต์อุตสาหกรรม",
         "โรงงานอัจฉริยะ",
+      ],
+      pillarItems: [
+        {
+          desc: "หน้าจอควบคุมที่ใช้งานง่ายและระบบควบคุมที่เชื่อถือได้ เพื่อการทำงานที่ชาญฉลาดและมีประสิทธิภาพยิ่งขึ้น",
+          features: ["HMI", "PLC", "SCADA"],
+        },
+        {
+          desc: "ระบบควบคุมการเคลื่อนที่อย่างแม่นยำ เพื่อผลผลิตที่สูงขึ้นและประสิทธิภาพที่ดีที่สุด",
+          features: ["เซอร์โวไดรฟ์", "เซอร์โวมอเตอร์", "ระบบควบคุมการเคลื่อนที่"],
+        },
+        {
+          desc: "หุ่นยนต์ที่ยืดหยุ่นและชาญฉลาด สำหรับงานประกอบ งานหยิบจับ และการผลิตขั้นสูง",
+          features: ["หุ่นยนต์อุตสาหกรรม", "หุ่นยนต์ทำงานร่วมกับคน", "การบูรณาการระบบ"],
+        },
+        {
+          desc: "เทคโนโลยีที่เชื่อมต่อถึงกัน เพื่อข้อมูลแบบเรียลไทม์ มองเห็นภาพรวมชัดเจน และไลน์ผลิตที่ชาญฉลาดยิ่งขึ้น",
+          features: ["IoT และ IIoT", "การวิเคราะห์ข้อมูล", "การเชื่อมต่อ MES"],
+        },
       ],
       industriesEyebrow: "กลุ่มลูกค้าของเรา",
       industriesTitle: "กลุ่มอุตสาหกรรม",
