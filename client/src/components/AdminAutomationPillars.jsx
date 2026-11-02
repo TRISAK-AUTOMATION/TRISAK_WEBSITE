@@ -11,7 +11,7 @@ const IMAGE_TYPES = "image/jpeg,image/png,image/webp";
 const ICON_TYPES = "image/png,image/webp,image/svg+xml";
 
 // ---- draft <-> API shape ---------------------------------------------------------
-function cardToDraft(card) {
+export function cardToDraft(card) {
   const features = Array.from({ length: FEATURE_SLOTS }, (_, i) => ({
     label: card.features?.[i]?.label || "",
     labelTh: card.features?.[i]?.labelTh || "",
@@ -36,7 +36,7 @@ function cardToDraft(card) {
 }
 
 // A blank card for the "Create Card" form: enabled, last in the order, linking to the Automation Solution page.
-const blankCard = (nextOrder) => ({
+export const blankCard = (nextOrder) => ({
   number: "",
   title: "",
   titleTh: "",
@@ -54,13 +54,13 @@ const blankCard = (nextOrder) => ({
 });
 
 // What the public card component expects (empty feature slots dropped).
-function draftToPillar(d) {
+export function draftToPillar(d) {
   return { ...d, features: d.features.filter((f) => f.label || f.labelTh || f.icon) };
 }
 
 // Mirrors the server's rules so mistakes are caught before the request is sent.
 const isSafeUrl = (u) => /^\/(?![/\\])\S*$/.test(u) || /^https?:\/\/[^\s<>"']+$/i.test(u);
-function validateDraft(d, maxOrder) {
+export function validateDraft(d, maxOrder) {
   const e = {};
   if (!d.title.trim()) e.title = "Please enter the title (English).";
   if (!d.description.trim()) e.description = "Please enter the description (English).";
@@ -78,12 +78,12 @@ function validateDraft(d, maxOrder) {
 }
 
 // ---- small pieces ----------------------------------------------------------------
-function FieldError({ children }) {
+export function FieldError({ children }) {
   return children ? <span className="pillar-admin__error">{children}</span> : null;
 }
 
 /** Choose a library icon or upload a custom one, for a single feature. */
-function FeatureIconField({ index, value, onChange }) {
+export function FeatureIconField({ index, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -372,7 +372,9 @@ function PillarEditor({ card, isNew = false, maxOrder, onSaved, onClose, onDirty
 }
 
 /**
- * "Automation Solutions Management" — shown on /admin/home. Lists the four
+ * (Legacy single-page version — /admin/home now uses the tabbed list + Add/Edit pages in
+ * pages/admin/AdminHomeAutomation*.jsx, which reuse the helpers exported above.)
+ * "Automation Solutions Management" — previously shown on /admin/home. Lists the four
  * Home page cards; each opens into its own editor. Every save goes straight
  * to the database, and the public Home page reads from the same rows.
  */

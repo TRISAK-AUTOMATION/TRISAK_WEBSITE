@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
-import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
-import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
+import { HomePageHeader, TabbarLanguageSelect } from "../../components/HomeAdmin.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
-import AdminAutomationPillars from "../../components/AdminAutomationPillars.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = [
@@ -78,27 +76,27 @@ export default function AdminHomeEditor() {
   }
 
   return (
-    <>
     <form onSubmit={handleSubmit}>
-      <AdminBreadcrumb items={[{ label: "หน้าแรก" }]} />
-
-      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
-        <div className="admin-edit-tabbar__actions">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
-          </button>
-        </div>
-      </div>
+      <HomePageHeader
+        actions={
+          <>
+            <TabbarLanguageSelect value={lang} onChange={setLang} />
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
+            </button>
+          </>
+        }
+      />
 
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
       {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าแรกในเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong>{" "}
-        — เลือกภาษาจากเมนูด้านข้างเพื่อแก้อีกภาษา ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก"
+        — เลือกภาษาจากเมนูด้านบนเพื่อแก้อีกภาษา ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก"
+        ส่วนการ์ดโซลูชันระบบอัตโนมัติแก้ไขได้จากแท็บด้านบน
       </div>
 
-      <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>
         <div className="admin-form">
           <div className="admin-form__section panel">
             <h3>Hero</h3>
@@ -205,11 +203,6 @@ export default function AdminHomeEditor() {
             </button>
           </div>
         </div>
-      </AdminEditLayout>
     </form>
-
-    {/* Automation Solutions cards — own editors and Save buttons, saved independently of the form above */}
-    <AdminAutomationPillars />
-    </>
   );
 }

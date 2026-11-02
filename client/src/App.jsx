@@ -20,6 +20,8 @@ import ProductDetail from "./pages/products/ProductDetail.jsx";
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminHomeEditor from "./pages/admin/AdminHomeEditor.jsx";
+import AdminHomeAutomation from "./pages/admin/AdminHomeAutomation.jsx";
+import AdminHomeAutomationForm from "./pages/admin/AdminHomeAutomationForm.jsx";
 import AdminAboutEditor from "./pages/admin/AdminAboutEditor.jsx";
 import AdminHistoryTimeline from "./pages/admin/AdminHistoryTimeline.jsx";
 import AdminHistoryTimelineForm from "./pages/admin/AdminHistoryTimelineForm.jsx";
@@ -121,6 +123,9 @@ export default function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="home" element={<AdminHomeEditor />} />
+          <Route path="home/automation-solutions" element={<AdminHomeAutomation />} />
+          <Route path="home/automation-solutions/new" element={<AdminHomeAutomationForm />} />
+          <Route path="home/automation-solutions/:id/edit" element={<AdminHomeAutomationForm />} />
           <Route path="about" element={<AdminAboutEditor />} />
           <Route path="about/timeline" element={<AdminHistoryTimeline />} />
           <Route path="about/timeline/new" element={<AdminHistoryTimelineForm />} />
