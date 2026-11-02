@@ -13,11 +13,18 @@ const isInternal = (url) => typeof url === "string" && url.startsWith("/");
  * `pillar` is the API shape: { number, title, titleTh, description,
  * descriptionTh, features: [{ label, labelTh, icon }], imageUrl, imageAlt,
  * imageAltTh, linkUrl }.
+ *
+ * The picture is the card's full background (CSS `cover` + `center`, set through the
+ * --pc-bg variable); text, headings and icons sit above it on a soft readability scrim.
  */
 export function PillarCard({ pillar, index = 0, lang = "en", preview = false }) {
   const number = pillar.number || String(index + 1).padStart(2, "0");
   const alt = pick(lang, pillar.imageAlt, pillar.imageAltTh);
   const features = pillar.features || [];
+  const hasImage = Boolean(pillar.imageUrl);
+  const cardClass = `pillar-card${hasImage ? " pillar-card--bg" : ""}`;
+  // JSON.stringify gives a safely quoted/escaped CSS string for the url()
+  const cardStyle = hasImage ? { "--pc-bg": `url(${JSON.stringify(pillar.imageUrl)})` } : undefined;
 
   const inner = (
     <div className="pillar-card__inner">
@@ -38,30 +45,24 @@ export function PillarCard({ pillar, index = 0, lang = "en", preview = false }) 
           </ul>
         )}
       </div>
-      {pillar.imageUrl && (
-        <div className="pillar-card__media">
-          <img
-            src={pillar.imageUrl}
-            alt={alt}
-            loading={preview ? "eager" : "lazy"}
-            decoding="async"
-            style={{ objectPosition: `${pillar.imagePositionX ?? 50}% ${pillar.imagePositionY ?? 50}%` }}
-          />
-        </div>
-      )}
     </div>
   );
 
-  if (preview) return <div className="pillar-card pillar-card--preview">{inner}</div>;
+  if (preview)
+    return (
+      <div className={`${cardClass} pillar-card--preview`} style={cardStyle} role={hasImage && alt ? "img" : undefined} aria-label={hasImage && alt ? alt : undefined}>
+        {inner}
+      </div>
+    );
   if (isInternal(pillar.linkUrl)) {
     return (
-      <Link to={pillar.linkUrl} className="pillar-card">
+      <Link to={pillar.linkUrl} className={cardClass} style={cardStyle} aria-label={alt || undefined}>
         {inner}
       </Link>
     );
   }
   return (
-    <a href={pillar.linkUrl} className="pillar-card" rel="noopener">
+    <a href={pillar.linkUrl} className={cardClass} style={cardStyle} aria-label={alt || undefined} rel="noopener">
       {inner}
     </a>
   );

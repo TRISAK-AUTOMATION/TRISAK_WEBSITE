@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
-import ImagePositionField from "../../components/ImagePositionField.jsx";
 import { PillarCard } from "../../components/SolutionPillars.jsx";
 import { AdminEditLayout, AdminLanguageSelect, AdminStatusToggle } from "../../components/AdminEditSidebar.jsx";
 import { HomePageHeader, HOME_AUTOMATION_PATH } from "../../components/HomeAdmin.jsx";
@@ -269,18 +268,11 @@ export default function AdminHomeAutomationForm() {
             </div>
 
             <div className="admin-form__section panel">
-              <h3>Main image</h3>
-              {draft.imageUrl && (
-                <div className="pillar-editor__position">
-                  <ImagePositionField
-                    imageUrl={draft.imageUrl}
-                    positionX={draft.imagePositionX}
-                    positionY={draft.imagePositionY}
-                    aspectRatio={1}
-                    onChange={({ x, y }) => set({ imagePositionX: x, imagePositionY: y })}
-                  />
-                </div>
-              )}
+              <h3>Background image</h3>
+              <p className="admin-form__hint">
+                The picture fills the whole card (centered and scaled to cover it, with no frame). Text sits on top, so keep the
+                subject on the right-hand side of the image.
+              </p>
               <ImageUploadField
                 value={draft.imageUrl}
                 hidePreview
@@ -288,7 +280,10 @@ export default function AdminHomeAutomationForm() {
                 maxSizeMB={5}
                 onChange={(url) => set({ imageUrl: url, imagePositionX: 50, imagePositionY: 50 })}
               />
-              <p className="admin-form__hint">JPG, PNG or WebP up to 5 MB. The picture is saved with the card when you press Save Changes.</p>
+              <p className="admin-form__hint">
+                JPG, PNG or WebP up to 5 MB — a wide image (about 1600 × 900 px) works best. Use "Change image" to replace it or "Remove" to clear it.
+                It is saved with the card when you press Save Changes.
+              </p>
             </div>
 
             <div className="admin-form__section panel">

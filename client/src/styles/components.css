@@ -460,11 +460,9 @@
 
 /* =========================================================
    Automation Solutions — four pillar cards (components/SolutionPillars.jsx)
-   2 × 2 on desktop, one column on tablet/mobile. Each card reacts to its OWN
-   width (container query): ~55% text / ~45% product picture side by side when
-   there is room; picture under the text when there is not. The picture has no
-   box or frame — it is faded into the card's white → light-blue gradient with
-   CSS masks, so it never shows a visible edge.
+   2 × 2 on desktop, one column on tablet/mobile. The admin-uploaded picture is the
+   card's FULL background (cover + center, no frame); a soft white scrim on the text
+   side keeps the heading, description and icons readable over any picture.
    ========================================================= */
 .solutions-section {
   --pc-navy: #0b1b3f; /* headings */
@@ -515,6 +513,36 @@
   opacity: 1.6;
 }
 
+/* Full-card background picture (uploaded in the admin). The gradient underneath shows while it loads. */
+.pillar-card--bg {
+  background-image: var(--pc-bg), linear-gradient(135deg, var(--pc-grad-from) 0%, var(--pc-grad-to) 100%);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+/* readability scrim: strongest behind the text (left), fading away over the picture (right) */
+.pillar-card--bg::before {
+  opacity: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(255, 255, 255, 0.84) 38%,
+    rgba(255, 255, 255, 0.35) 66%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.pillar-card--bg:hover::before {
+  opacity: 1;
+}
+
+.pillar-card--bg h3,
+.pillar-card--bg p,
+.pillar-card--bg .pillar-card__label {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+}
+
 .pillar-card:hover {
   filter: saturate(1.08);
 }
@@ -529,7 +557,8 @@
   flex-direction: column;
   gap: 0;
   height: 100%;
-  padding: 28px 28px 0;
+  min-height: 300px;
+  padding: 28px;
 }
 
 .pillar-card__body {
@@ -539,7 +568,7 @@
   flex-direction: column;
   gap: 12px;
   flex: 1 1 auto;
-  padding-bottom: 8px;
+  max-width: 62%; /* text stays on the left, the picture shows on the right */
 }
 
 .pillar-card__num {
@@ -636,85 +665,8 @@
   max-width: 100%;
 }
 
-/* Picture — no box, no border, no background: just the product, faded into the card.
-   Stacked under the text by default (narrow cards / mobile); top edge fades out. */
-.pillar-card__media {
-  position: relative;
-  margin: 0 -28px; /* run to the card's edges so no frame is implied */
-  height: clamp(200px, 55cqw, 300px);
-  background: none;
-  border-radius: 0;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.pillar-card__media img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  mix-blend-mode: multiply; /* a white photo background melts into the gradient */
-  /* fade every edge: top (stacked) + left/right/bottom */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 100%),
-    linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 100%),
-    linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
-  transition: transform 0.35s ease;
-}
-
-/* soft overlay: lets the card gradient wash over the picture's outer edges */
-.pillar-card__media::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, var(--pc-grad-from) 0%, rgba(255, 255, 255, 0) 35%),
-    linear-gradient(to right, rgba(233, 241, 255, 0.55) 0%, rgba(233, 241, 255, 0) 25%);
-}
-
 .pillar-card--preview {
   cursor: default;
-}
-
-.pillar-card:hover .pillar-card__media img {
-  transform: scale(1.04);
-}
-
-/* Roomy card: ~55% text on the left, ~45% large product picture on the right. */
-@container pillar (min-width: 460px) {
-  .pillar-card__inner {
-    display: grid;
-    grid-template-columns: 55fr 45fr;
-    align-items: stretch;
-    padding: 28px 0 28px 28px;
-  }
-
-  .pillar-card__body {
-    min-width: 0;
-    padding-right: 8px;
-  }
-
-  .pillar-card__media {
-    margin: -28px 0; /* picture uses the card's full height */
-    height: auto;
-    min-height: 240px;
-    min-width: 0;
-  }
-
-  .pillar-card__media img {
-    /* the LEFT edge fades into the background; top/bottom/right soften */
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 32%, #000 100%),
-      linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0%, #000 32%, #000 100%),
-      linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
-    -webkit-mask-composite: source-in;
-    mask-composite: intersect;
-  }
-
-  .pillar-card__media::after {
-    background: linear-gradient(to right, rgba(247, 250, 255, 0.9) 0%, rgba(247, 250, 255, 0) 38%);
-  }
 }
 
 /* Tablet and below: one card per row, so every card is wide enough for the 55 / 45 split. */
@@ -725,14 +677,24 @@
   }
 }
 
-/* Narrow card (mobile): compact padding; the picture sits under the text. */
+/* Narrow card (mobile): text spans the card, the picture shows through a top-to-bottom scrim. */
 @container pillar (max-width: 459px) {
   .pillar-card__inner {
-    padding: 22px 22px 0;
+    padding: 22px;
+    min-height: 340px;
   }
 
-  .pillar-card__media {
-    margin: 0 -22px;
+  .pillar-card__body {
+    max-width: 100%;
+  }
+
+  .pillar-card--bg::before {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.94) 0%,
+      rgba(255, 255, 255, 0.86) 55%,
+      rgba(255, 255, 255, 0.6) 100%
+    );
   }
 }
 
@@ -743,14 +705,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pillar-card__media img,
   .pillar-card,
   .pillar-card::before {
     transition: none;
-  }
-
-  .pillar-card:hover .pillar-card__media img {
-    transform: none;
   }
 }
 
