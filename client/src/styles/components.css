@@ -564,6 +564,28 @@
   width: 76px;
 }
 
+/* keeps the section's height steady while the cards load */
+.pillar-grid-placeholder {
+  min-height: 300px;
+}
+
+.pillar-card__icon .feature-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* an uploaded icon is drawn as a mask, so it takes the same colours as the built-in ones */
+.pillar-card__icon .feature-icon--image {
+  display: block;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .pillar-card__icon {
   display: grid;
   place-items: center;
@@ -606,6 +628,10 @@
   transition: transform 0.35s ease;
 }
 
+.pillar-card--preview {
+  cursor: default;
+}
+
 .pillar-card:hover .pillar-card__media img {
   transform: scale(1.05);
 }
@@ -628,12 +654,6 @@
     aspect-ratio: auto;
     min-height: 200px;
   }
-
-  /* keep each product (not just the middle of the picture) in frame */
-  .pillar-card:nth-child(1) .pillar-card__media img { object-position: 40% 50%; }
-  .pillar-card:nth-child(2) .pillar-card__media img { object-position: 58% 50%; }
-  .pillar-card:nth-child(3) .pillar-card__media img { object-position: 38% 50%; }
-  .pillar-card:nth-child(4) .pillar-card__media img { object-position: 82% 50%; }
 }
 
 @media (max-width: 720px) {

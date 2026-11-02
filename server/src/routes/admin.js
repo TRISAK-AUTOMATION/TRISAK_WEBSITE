@@ -58,6 +58,14 @@ import {
   commitProductImport,
 } from "../controllers/productImportController.js";
 import { updateHomeContent } from "../controllers/homeContentController.js";
+import {
+  listPillarsAdmin,
+  createPillar,
+  updatePillar,
+  deletePillar,
+  togglePillarStatus,
+  reorderPillar,
+} from "../controllers/automationPillarsController.js";
 import { updateSiteSettings } from "../controllers/siteSettingsController.js";
 import { getDashboard } from "../controllers/dashboardController.js";
 import {
@@ -109,6 +117,14 @@ router.use("/admin", requireAdmin);
 router.post("/admin/logout", logout);
 
 router.put("/admin/home-content", updateHomeContent);
+
+// Home page "Automation Solutions" cards (edited from /admin/home)
+router.get("/admin/automation-pillars", listPillarsAdmin);
+router.post("/admin/automation-pillars", createPillar);
+router.put("/admin/automation-pillars/:id", updatePillar);
+router.delete("/admin/automation-pillars/:id", deletePillar);
+router.patch("/admin/automation-pillars/:id/status", togglePillarStatus);
+router.post("/admin/automation-pillars/:id/reorder", reorderPillar);
 router.put("/admin/site-settings", updateSiteSettings);
 
 router.get("/admin/dashboard", getDashboard);

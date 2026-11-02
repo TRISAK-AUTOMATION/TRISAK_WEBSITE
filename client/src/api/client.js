@@ -142,6 +142,7 @@ export const api = {
   getCustomers: () => request("/customers"),
   getIndustries: () => request("/industries"),
   getHomeContent: () => request("/home-content"),
+  getAutomationPillars: () => request("/automation-pillars"),
   getSiteSettings: () => request("/site-settings"),
   getMenu: () => request("/menu"),
   getActivePopup: () => request("/popups/active"),
@@ -192,6 +193,24 @@ export const api = {
       body: JSON.stringify({ direction }),
     }),
   adminDeleteBrand: (id) => authRequest(`/admin/brands/${id}`, { method: "DELETE" }),
+
+  // ---- automation solutions cards (Home page, managed from /admin/home) ----
+  adminGetAutomationPillars: () => authRequest("/admin/automation-pillars"),
+  adminCreateAutomationPillar: (payload) =>
+    authRequest("/admin/automation-pillars", { method: "POST", body: JSON.stringify(payload) }),
+  adminDeleteAutomationPillar: (id) => authRequest(`/admin/automation-pillars/${id}`, { method: "DELETE" }),
+  adminUpdateAutomationPillar: (id, payload) =>
+    authRequest(`/admin/automation-pillars/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminToggleAutomationPillarStatus: (id, isActive) =>
+    authRequest(`/admin/automation-pillars/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  adminReorderAutomationPillar: (id, direction) =>
+    authRequest(`/admin/automation-pillars/${id}/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
 
   // ---- industries (Home page Industries slider) ----
   adminGetIndustries: () => authRequest("/admin/industries"),

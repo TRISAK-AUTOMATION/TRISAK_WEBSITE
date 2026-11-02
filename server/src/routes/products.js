@@ -20,6 +20,7 @@ import {
   listIndustries,
 } from "../controllers/productsController.js";
 import { getHomeContent } from "../controllers/homeContentController.js";
+import { listPillarsPublic } from "../controllers/automationPillarsController.js";
 import { getSiteSettings } from "../controllers/siteSettingsController.js";
 import { getMenu } from "../controllers/menuController.js";
 import { getActivePopup } from "../controllers/popupsController.js";
@@ -35,6 +36,7 @@ import { getHistoryContent } from "../controllers/historyContentController.js";
 const router = Router();
 
 router.get("/home-content", getHomeContent);
+router.get("/automation-pillars", listPillarsPublic);
 router.get("/site-settings", getSiteSettings);
 router.get("/menu", getMenu);
 router.get("/popups/active", getActivePopup);

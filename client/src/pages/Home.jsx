@@ -40,8 +40,15 @@ export default function Home() {
   const [homeContent, setHomeContent] = useState(null);
   const [brands, setBrands] = useState(null);
   const [customers, setCustomers] = useState(null);
+  // Automation Solutions cards: undefined = loading, null = request failed
+  // (SolutionPillars shows its built-in fallback), array = the active cards.
+  const [pillars, setPillars] = useState(undefined);
 
   useEffect(() => {
+    api
+      .getAutomationPillars()
+      .then((data) => setPillars(Array.isArray(data) ? data : null))
+      .catch(() => setPillars(null));
     api
       .getIndustries()
       .then((data) => setIndustries(data?.length ? data : null))
@@ -202,16 +209,19 @@ export default function Home() {
       </section>
 
       {/* 04 — AUTOMATION SOLUTIONS */}
-      <section className="section solutions-section">
-        <div className="container">
-          <SectionLabel
-            eyebrow={t("home.solutionsEyebrow")}
-            title={t("home.solutionsTitle")}
-            lede={t("home.solutionsLede")}
-          />
-          <SolutionPillars />
-        </div>
-      </section>
+      {/* hidden only when an admin has disabled every card */}
+      {!(Array.isArray(pillars) && pillars.length === 0) && (
+        <section className="section solutions-section">
+          <div className="container">
+            <SectionLabel
+              eyebrow={t("home.solutionsEyebrow")}
+              title={t("home.solutionsTitle")}
+              lede={t("home.solutionsLede")}
+            />
+            <SolutionPillars pillars={pillars} />
+          </div>
+        </section>
+      )}
 
       {/* 05 — INDUSTRIES */}
       <section className="section industries-section">

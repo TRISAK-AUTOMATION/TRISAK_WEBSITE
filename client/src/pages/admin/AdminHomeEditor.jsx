@@ -3,6 +3,7 @@ import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import AdminAutomationPillars from "../../components/AdminAutomationPillars.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 const FIELD_SUFFIXES = [
@@ -77,6 +78,7 @@ export default function AdminHomeEditor() {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit}>
       <AdminBreadcrumb items={[{ label: "หน้าแรก" }]} />
 
@@ -205,5 +207,9 @@ export default function AdminHomeEditor() {
         </div>
       </AdminEditLayout>
     </form>
+
+    {/* Automation Solutions cards — own editors and Save buttons, saved independently of the form above */}
+    <AdminAutomationPillars />
+    </>
   );
 }
