@@ -5,8 +5,8 @@ import SuccessModal from "../../components/SuccessModal.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import ImagePositionField from "../../components/ImagePositionField.jsx";
 import { PillarCard } from "../../components/SolutionPillars.jsx";
-import { AdminEditLayout, AdminStatusToggle } from "../../components/AdminEditSidebar.jsx";
-import { HomePageHeader, TabbarLanguageSelect, HOME_AUTOMATION_PATH } from "../../components/HomeAdmin.jsx";
+import { AdminEditLayout, AdminLanguageSelect, AdminStatusToggle } from "../../components/AdminEditSidebar.jsx";
+import { HomePageHeader, HOME_AUTOMATION_PATH } from "../../components/HomeAdmin.jsx";
 import {
   FeatureIconField,
   FieldError,
@@ -20,8 +20,7 @@ const IMAGE_TYPES = "image/jpeg,image/png,image/webp";
 
 /**
  * Home → Automation Solutions → Add / Edit card.
- * Same page structure as the History Add/Edit forms: language dropdown in the
- * tab bar, status + display order in the sidebar, SuccessModal after saving.
+ * Same page structure as the History Add/Edit forms: language dropdown, status + display order in the sidebar, SuccessModal after saving.
  * Reads / writes the same automation-pillars API and fields as before.
  */
 export default function AdminHomeAutomationForm() {
@@ -159,7 +158,7 @@ export default function AdminHomeAutomationForm() {
 
   return (
     <>
-      <HomePageHeader crumbs={crumbs} actions={<TabbarLanguageSelect value={lang} onChange={setLang} />} />
+      <HomePageHeader crumbs={crumbs} />
 
       <form className="admin-form" onSubmit={handleSubmit}>
         {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
@@ -173,6 +172,7 @@ export default function AdminHomeAutomationForm() {
         <AdminEditLayout
           sidebar={
             <>
+              <AdminLanguageSelect value={lang} onChange={setLang} label="Language" />
               <AdminStatusToggle
                 checked={draft.isActive}
                 onChange={(v) => set({ isActive: v })}

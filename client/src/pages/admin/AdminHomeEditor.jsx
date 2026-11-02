@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client.js";
-import { HomePageHeader, TabbarLanguageSelect } from "../../components/HomeAdmin.jsx";
+import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
+import { HomePageHeader } from "../../components/HomeAdmin.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
@@ -79,12 +80,9 @@ export default function AdminHomeEditor() {
     <form onSubmit={handleSubmit}>
       <HomePageHeader
         actions={
-          <>
-            <TabbarLanguageSelect value={lang} onChange={setLang} />
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
-            </button>
-          </>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            💾 {saving ? "กำลังบันทึก…" : "บันทึก"}
+          </button>
         }
       />
 
@@ -93,10 +91,11 @@ export default function AdminHomeEditor() {
 
       <div className="admin-edit-notice">
         🔔 กำลังแก้ไขข้อความหน้าแรกในเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong>{" "}
-        — เลือกภาษาจากเมนูด้านบนเพื่อแก้อีกภาษา ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก"
+        — เลือกภาษาจากเมนูด้านข้างเพื่อแก้อีกภาษา ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด "บันทึก"
         ส่วนการ์ดโซลูชันระบบอัตโนมัติแก้ไขได้จากแท็บด้านบน
       </div>
 
+      <AdminEditLayout sidebar={<AdminLanguageSelect value={lang} onChange={setLang} />}>
         <div className="admin-form">
           <div className="admin-form__section panel">
             <h3>Hero</h3>
@@ -203,6 +202,7 @@ export default function AdminHomeEditor() {
             </button>
           </div>
         </div>
+      </AdminEditLayout>
     </form>
   );
 }
