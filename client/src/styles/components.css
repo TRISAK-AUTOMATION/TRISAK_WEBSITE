@@ -1911,3 +1911,16 @@
     min-height: 84px;
   }
 }
+
+/* ---------- Career page (structure only) ---------- */
+.career-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.career-positions__list {
+  min-height: 120px;
+}
+.career-details {
+  min-height: 160px;
+}

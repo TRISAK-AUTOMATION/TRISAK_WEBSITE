@@ -321,6 +321,15 @@ export const translations = {
         { label: "Technical Support", desc: "Stay on call for maintenance, upgrades, and troubleshooting." },
       ],
     },
+    career: {
+      heroMeta: "Careers",
+      heroTitle: "Career",
+      heroSub: "",
+      openPositionsEyebrow: "Opportunities",
+      openPositionsTitle: "Open Positions",
+      jobDetailsEyebrow: "Details",
+      jobDetailsTitle: "Job Details",
+    },
     contacts: {
       heroMeta: "Get In Touch",
       heroTitle: "Contact TRISAK Group",
@@ -681,6 +690,15 @@ export const translations = {
         { label: "ทดสอบระบบ", desc: "ทดสอบ ปรับจูน และตรวจสอบระบบภายใต้สภาวะการผลิตจริง" },
         { label: "สนับสนุนด้านเทคนิค", desc: "พร้อมให้บริการบำรุงรักษา อัปเกรด และแก้ไขปัญหาต่อเนื่อง" },
       ],
+    },
+    career: {
+      heroMeta: "ร่วมงานกับเรา",
+      heroTitle: "ร่วมงานกับเรา",
+      heroSub: "",
+      openPositionsEyebrow: "ตำแหน่งงาน",
+      openPositionsTitle: "ตำแหน่งที่เปิดรับ",
+      jobDetailsEyebrow: "รายละเอียด",
+      jobDetailsTitle: "รายละเอียดตำแหน่งงาน",
     },
     contacts: {
       heroMeta: "ติดต่อเรา",

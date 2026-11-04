@@ -11,6 +11,7 @@ import Home from "./pages/Home.jsx";
 import History from "./pages/History.jsx";
 import AutomationSolution from "./pages/AutomationSolution.jsx";
 import Contacts from "./pages/Contacts.jsx";
+import Career from "./pages/Career.jsx";
 
 import ProductsOverview from "./pages/products/ProductsOverview.jsx";
 import ProductListingPage from "./pages/products/ProductListingPage.jsx";
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="/history" element={<History />} />
         <Route path="/automation-solution" element={<AutomationSolution />} />
         <Route path="/contacts" element={<Contacts />} />
+        <Route path="/career" element={<Career />} />
 
         {/* 01 — products overview */}
         <Route path="/products" element={<ProductsOverview />} />
