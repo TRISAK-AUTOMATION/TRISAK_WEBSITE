@@ -41,25 +41,18 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 // left exactly as they were on update, and default to empty/false/
 // next-in-line on create.
 //
-// AVAILABILITY (optional columns "In Stock" and "Item Status", located by
-// header name — wherever they sit in the file; both are stored on the product
-// so they export again):
-//   Item Status = Discontinued            → Discontinued  (always wins, any stock)
-//   Item Status = Active, In Stock > 0    → Available
-//   Item Status = Active, In Stock = 0    → Unavailable
-// Invalid / missing source values are flagged for review and never
-// overwrite an existing status or the stored In Stock / Item Status (a new
-// product with no usable values is rejected, since no status can be derived).
-// The derived status is never read from Excel. "Replacement Available" and
-// replacement links are managed by admins only: an import never sets,
-// changes or clears them. Files without these columns leave every
-// status untouched.
+// STATUS: the required "Item Status" column is the only status value read from
+// Excel. It is stored in products.item_status and exported unchanged; the
+// database derives products.availability_status from it:
+//   Active                                     → Available
+//   Discontinued, replacement product linked   → Replacement Available
+//   Discontinued, no replacement               → Discontinued
+// Stock quantity plays no part (an "In Stock" column in older files is
+// ignored). A missing or invalid Item Status is reported: a new product is
+// rejected; an existing product is imported with its status left unchanged
+// and flagged for review. Replacement links are managed by admins only: an
+// import never sets, changes or clears them.
 // ============================================================
-
-// The optional source columns behind the derived availability status. They are
-// optional on import so older files without them keep working (statuses
-// simply stay untouched).
-export const AVAILABILITY_EXPORT_COLUMNS = ["In Stock", "Item Status"];
 
 // Single source of truth for the column ORDER of the Excel export, the
 // downloadable import template and the import preview. Import never relies on
@@ -68,7 +61,6 @@ export const AVAILABILITY_EXPORT_COLUMNS = ["In Stock", "Item Status"];
 export const PRODUCT_EXCEL_COLUMNS = [
   "Slug", // = ITEM NO
   "Name",
-  "In Stock", // numeric, non-negative
   "Brand",
   "Category",
   "Series",
@@ -80,17 +72,18 @@ export const PRODUCT_EXCEL_COLUMNS = [
   "Item Status", // Active | Discontinued
 ];
 
-// Columns that must be present on import (everything except the optional
-// availability source columns).
-export const IMPORT_COLUMNS = PRODUCT_EXCEL_COLUMNS.filter((c) => !AVAILABILITY_EXPORT_COLUMNS.includes(c));
+// Every column must be present on import ("Item Status" may be spelled as any
+// of ITEM_STATUS_ALIASES).
+export const IMPORT_COLUMNS = PRODUCT_EXCEL_COLUMNS;
+const ITEM_STATUS_ALIASES = ["item status", "itemstatus", "item_status"];
 
-// Optional availability columns (header aliases, matched case-insensitively).
-const AVAILABILITY_COLUMNS = {
-  "In Stock": ["in stock", "instock", "in-stock"],
-  "Item Status": ["item status", "itemstatus", "item_status"],
-};
-const ITEM_STATUSES = ["active", "discontinued"];
-const MANUAL_STATUS = "replacement_available"; // admin-managed, never derived
+const ITEM_STATUSES = ["Active", "Discontinued"];
+
+// Same rule as the generated column products.availability_status (migration 035).
+function websiteStatus(itemStatus, hasReplacement) {
+  if (itemStatus !== "Discontinued") return "available";
+  return hasReplacement ? "replacement_available" : "discontinued";
+}
 
 // Multiple Features / Specifications entries live in one cell,
 // separated by " | " — easier to type and read in a spreadsheet cell
@@ -148,51 +141,15 @@ function formatSpecsField(specs) {
 }
 
 /**
- * Derives availability from the source columns.
- * Returns { status, problems, warnings }:
- *   status   "available" | "unavailable" | "discontinued", or null when it
- *            cannot be determined (then `problems` says why)
- *   itemStatus / stock   the validated source values (null when invalid)
- *   problems blocking issues (missing/invalid values)
- *   warnings non-blocking notes (e.g. bad In Stock on a Discontinued item)
- * Item Status (source) and the derived availability status are separate
- * things; Discontinued outranks stock quantity.
+ * Validates an Item Status cell (letter case ignored).
+ * Returns { itemStatus: "Active" | "Discontinued" | null, problem }.
  */
-export function deriveAvailability(instockRaw, itemStatusRaw) {
-  const problems = [];
-  const warnings = [];
-
-  const itemStatusText = (itemStatusRaw ?? "").toString().trim();
-  const itemStatusKey = itemStatusText.toLowerCase();
-  let itemStatus = null; // "Active" | "Discontinued" when valid
-  if (!itemStatusText) {
-    problems.push("Item Status is missing");
-  } else if (!ITEM_STATUSES.includes(itemStatusKey)) {
-    problems.push(
-      itemStatusKey === "inactive"
-        ? 'Item Status "Inactive" is no longer supported (use Active or Discontinued)'
-        : `Item Status "${itemStatusText}" is not supported (use Active or Discontinued)`
-    );
-  } else {
-    itemStatus = itemStatusKey === "active" ? "Active" : "Discontinued";
-  }
-
-  const instockText = (instockRaw ?? "").toString().trim().replace(/[,\s]/g, "");
-  let stock = null; // number when valid
-  let stockProblem = null;
-  if (!instockText) stockProblem = "In Stock is missing";
-  else if (!/^\d+(\.\d+)?$/.test(instockText)) {
-    stockProblem = `In Stock "${(instockRaw ?? "").toString().trim()}" must be a non-negative number`;
-  } else stock = Number(instockText);
-
-  if (itemStatus === "Discontinued") {
-    // stock quantity is irrelevant for Discontinued items — only mention a bad value
-    if (stockProblem && instockText) warnings.push(`${stockProblem} (ignored: item is Discontinued)`);
-    return { status: "discontinued", itemStatus, stock, problems, warnings };
-  }
-  if (stockProblem) problems.push(stockProblem);
-  if (problems.length) return { status: null, itemStatus, stock, problems, warnings };
-  return { status: stock > 0 ? "available" : "unavailable", itemStatus, stock, problems, warnings };
+export function parseItemStatus(raw) {
+  const text = (raw ?? "").toString().trim();
+  if (!text) return { itemStatus: null, problem: "Item Status is missing" };
+  const itemStatus = ITEM_STATUSES.find((v) => v.toLowerCase() === text.toLowerCase());
+  if (!itemStatus) return { itemStatus: null, problem: `Item Status "${text}" is not valid (use Active or Discontinued)` };
+  return { itemStatus, problem: null };
 }
 
 // ---------------- shared: DB lookups + per-row validation ----------------
@@ -202,7 +159,7 @@ export function deriveAvailability(instockRaw, itemStatusRaw) {
 // Keeps every product-lookup map in step. Used when loading and again after a
 // row of the current batch inserts a product, so later rows see it.
 function registerProduct(lookups, p) {
-  const entry = { id: p.id, slug: p.slug, item_no: p.item_no ?? null };
+  const entry = { id: p.id, slug: p.slug, item_no: p.item_no ?? null, hasReplacement: p.replacement_product_id != null };
   lookups.bySlug.set(p.slug, entry);
   lookups.bySlugKey.set(p.slug.toLowerCase(), entry);
   if (entry.item_no) lookups.byItemNoKey.set(entry.item_no.toLowerCase(), entry);
@@ -214,7 +171,7 @@ async function loadLookups() {
     pool.query("SELECT id, name FROM brands"),
     pool.query("SELECT id, name FROM categories"),
     pool.query("SELECT id, name, brand_id, category_id FROM series"),
-    pool.query("SELECT id, slug, item_no, availability_status FROM products"),
+    pool.query("SELECT id, slug, item_no, availability_status, replacement_product_id FROM products"),
     pool.query(
       `SELECT h.old_slug, p.slug AS current_slug, p.item_no
        FROM product_slug_history h JOIN products p ON p.id = h.product_id`
@@ -399,43 +356,19 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
 
   const exists = Boolean(target);
 
-  // ---- availability (only when the file carries the source columns) ----
-  const availabilityProvided = raw["In Stock"] !== undefined || raw["Item Status"] !== undefined;
+  // ---- status: from Item Status only ----
+  const { itemStatus, problem: itemStatusProblem } = parseItemStatus(raw["Item Status"]);
   const availability = {
-    provided: availabilityProvided,
-    current: null,
-    next: null,
+    current: exists ? lookups.statusBySlug.get(slug) || null : null,
+    next: itemStatus ? websiteStatus(itemStatus, Boolean(target?.hasReplacement)) : null,
     changed: false,
-    preserved: false,
-    needsReview: false,
-    itemStatus: null, // validated values to store (null → leave stored value alone)
-    stock: null,
+    needsReview: Boolean(itemStatusProblem),
+    itemStatus, // value to store (null → leave the stored Item Status alone)
   };
-  if (availabilityProvided) {
-    const derived = deriveAvailability(raw["In Stock"], raw["Item Status"]);
-    availability.current = exists ? lookups.statusBySlug.get(slug) || null : null;
-    derived.warnings.forEach((w) => warnings.push(w));
-    if (derived.status) {
-      if (availability.current === MANUAL_STATUS) {
-        availability.next = MANUAL_STATUS; // admin-managed — never overwritten by an import
-        availability.preserved = true;
-        warnings.push("Status stays Replacement Available (managed manually by an admin)");
-      } else {
-        availability.next = derived.status;
-      }
-      availability.changed = availability.next !== availability.current;
-      // Source values are only stored when the row's status could be derived.
-      availability.itemStatus = derived.itemStatus;
-      availability.stock = derived.stock;
-    } else {
-      availability.needsReview = true;
-      const why = derived.problems.join("; ");
-      if (exists) {
-        warnings.push(`Needs review: ${why}. Availability status left unchanged.`);
-      } else {
-        errors.push(`Cannot determine availability for a new product: ${why}`);
-      }
-    }
+  availability.changed = availability.next != null && availability.next !== availability.current;
+  if (itemStatusProblem) {
+    if (exists) warnings.push(`Needs review: ${itemStatusProblem}. Status left unchanged.`);
+    else errors.push(`${itemStatusProblem} — a new product needs Active or Discontinued`);
   }
 
   const action = errors.length ? "error" : exists ? "update" : "add";
@@ -447,7 +380,6 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
       Slug: itemNo,
       ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
       Name: name,
-      ...(availabilityProvided ? { "In Stock": (raw["In Stock"] ?? "").toString().trim() } : {}),
       Brand: brandName,
       Category: categoryName,
       Series: seriesName,
@@ -456,7 +388,7 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
       Description: description,
       Features: (raw.Features || "").toString(),
       Specifications: (raw.Specifications || "").toString(),
-      ...(availabilityProvided ? { "Item Status": (raw["Item Status"] ?? "").toString().trim() } : {}),
+      "Item Status": (raw["Item Status"] ?? "").toString().trim(),
     },
     resolved: {
       name,
@@ -483,7 +415,7 @@ async function readWorkbookRows(buffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
   const sheet = workbook.worksheets[0];
-  if (!sheet) return { missingColumns: IMPORT_COLUMNS, rows: [], slugSource: "Slug", availabilityColumns: false };
+  if (!sheet) return { missingColumns: IMPORT_COLUMNS, rows: [], slugSource: "Slug" };
 
   const headerMap = {}; // normalized header -> column index
   sheet.getRow(1).eachCell({ includeEmpty: false }, (cell, colNumber) => {
@@ -496,17 +428,14 @@ async function readWorkbookRows(buffer) {
   const otherSlugColIdx = itemNoKey && "slug" in headerMap ? headerMap.slug : null;
   const slugSource = itemNoKey ? "ITEM NO" : "Slug";
 
-  const missingColumns = IMPORT_COLUMNS.filter((col) =>
-    col === "Slug" ? slugColIdx === undefined : !(normalizeHeader(col) in headerMap)
-  ).map((col) => (col === "Slug" ? "Slug (or ITEM NO)" : col));
-  if (missingColumns.length) return { missingColumns, rows: [], availabilityColumns: false };
+  const itemStatusKey = ITEM_STATUS_ALIASES.find((a) => a in headerMap);
+  const columnIndex = (col) =>
+    col === "Slug" ? slugColIdx : col === "Item Status" ? headerMap[itemStatusKey] : headerMap[normalizeHeader(col)];
 
-  // Optional availability columns → their column index (if present)
-  const availabilityCols = {};
-  for (const [col, aliases] of Object.entries(AVAILABILITY_COLUMNS)) {
-    const key = aliases.find((a) => a in headerMap);
-    if (key) availabilityCols[col] = headerMap[key];
-  }
+  const missingColumns = IMPORT_COLUMNS.filter((col) => columnIndex(col) === undefined).map((col) =>
+    col === "Slug" ? "Slug (or ITEM NO)" : col
+  );
+  if (missingColumns.length) return { missingColumns, rows: [] };
 
   const rows = [];
   sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
@@ -514,19 +443,17 @@ async function readWorkbookRows(buffer) {
     const raw = {};
     let hasAny = false;
     for (const col of IMPORT_COLUMNS) {
-      const idx = col === "Slug" ? slugColIdx : headerMap[normalizeHeader(col)];
-      const val = cellText(row.getCell(idx).value);
+      const val = cellText(row.getCell(columnIndex(col)).value);
       raw[col] = val;
       if (val) hasAny = true;
     }
     if (hasAny) {
       if (otherSlugColIdx) raw._slugColumn = cellText(row.getCell(otherSlugColIdx).value);
-      for (const [col, idx] of Object.entries(availabilityCols)) raw[col] = cellText(row.getCell(idx).value);
       rows.push({ rowNumber, raw });
     }
   });
 
-  return { missingColumns: [], rows, slugSource, availabilityColumns: Object.keys(availabilityCols).length > 0 };
+  return { missingColumns: [], rows, slugSource };
 }
 
 // ---------------- export ----------------
@@ -543,7 +470,6 @@ function columnWidth(header) {
     Description: 44,
     Features: 44,
     Specifications: 44,
-    "In Stock": 12,
     "Item Status": 14,
   };
   return widths[header] || 20;
@@ -554,7 +480,7 @@ export async function exportProductsExcel(req, res) {
     const [productsRes, specsRes] = await Promise.all([
       pool.query(
         `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.short_description, p.description, p.features,
-                p.stock_quantity, p.item_status,
+                p.item_status,
                 b.name AS brand, c.name AS category, s.name AS series
          FROM products p
          JOIN brands b ON b.id = p.brand_id
@@ -591,8 +517,6 @@ export async function exportProductsExcel(req, res) {
         // so the file still re-imports onto the same product
         Slug: p.item_no || p.slug,
         Name: p.name,
-        // blank when never imported — nothing is inferred from the derived status
-        "In Stock": p.stock_quantity == null ? "" : Number(p.stock_quantity),
         Brand: p.brand,
         Category: p.category,
         Series: p.series || "",
@@ -601,7 +525,7 @@ export async function exportProductsExcel(req, res) {
         Description: p.description || "",
         Features: formatListField(p.features),
         Specifications: formatSpecsField(specsByProduct.get(p.id) || []),
-        "Item Status": p.item_status || "",
+        "Item Status": p.item_status, // stored as-is: Active | Discontinued
       });
     }
 
@@ -618,7 +542,7 @@ export async function exportProductsExcel(req, res) {
 
 // ---------------- import template (headers only, no data rows) ----------------
 
-const TEMPLATE_ROWS = 2000; // rows that get the number / dropdown rules
+const TEMPLATE_ROWS = 2000; // rows that get the Item Status dropdown
 
 export async function downloadProductImportTemplate(req, res) {
   try {
@@ -640,15 +564,6 @@ export async function downloadProductImportTemplate(req, res) {
 
     const col = (header) => PRODUCT_EXCEL_COLUMNS.indexOf(header) + 1;
     for (let r = 2; r <= TEMPLATE_ROWS + 1; r += 1) {
-      sheet.getCell(r, col("In Stock")).dataValidation = {
-        type: "decimal",
-        operator: "greaterThanOrEqual",
-        formulae: [0],
-        allowBlank: true,
-        showErrorMessage: true,
-        errorTitle: "In Stock",
-        error: "In Stock must be a number of 0 or more.",
-      };
       sheet.getCell(r, col("Item Status")).dataValidation = {
         type: "list",
         formulae: ['"Active,Discontinued"'],
@@ -664,15 +579,13 @@ export async function downloadProductImportTemplate(req, res) {
     const notes = [
       ["Slug", "Required. The product's ITEM NO, stored exactly as written (a column named ITEM NO is also accepted). It may contain letters, numbers, spaces and hyphens only. The product's URL slug is generated from it: spaces become hyphens (CIMR JT2A0010BAA -> CIMR-JT2A0010BAA). Must be unique in the file, and so must the generated slug. A product with the same ITEM NO is updated; a new ITEM NO creates a product. Different ITEM NOs are never merged."],
       ["Name", "Required."],
-      ["In Stock", "Stock quantity: a number, 0 or more."],
       ["Brand / Category", "Required. Must match an existing brand / category name."],
       ["Series / Model", "Optional. Series must exist for that Brand/Category, otherwise it is left blank."],
       ["Short Description / Description", "Optional text."],
       ["Features", 'Separate entries with " | ".'],
       ["Specifications", 'Separate entries with " | "; each entry is "Label: Value".'],
-      ["Item Status", "Active or Discontinued."],
-      ["Availability status", "Calculated on import (never read from the file): Item Status Discontinued → Discontinued (any stock); Active and In Stock > 0 → Available; Active and In Stock = 0 → Unavailable. Replacement Available and replacement products are managed by admins and are never changed by an import."],
-      ["Column order", "Columns are matched by header name, so their order in your file does not matter. In Stock and Item Status are optional columns, but if you include them, fill both."],
+      ["Item Status", "Required: Active or Discontinued. It sets the product status on the website: Active → Available; Discontinued → Discontinued, or Replacement Available when an admin has linked a replacement product. A new product without a valid Item Status is not imported; an existing one keeps its current status and is flagged for review. Replacement products are managed by admins and are never changed by an import."],
+      ["Column order", "Columns are matched by header name, so their order in your file does not matter."],
     ];
     notes.forEach((n) => help.addRow(n));
     help.getColumn(1).font = { bold: true };
@@ -693,7 +606,7 @@ export async function downloadProductImportTemplate(req, res) {
 export async function parseProductImport(req, res) {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   try {
-    const { missingColumns, rows, slugSource, availabilityColumns } = await readWorkbookRows(req.file.buffer);
+    const { missingColumns, rows, slugSource } = await readWorkbookRows(req.file.buffer);
     if (missingColumns.length) {
       return res.status(400).json({
         error: `The file is missing required column(s): ${missingColumns.join(", ")}`,
@@ -731,21 +644,17 @@ export async function parseProductImport(req, res) {
 
     // Projected catalogue-wide status counts if this file were imported now.
     const projected = new Map(lookups.statusBySlug);
-    const fromFile = { available: 0, unavailable: 0, discontinued: 0, replacement_available: 0 };
+    const fromFile = { available: 0, discontinued: 0, replacement_available: 0 };
     let needsReview = 0;
     let statusChanges = 0;
     for (const r of results) {
       if (r.availability.needsReview) needsReview += 1;
-      if (r.action === "error") continue;
-      if (r.availability.next) {
-        projected.set(r.resolved.slug, r.availability.next);
-        fromFile[r.availability.next] += 1;
-        if (r.availability.changed) statusChanges += 1;
-      } else if (r.action === "add") {
-        projected.set(r.resolved.slug, "available"); // no availability data → default
-      }
+      if (r.action === "error" || !r.availability.next) continue;
+      projected.set(r.resolved.slug, r.availability.next);
+      fromFile[r.availability.next] += 1;
+      if (r.availability.changed) statusChanges += 1;
     }
-    const resulting = { available: 0, unavailable: 0, discontinued: 0, replacement_available: 0 };
+    const resulting = { available: 0, discontinued: 0, replacement_available: 0 };
     for (const status of projected.values()) if (status in resulting) resulting[status] += 1;
 
     res.json({
@@ -754,7 +663,7 @@ export async function parseProductImport(req, res) {
       duplicateItemNos,
       duplicateSlugs,
       rows: results,
-      statusSummary: { columnsPresent: availabilityColumns, resulting, fromFile, needsReview, statusChanges },
+      statusSummary: { resulting, fromFile, needsReview, statusChanges },
     });
   } catch (err) {
     console.error(err);
@@ -773,7 +682,7 @@ export async function commitProductImport(req, res) {
   let skipped = 0;
   let statusUpdated = 0;
   const errors = [];
-  const reviewed = []; // imported rows whose availability was flagged and left unchanged
+  const reviewed = []; // imported rows whose Item Status was invalid (status left unchanged)
 
   const client = await pool.connect();
   try {
@@ -853,18 +762,16 @@ export async function commitProductImport(req, res) {
           productId = insertRes.rows[0].id;
         }
 
-        // Availability: when the row's source values were valid, store them and
-        // the derived status (never the admin-managed Replacement Available,
-        // never replacement links). The timestamp moves only on a real change.
-        if (availability.provided && availability.next) {
+        // Status: store a valid Item Status (the database derives the website
+        // status; replacement links are never touched). The timestamp moves
+        // only on a real change.
+        if (availability.itemStatus) {
           await client.query(
             `UPDATE products SET
-               availability_status = $1,
-               status_updated_at = CASE WHEN $2 THEN now() ELSE status_updated_at END,
-               item_status = COALESCE($3, item_status),
-               stock_quantity = COALESCE($4, stock_quantity)
-             WHERE id = $5`,
-            [availability.next, availability.changed, availability.itemStatus, availability.stock, productId]
+               item_status = $1,
+               status_updated_at = CASE WHEN $2 THEN now() ELSE status_updated_at END
+             WHERE id = $3`,
+            [availability.itemStatus, availability.changed, productId]
           );
         }
 
@@ -877,10 +784,17 @@ export async function commitProductImport(req, res) {
 
         await client.query("COMMIT");
         // keep lookups fresh within this batch (a later row can then see this product)
-        registerProduct(lookups, { id: productId, slug: r.slug, item_no: r.itemNo, availability_status: "available" });
+        const hadReplacement = Boolean(existingId && lookups.bySlug.get(r.slug)?.hasReplacement);
+        registerProduct(lookups, {
+          id: productId,
+          slug: r.slug,
+          item_no: r.itemNo,
+          availability_status: availability.next ?? availability.current,
+          replacement_product_id: hadReplacement ? true : null, // only its presence is used
+        });
         if (existingId) updated += 1;
         else added += 1;
-        if (availability.provided && availability.next && availability.changed) statusUpdated += 1;
+        if (availability.changed) statusUpdated += 1;
         if (availability.needsReview) reviewed.push({ rowNumber, slug: r.slug, messages: rowWarnings });
       } catch (err) {
         await client.query("ROLLBACK").catch(() => {});

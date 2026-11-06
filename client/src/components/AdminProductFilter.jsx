@@ -5,13 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // Everything is derived from fields the admin products API already returns:
 //   availability_status, brand_id, category_id, image_url,
 //   replacement_product_id, has_datasheet
-// Nothing is recalculated: status uses the stored availability_status, and
+// Nothing is recalculated: status uses availability_status (derived from Item Status), and
 // "Product Data" reuses the two data-quality rules the dashboard already
 // reports (missing image / missing Datasheet) — see dashboardController.js.
 // ---------------------------------------------------------------------------
 
 export const EMPTY_FILTERS = {
-  status: "all", // all | available | unavailable | discontinued
+  status: "all", // all | available | discontinued | replacement_available
   brandId: "", // "" = all brands
   categoryId: "", // "" = all categories (a parent also covers its subcategories)
   image: "all", // all | has | missing
@@ -91,8 +91,8 @@ function flattenCategories(categories) {
 const STATUS_OPTIONS = [
   ["all", "All"],
   ["available", "Available"],
-  ["unavailable", "Unavailable"],
   ["discontinued", "Discontinued"],
+  ["replacement_available", "Replacement Available"],
 ];
 const IMAGE_OPTIONS = [
   ["all", "All"],

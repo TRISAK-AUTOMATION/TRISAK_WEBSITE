@@ -352,12 +352,9 @@ export async function getProductBySlug(req, res) {
 
     // Replacement is whatever an admin explicitly linked (never inferred).
     let replacementProduct = null;
-    // (only for statuses that can have one — an imported/derived Available
-    //  status keeps the stored link but doesn't display it)
-    if (
-      product.replacement_product_id &&
-      ["discontinued", "replacement_available"].includes(product.availability_status)
-    ) {
+    // (a Discontinued product with a link is Replacement Available; an Available
+    //  product keeps the stored link but doesn't display it)
+    if (product.replacement_product_id && product.availability_status === "replacement_available") {
       const rep = await pool.query(
         `SELECT p.id, p.name, p.slug, p.model,
                 s.slug AS series_slug, b.slug AS brand_slug, c.slug AS category_slug
@@ -399,7 +396,8 @@ export async function getProductBySlug(req, res) {
       ),
     ]);
 
-    // stock quantity / item status are internal (export source data)
+    // internal: Item Status is the Excel source value (the public status is
+    // availability_status); stock_quantity is a legacy column no longer used
     const { stock_quantity, item_status, ...publicProduct } = product;
     res.json({
       ...publicProduct,

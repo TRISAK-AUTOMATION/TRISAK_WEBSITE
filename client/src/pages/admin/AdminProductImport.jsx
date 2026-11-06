@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
-import { availabilityLabel } from "../../utils/productAvailability.js";
+import { availabilityLabel, STATUS_OPTIONS } from "../../utils/productAvailability.js";
 
 const ACTION_LABELS = {
   add: { text: "เพิ่มใหม่", className: "admin-import-badge--add" },
@@ -10,14 +10,10 @@ const ACTION_LABELS = {
   error: { text: "ข้อผิดพลาด", className: "admin-import-badge--error" },
 };
 
-const STATUS_ORDER = ["available", "unavailable", "discontinued", "replacement_available"];
-
 // Preview columns, in the same order as the Excel export / import template.
-// `availability` columns only show when the file carries In Stock / Item Status.
 const PREVIEW_COLUMNS = [
   { key: "Slug" },
   { key: "Name" },
-  { key: "In Stock", availability: true },
   { key: "Brand" },
   { key: "Category" },
   { key: "Series" },
@@ -26,7 +22,7 @@ const PREVIEW_COLUMNS = [
   { key: "Description", long: true },
   { key: "Features", long: true },
   { key: "Specifications", long: true },
-  { key: "Item Status", availability: true },
+  { key: "Item Status" },
 ];
 
 const LONG_CELL_STYLE = { maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
@@ -116,17 +112,17 @@ export default function AdminProductImport() {
         <br />
         <strong>รูปภาพสินค้าไม่ได้จัดการผ่านไฟล์นี้</strong> — เพิ่ม/แก้ไขรูปภาพได้จากหน้าแก้ไขสินค้าแต่ละรายการหลังนำเข้าแล้ว
         <br />
-        <strong>สถานะสินค้า (ไม่บังคับ):</strong> หากไฟล์มีคอลัมน์ In Stock และ Item Status ระบบจะคำนวณสถานะให้อัตโนมัติ —
-        Item Status = Discontinued → Discontinued (สำคัญที่สุด ไม่สนใจจำนวนสต็อก), Active + In Stock &gt; 0 = Available, Active + In Stock = 0 = Unavailable
-        สถานะ Replacement Available และสินค้าทดแทนจัดการด้วยมือเท่านั้น และจะไม่ถูกเปลี่ยนจากการนำเข้า
+        <strong>สถานะสินค้า (คอลัมน์ Item Status — บังคับ):</strong> Active → Available, Discontinued → Discontinued
+        หรือ Replacement Available หากผู้ดูแลระบุสินค้าทดแทนไว้แล้ว (ไม่ใช้จำนวนสต็อก) — ค่า Item Status ที่ว่างหรือไม่ถูกต้องจะถูกแจ้งเตือน: สินค้าใหม่จะไม่ถูกนำเข้า
+        สินค้าเดิมจะคงสถานะเดิมไว้ สินค้าทดแทนจัดการด้วยมือเท่านั้น และจะไม่ถูกเปลี่ยนจากการนำเข้า
       </div>
 
       {!preview && !result && (
         <div className="admin-form__section panel">
           <h3>1. เลือกไฟล์ Excel</h3>
           <p className="admin-list-table__submeta" style={{ marginBottom: 16 }}>
-            ลำดับคอลัมน์: Slug (= ITEM NO), Name, In Stock, Brand, Category, Series, Model, Short Description, Description,
-            Features, Specifications, Item Status (In Stock และ Item Status ไม่บังคับ; ระบบอ่านข้อมูลตามชื่อหัวคอลัมน์ ไม่ขึ้นกับตำแหน่งคอลัมน์) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมา หรือดาวน์โหลดเทมเพลตด้านล่างแล้วแก้ไขต่อ
+            ลำดับคอลัมน์: Slug (= ITEM NO), Name, Brand, Category, Series, Model, Short Description, Description,
+            Features, Specifications, Item Status (ระบบอ่านข้อมูลตามชื่อหัวคอลัมน์ ไม่ขึ้นกับตำแหน่งคอลัมน์) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมา หรือดาวน์โหลดเทมเพลตด้านล่างแล้วแก้ไขต่อ
             (Features/Specifications แต่ละรายการคั่นด้วย " | ", Specifications แต่ละช่องใช้รูปแบบ "ป้ายชื่อ: ค่า")
           </p>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -202,32 +198,27 @@ export default function AdminProductImport() {
               </div>
             )}
 
-            {preview.statusSummary &&
-              (preview.statusSummary.columnsPresent ? (
-                <>
-                  <h4 style={{ margin: "24px 0 8px" }}>สถานะสินค้าหลังนำเข้า (ทั้งแคตตาล็อก)</h4>
-                  <div className="admin-import-summary">
-                    {STATUS_ORDER.map((st) => (
-                      <div key={st} className="admin-import-summary__stat">
-                        <strong>{preview.statusSummary.resulting[st]}</strong>
-                        <span>{availabilityLabel(st)}</span>
-                      </div>
-                    ))}
-                    <div className="admin-import-summary__stat admin-import-summary__stat--update">
-                      <strong>{preview.statusSummary.statusChanges}</strong>
-                      <span>สถานะที่จะเปลี่ยน</span>
+            {preview.statusSummary && (
+              <>
+                <h4 style={{ margin: "24px 0 8px" }}>สถานะสินค้าหลังนำเข้า (ทั้งแคตตาล็อก)</h4>
+                <div className="admin-import-summary">
+                  {STATUS_OPTIONS.map((o) => (
+                    <div key={o.value} className="admin-import-summary__stat">
+                      <strong>{preview.statusSummary.resulting[o.value]}</strong>
+                      <span>{o.label}</span>
                     </div>
-                    <div className="admin-import-summary__stat admin-import-summary__stat--error">
-                      <strong>{preview.statusSummary.needsReview}</strong>
-                      <span>ต้องตรวจสอบ (In Stock / Item Status)</span>
-                    </div>
+                  ))}
+                  <div className="admin-import-summary__stat admin-import-summary__stat--update">
+                    <strong>{preview.statusSummary.statusChanges}</strong>
+                    <span>สถานะที่จะเปลี่ยน</span>
                   </div>
-                </>
-              ) : (
-                <p className="admin-list-table__submeta" style={{ marginTop: 16 }}>
-                  ไม่พบคอลัมน์ In Stock / Item Status — สถานะสินค้าทั้งหมดจะไม่ถูกเปลี่ยน
-                </p>
-              ))}
+                  <div className="admin-import-summary__stat admin-import-summary__stat--error">
+                    <strong>{preview.statusSummary.needsReview}</strong>
+                    <span>Item Status ว่าง/ไม่ถูกต้อง</span>
+                  </div>
+                </div>
+              </>
+            )}
 
             {commitError && <p className="contact-form__status contact-form__status--error">{commitError}</p>}
 
@@ -237,10 +228,10 @@ export default function AdminProductImport() {
                   <tr>
                     <th>แถว</th>
                     <th>สถานะ</th>
-                    {PREVIEW_COLUMNS.filter((c) => !c.availability || preview.statusSummary?.columnsPresent).map((c) => (
+                    {PREVIEW_COLUMNS.map((c) => (
                       <th key={c.key}>{c.key}</th>
                     ))}
-                    {preview.statusSummary?.columnsPresent && <th>สถานะสินค้า</th>}
+                    <th>สถานะสินค้า</th>
                     <th>รายละเอียด</th>
                   </tr>
                 </thead>
@@ -253,7 +244,7 @@ export default function AdminProductImport() {
                         <td>
                           <span className={`admin-import-badge ${badge.className}`}>{badge.text}</span>
                         </td>
-                        {PREVIEW_COLUMNS.filter((c) => !c.availability || preview.statusSummary?.columnsPresent).map((c) => {
+                        {PREVIEW_COLUMNS.map((c) => {
                           const value = r.raw[c.key];
                           return (
                             <td
@@ -269,22 +260,20 @@ export default function AdminProductImport() {
                             </td>
                           );
                         })}
-                        {preview.statusSummary?.columnsPresent && (
-                          <td>
-                            {r.availability?.next ? (
-                              <>
-                                {r.availability.current && r.availability.changed
-                                  ? `${availabilityLabel(r.availability.current)} → `
-                                  : ""}
-                                {availabilityLabel(r.availability.next)}
-                              </>
-                            ) : r.availability?.needsReview ? (
-                              <span className="admin-import-issue admin-import-issue--error">ต้องตรวจสอบ</span>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                        )}
+                        <td>
+                          {r.availability?.next ? (
+                            <>
+                              {r.availability.current && r.availability.changed
+                                ? `${availabilityLabel(r.availability.current)} → `
+                                : ""}
+                              {availabilityLabel(r.availability.next)}
+                            </>
+                          ) : r.availability?.needsReview ? (
+                            <span className="admin-import-issue admin-import-issue--error">ต้องตรวจสอบ</span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                         <td>
                           {r.errors.map((e, i) => (
                             <p key={`e${i}`} className="admin-import-issue admin-import-issue--error">
@@ -352,7 +341,7 @@ export default function AdminProductImport() {
 
           {result.reviewed?.length > 0 && (
             <div className="admin-list-table-wrap" style={{ marginTop: 20 }}>
-              <h4 style={{ margin: "0 0 8px" }}>นำเข้าแล้ว แต่ต้องตรวจสอบข้อมูลสถานะ (สถานะเดิมไม่ถูกเปลี่ยน)</h4>
+              <h4 style={{ margin: "0 0 8px" }}>นำเข้าแล้ว แต่ Item Status ว่าง/ไม่ถูกต้อง (สถานะเดิมไม่ถูกเปลี่ยน)</h4>
               <table className="admin-list-table">
                 <thead>
                   <tr>

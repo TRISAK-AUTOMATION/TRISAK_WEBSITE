@@ -263,10 +263,8 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="admin-list-table__status">
-                    <span
-                      className={`availability-badge availability-badge--${(p.availability_status || "available").replace(/_/g, "-")}`}
-                    >
-                      {availabilityLabel(p.availability_status || "available")}
+                    <span className={`availability-badge availability-badge--${p.availability_status.replace(/_/g, "-")}`}>
+                      {availabilityLabel(p.availability_status)}
                     </span>
                   </td>
                   <td className="admin-list-table__muted">

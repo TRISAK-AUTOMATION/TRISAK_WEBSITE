@@ -5,7 +5,7 @@ import ImageUploadField from "../../components/ImageUploadField.jsx";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import AdminModal, { ModalButton } from "../../components/AdminModal.jsx";
 import ProductDocumentsPanel from "../../components/ProductDocumentsPanel.jsx";
-import { AVAILABILITY_OPTIONS, REPLACEMENT_STATUSES } from "../../utils/productAvailability.js";
+import { ITEM_STATUS_OPTIONS } from "../../utils/productAvailability.js";
 import { generateSlugFromItemNo } from "../../utils/productSlug.js";
 
 const emptyForm = {
@@ -23,7 +23,7 @@ const emptyForm = {
   images: [],
   specs: [],
   relatedProductIds: [],
-  availabilityStatus: "available",
+  itemStatus: "Active",
   statusNote: "",
   replacementProductId: "",
 };
@@ -66,7 +66,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
   const [statusUpdatedAt, setStatusUpdatedAt] = useState(null);
-  const [sourceData, setSourceData] = useState({ stock: null, itemStatus: null }); // read-only, set by Excel import
   const [replacementFilter, setReplacementFilter] = useState("");
 
   useEffect(() => {
@@ -96,7 +95,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           images: p.images?.map((i) => ({ imageUrl: i.image_url, sortOrder: i.sort_order })) || [],
           specs: p.specs?.map((s) => ({ label: s.label, value: s.value, sortOrder: s.sort_order })) || [],
           relatedProductIds: p.relatedProductIds || [],
-          availabilityStatus: p.availability_status || "available",
+          itemStatus: p.item_status || "Active",
           statusNote: p.status_note || "",
           replacementProductId: p.replacement_product_id ? String(p.replacement_product_id) : "",
           // Preserve the product's existing position — otherwise saving
@@ -107,7 +106,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         setForm(loaded);
         setStored({ itemNo: p.item_no || null, slug: p.slug || "" });
         setStatusUpdatedAt(p.status_updated_at || null);
-        setSourceData({ stock: p.stock_quantity ?? null, itemStatus: p.item_status || null });
         setInitialSnapshot(JSON.stringify(loaded));
       })
       .catch((err) => {
@@ -165,8 +163,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
       return "ITEM NO can contain only letters, numbers, spaces and hyphens.";
     if (!form.brandId) return "Please select a brand.";
     if (!form.categoryId) return "Please select a category.";
-    if (form.availabilityStatus === "replacement_available" && !form.replacementProductId)
-      return "Please select the replacement product, or choose a different availability status.";
     return "";
   };
 
@@ -198,9 +194,9 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         ? form.sortOrder ?? 0
         : allProducts.reduce((max, p) => Math.max(max, p.sort_order ?? 0), -1) + 1,
     };
-    // Picker hidden (e.g. status Available after an import): don't send the
-    // field at all, so the stored replacement link is kept, not cleared.
-    if (!REPLACEMENT_STATUSES.includes(form.availabilityStatus)) delete payload.replacementProductId;
+    // Picker hidden (status Available): don't send the field at all, so the
+    // stored replacement link is kept, not cleared.
+    if (!canHaveReplacement) delete payload.replacementProductId;
     // Legacy product with no ITEM NO entered: leave ITEM NO and URL slug untouched.
     if (!itemNoTrimmed) delete payload.itemNo;
     try {
@@ -221,7 +217,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     }
   };
 
-  const canHaveReplacement = REPLACEMENT_STATUSES.includes(form.availabilityStatus);
+  const canHaveReplacement = form.itemStatus === "Discontinued";
   const filterText = replacementFilter.trim().toLowerCase();
   const replacementChoices = allProducts.filter((p) => {
     if (String(p.id) === String(id)) return false; // never itself
@@ -229,8 +225,6 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     if (!filterText) return true;
     return [p.model, p.name, p.brand].filter(Boolean).join(" ").toLowerCase().includes(filterText);
   });
-
-  const handleStatusChange = (value) => updateField("availabilityStatus", value);
 
   const formId = "product-edit-form";
 
@@ -375,12 +369,12 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
         </div>
 
         <div className="admin-form__section panel">
-          <h3>Availability</h3>
+          <h3>Status</h3>
           <div className="admin-form__row">
             <label className="contact-form__field">
-              <span>Status</span>
-              <select value={form.availabilityStatus} onChange={(e) => handleStatusChange(e.target.value)}>
-                {AVAILABILITY_OPTIONS.map((o) => (
+              <span>Status (Item Status)</span>
+              <select value={form.itemStatus} onChange={(e) => updateField("itemStatus", e.target.value)}>
+                {ITEM_STATUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -409,7 +403,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
                 />
               </label>
               <label className="contact-form__field">
-                <span>Replacement product{form.availabilityStatus === "replacement_available" ? " *" : ""}</span>
+                <span>Replacement product</span>
                 <select
                   value={form.replacementProductId}
                   onChange={(e) => updateField("replacementProductId", e.target.value)}
@@ -425,14 +419,11 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
             </div>
           )}
 
-          {isEdit && (
-            <p className="admin-list-table__muted">
-              Excel source data — In Stock: {sourceData.stock ?? "not set"}, Item Status:{" "}
-              {sourceData.itemStatus || "not set"} (set by Excel import; the availability status is a separate field,
-              recalculated from these on each import: Active + stock &gt; 0 = Available, Active + stock = 0 =
-              Unavailable, Item Status Discontinued = Discontinued).
-            </p>
-          )}
+          <p className="admin-list-table__muted">
+            Same value as the Item Status column in Excel (Active = Available, Discontinued = Discontinued). A
+            Discontinued product with a replacement product selected shows as Replacement Available. An Excel import
+            with a valid Item Status overwrites it; it never changes the replacement product.
+          </p>
 
           {isEdit && (
             <p className="admin-list-table__muted">

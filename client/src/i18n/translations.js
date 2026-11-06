@@ -183,7 +183,6 @@ export const translations = {
       replacementModel: "Replacement model",
       availability: {
         available: "Available",
-        unavailable: "Unavailable",
         discontinued: "Discontinued",
         replacement_available: "Replacement Available",
       },
@@ -553,7 +552,6 @@ export const translations = {
       replacementModel: "รุ่นทดแทน",
       availability: {
         available: "พร้อมจำหน่าย",
-        unavailable: "ไม่มีสินค้า",
         discontinued: "เลิกผลิต",
         replacement_available: "มีรุ่นทดแทน",
       },

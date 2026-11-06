@@ -559,7 +559,7 @@ export async function getProductAdmin(req, res) {
   try {
     const productRes = await pool.query("SELECT * FROM products WHERE id = $1", [id]);
     if (!productRes.rows.length) return res.status(404).json({ error: "Product not found" });
-    const product = productRes.rows[0];
+    const { stock_quantity, ...product } = productRes.rows[0]; // legacy column, unused
 
     const [images, specs, documents, related] = await Promise.all([
       pool.query(
@@ -602,7 +602,7 @@ export async function getProductAdmin(req, res) {
  *    except that create falls back to `slug` as the ITEM NO for older clients)
  *   shortDescription, description, features: string[], imageUrl,
  *   isNew, sortOrder,
- *   availabilityStatus, statusNote, replacementProductId   (all optional)
+ *   itemStatus ("Active" | "Discontinued"), statusNote, replacementProductId   (all optional)
  *   images: [{ imageUrl, sortOrder }],
  *   specs: [{ label, value, sortOrder }],
  *   relatedProductIds: number[],
@@ -610,9 +610,10 @@ export async function getProductAdmin(req, res) {
  *   -- via /admin/products/:productId/documents, see productDocumentsController.js
  * }
  */
-const AVAILABILITY_STATUSES = ["available", "unavailable", "discontinued", "replacement_available"];
-// statuses that may point at a replacement product
-const REPLACEMENT_STATUSES = ["discontinued", "replacement_available"];
+// Item Status is the only stored status; the database derives
+// availability_status from it (Active -> available; Discontinued ->
+// replacement_available when a replacement is linked, else discontinued).
+const ITEM_STATUSES = ["Active", "Discontinued"];
 const MAX_STATUS_NOTE = 500;
 
 // `requireItemNo` is true on create. On update an omitted / blank itemNo means
@@ -698,17 +699,17 @@ async function resolveProductIdentity(client, body, current = null) {
 }
 
 /**
- * Availability fields: availabilityStatus, statusNote, replacementProductId.
- * Returns { error } or { provided, status, note, replacementId }.
- * `provided` is false when the payload doesn't mention availability at all
+ * Status fields: itemStatus, statusNote, replacementProductId.
+ * Returns { error } or { provided, itemStatus, note, replacementId }.
+ * `provided` is false when the payload doesn't mention itemStatus at all
  * (then existing values are left untouched). The replacement is only ever
  * what the admin picked — never inferred.
  */
 async function resolveAvailability(client, body, ownId, prevReplacementId = null) {
-  if (body.availabilityStatus === undefined) return { provided: false };
-  const status = body.availabilityStatus;
-  if (!AVAILABILITY_STATUSES.includes(status)) {
-    return { error: `availabilityStatus must be one of: ${AVAILABILITY_STATUSES.join(", ")}` };
+  if (body.itemStatus === undefined) return { provided: false };
+  const itemStatus = body.itemStatus;
+  if (!ITEM_STATUSES.includes(itemStatus)) {
+    return { error: `itemStatus must be one of: ${ITEM_STATUSES.join(", ")}` };
   }
   const note = typeof body.statusNote === "string" ? body.statusNote.trim() : "";
   if (note.length > MAX_STATUS_NOTE) {
@@ -723,8 +724,8 @@ async function resolveAvailability(client, body, ownId, prevReplacementId = null
     if (!Number.isInteger(replacementId) || replacementId <= 0) {
       return { error: "replacementProductId must be a valid product id" };
     }
-    if (!REPLACEMENT_STATUSES.includes(status)) {
-      return { error: "A replacement product can only be set for Discontinued or Replacement Available products" };
+    if (itemStatus !== "Discontinued") {
+      return { error: "A replacement product can only be set for Discontinued products" };
     }
     if (ownId != null && replacementId === Number(ownId)) {
       return { error: "A product cannot be its own replacement" };
@@ -732,10 +733,7 @@ async function resolveAvailability(client, body, ownId, prevReplacementId = null
     const exists = await client.query("SELECT 1 FROM products WHERE id = $1", [replacementId]);
     if (!exists.rows.length) return { error: "The selected replacement product does not exist" };
   }
-  if (status === "replacement_available" && replacementId == null) {
-    return { error: "Select the replacement product for a Replacement Available status" };
-  }
-  return { provided: true, status, note: note || null, replacementId };
+  return { provided: true, itemStatus, note: note || null, replacementId };
 }
 
 // Product documents (PDFs) are NOT touched here — they're managed
@@ -791,7 +789,7 @@ export async function createProduct(req, res) {
     const { rows } = await client.query(
       `INSERT INTO products
         (name, slug, brand_id, category_id, series_id, model, short_description, description, features, image_url, is_new, sort_order,
-         availability_status, status_note, replacement_product_id, status_updated_at, item_no)
+         item_status, status_note, replacement_product_id, status_updated_at, item_no)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now(),$16)
        RETURNING id`,
       [
@@ -807,7 +805,7 @@ export async function createProduct(req, res) {
         body.imageUrl || null,
         body.isNew || false,
         body.sortOrder || 0,
-        avail.provided ? avail.status : "available",
+        avail.provided ? avail.itemStatus : "Active",
         avail.provided ? avail.note : null,
         avail.provided ? avail.replacementId : null,
         identity.itemNo,
@@ -838,7 +836,7 @@ export async function updateProduct(req, res) {
     client = await pool.connect();
     await client.query("BEGIN");
     const current = await client.query(
-      "SELECT id, slug, item_no, availability_status, status_note, replacement_product_id FROM products WHERE id = $1 FOR UPDATE",
+      "SELECT id, slug, item_no, item_status, status_note, replacement_product_id FROM products WHERE id = $1 FOR UPDATE",
       [id]
     );
     if (!current.rows.length) {
@@ -851,14 +849,14 @@ export async function updateProduct(req, res) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: avail.error });
     }
-    // Availability not mentioned in the payload → keep what's stored.
+    // Item Status not mentioned in the payload → keep what's stored.
     const prev = current.rows[0];
-    const nextStatus = avail.provided ? avail.status : prev.availability_status;
+    const nextStatus = avail.provided ? avail.itemStatus : prev.item_status;
     const nextNote = avail.provided ? avail.note : prev.status_note;
     const nextReplacement = avail.provided ? avail.replacementId : prev.replacement_product_id;
     const statusChanged =
       avail.provided &&
-      (nextStatus !== prev.availability_status ||
+      (nextStatus !== prev.item_status ||
         (nextNote || null) !== (prev.status_note || null) ||
         (nextReplacement ?? null) !== (prev.replacement_product_id ?? null));
 
@@ -867,7 +865,7 @@ export async function updateProduct(req, res) {
         name = $1, slug = $2, brand_id = $3, category_id = $4, series_id = $5,
         model = $6, short_description = $7, description = $8, features = $9,
         image_url = $10, is_new = $11, sort_order = $12, updated_at = now(),
-        availability_status = $14, status_note = $15, replacement_product_id = $16,
+        item_status = $14, status_note = $15, replacement_product_id = $16,
         status_updated_at = CASE WHEN $17 THEN now() ELSE status_updated_at END,
         item_no = $18
        WHERE id = $13`,
