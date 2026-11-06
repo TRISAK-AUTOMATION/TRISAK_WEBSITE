@@ -1,7 +1,7 @@
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 // Checkbox whose "some but not all" state is shown as indeterminate.
-function Check({ checked, indeterminate, onChange, label }) {
+function Check({ checked, indeterminate = false, onChange, label }) {
   return (
     <label className="filter-check">
       <input
