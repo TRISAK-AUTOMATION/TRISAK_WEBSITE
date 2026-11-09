@@ -151,6 +151,7 @@ export const api = {
   getProductsPageContent: () => request("/products-page-content"),
   getContactsPageContent: () => request("/contacts-page-content"),
   getCareerPageContent: () => request("/career-page-content"),
+  getCareerJobs: () => request("/career-jobs"),
   getFooterContent: () => request("/footer-content"),
   getAutomationSolutionContent: () => request("/automation-solution-content"),
 
@@ -401,6 +402,15 @@ export const api = {
   adminGetContactsPageContent: () => authRequest("/admin/contacts-page-content"),
   adminUpdateContactsPageContent: (payload) =>
     authRequest("/admin/contacts-page-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetCareerJobs: () => authRequest("/admin/career-jobs"),
+  adminCreateCareerJob: (payload) =>
+    authRequest("/admin/career-jobs", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateCareerJob: (id, payload) =>
+    authRequest(`/admin/career-jobs/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteCareerJob: (id) => authRequest(`/admin/career-jobs/${id}`, { method: "DELETE" }),
+  adminReorderCareerJob: (id, direction) =>
+    authRequest(`/admin/career-jobs/${id}/reorder`, { method: "POST", body: JSON.stringify({ direction }) }),
 
   adminGetCareerPageContent: () => authRequest("/admin/career-page-content"),
   adminUpdateCareerPageContent: (payload) =>

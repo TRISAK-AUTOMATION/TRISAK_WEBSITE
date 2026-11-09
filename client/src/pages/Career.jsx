@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-import { careerJobs } from "../data/careerJobs.js";
 import { api } from "../api/client.js";
 
 const PinIcon = () => (
@@ -65,20 +64,26 @@ const sectionIcons = {
 
 export default function Career() {
   const { t, lang } = useLanguage();
-  const [activeId, setActiveId] = useState(careerJobs[0]?.id);
+  const [careerJobs, setCareerJobs] = useState(null); // null = loading
+  const [activeId, setActiveId] = useState(null);
   const detailRef = useRef(null);
   const applyRef = useRef(null);
   const [pageContent, setPageContent] = useState(null);
 
   useEffect(() => {
     api
+      .getCareerJobs()
+      .then((list) => setCareerJobs(Array.isArray(list) ? list : []))
+      .catch(() => setCareerJobs([]));
+    api
       .getCareerPageContent()
       .then(setPageContent)
       .catch(() => setPageContent(null));
   }, []);
 
-  const tr = (field) => (field ? field[lang] || field.en : "");
-  const active = careerJobs.find((job) => job.id === activeId) || careerJobs[0];
+  const tr = (field) => (field ? field[lang] || field.en || field.th || "" : "");
+  const jobs = careerJobs || [];
+  const active = jobs.find((job) => job.id === activeId) || jobs[0];
 
   // How to Apply — admin-managed list of { en, th }; falls back to the
   // built-in default steps until the content row is loaded / filled in.
@@ -137,19 +142,21 @@ export default function Career() {
             lede={t("career.openPositionsLede")}
           />
 
-          {careerJobs.length === 0 ? (
+          {careerJobs === null ? (
+            <p className="career-empty">{t("career.loading")}</p>
+          ) : jobs.length === 0 ? (
             <p className="career-empty">{t("career.noPositions")}</p>
           ) : (
             <div className="career-board">
               <div className="career-list">
                 <div className="career-list__head">
                   <span className="career-list__count">
-                    {careerJobs.length} {t("career.positionsCount")}
+                    {jobs.length} {t("career.positionsCount")}
                   </span>
                   <span className="career-list__hint">{t("career.selectHint")}</span>
                 </div>
 
-                {careerJobs.map((job) => {
+                {jobs.map((job) => {
                   const selected = job.id === active.id;
                   return (
                     <button
@@ -195,7 +202,7 @@ export default function Career() {
                         <MoneyIcon />
                         {tr(active.salary)}
                       </span>
-                      {active.type && (
+                      {tr(active.type) && (
                         <span className="career-chip">
                           <ClockIcon />
                           {tr(active.type)}

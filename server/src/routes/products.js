@@ -21,6 +21,7 @@ import {
 } from "../controllers/productsController.js";
 import { getHomeContent } from "../controllers/homeContentController.js";
 import { listPillarsPublic } from "../controllers/automationPillarsController.js";
+import { listCareerJobsPublic } from "../controllers/careerJobsController.js";
 import { getSiteSettings } from "../controllers/siteSettingsController.js";
 import { getMenu } from "../controllers/menuController.js";
 import { getActivePopup } from "../controllers/popupsController.js";
@@ -46,6 +47,7 @@ router.get("/history-content", getHistoryContent);
 router.get("/products-page-content", getProductsPageContent);
 router.get("/contacts-page-content", getContactsPageContent);
 router.get("/career-page-content", getCareerPageContent);
+router.get("/career-jobs", listCareerJobsPublic);
 router.get("/footer-content", getFooterContent);
 router.get("/automation-solution-content", getAutomationSolutionContent);
 
