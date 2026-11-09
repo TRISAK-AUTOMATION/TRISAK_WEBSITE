@@ -469,6 +469,13 @@ WHERE NOT EXISTS (SELECT 1 FROM career_jobs);
 -- ============================================================
 CREATE TABLE career_page_content (
   id           SERIAL PRIMARY KEY,
+  hero_meta_en  VARCHAR(255),
+  hero_meta_th  VARCHAR(255),
+  hero_title_en VARCHAR(255),
+  hero_title_th VARCHAR(255),
+  hero_sub_en   TEXT,
+  hero_sub_th   TEXT,
+  hero_bg_image VARCHAR(255),
   apply_steps  JSONB NOT NULL DEFAULT '[]'::jsonb,
   hr_name_en   VARCHAR(255),
   hr_name_th   VARCHAR(255),

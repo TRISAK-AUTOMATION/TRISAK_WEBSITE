@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { ConfirmModal } from "../../components/AdminModal.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
+import ImageUploadField from "../../components/ImageUploadField.jsx";
+import { translations } from "../../i18n/translations.js";
 
 /**
  * Admin > ตำแหน่งงาน (Career) — /admin/career
@@ -164,6 +167,9 @@ export default function AdminCareerJobs() {
   const [shared, setShared] = useState({ apply_steps: [], hr_name_en: "", hr_name_th: "", hr_phone: "", hr_email: "", hr_line_id: "" });
   const [sharedDirty, setSharedDirty] = useState(false);
   const [lang, setLang] = useState("th");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "hero" ? "hero" : "jobs";
+  const setTab = (next) => setSearchParams(next === "hero" ? { tab: "hero" } : {}, { replace: true });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busyReorder, setBusyReorder] = useState(false);
@@ -307,12 +313,30 @@ export default function AdminCareerJobs() {
   if (loading) return <p className="empty-state">กำลังโหลด…</p>;
 
   const hrNameField = `hr_name_${lang}`;
+  const heroDefaults = translations[lang]?.career || {};
 
   return (
     <div className="career-admin">
       <AdminBreadcrumb items={[{ label: "ตำแหน่งงาน (Career)" }]} />
 
-      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
+      <div className="admin-edit-tabbar career-admin__tabbar">
+        <div className="admin-edit-tabs" role="tablist">
+          {[
+            ["jobs", "ตำแหน่งงาน"],
+            ["hero", "Hero"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              className={`admin-edit-tab${tab === key ? " is-active" : ""}`}
+              onClick={() => setTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="admin-edit-tabbar__actions career-admin__toolbar">
           <label className="career-admin__lang">
             <span>ภาษา</span>
@@ -332,10 +356,62 @@ export default function AdminCareerJobs() {
       {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-edit-notice">
-        🔔 กำลังแก้ไขเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — เลือกภาษาที่แถบด้านบนเพื่อแก้อีกภาษา
-        กดการ์ดด้านซ้ายเพื่อแก้ไขตำแหน่งนั้น แล้วกด “บันทึก” (การเรียงลำดับและการลบมีผลทันที)
+        🔔 กำลังแก้ไขเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — เลือกภาษาที่แถบด้านบนเพื่อแก้อีกภาษา{" "}
+        {tab === "hero"
+          ? "พิมพ์แก้ข้อความใน Hero ด้านล่างได้โดยตรง ช่องที่เว้นว่างจะใช้ข้อความเริ่มต้น (ตัวจาง) แล้วกด “บันทึก”"
+          : "กดการ์ดด้านซ้ายเพื่อแก้ไขตำแหน่งนั้น แล้วกด “บันทึก” (การเรียงลำดับและการลบมีผลทันที)"}
       </div>
 
+      {tab === "hero" && (
+        <div className="career-admin__hero-wrap">
+          <section className={`hero hero--compact career-hero career-admin__hero${shared.hero_bg_image ? " hero--has-bg" : ""}`}>
+            {shared.hero_bg_image && (
+              <>
+                <div className="hero__bg-image" style={{ backgroundImage: `url(${shared.hero_bg_image})` }} aria-hidden="true" />
+                <div className="hero__bg-scrim" aria-hidden="true" />
+              </>
+            )}
+            <div className="hero__grid-overlay" aria-hidden="true" />
+            <div className="container hero__content career-admin__hero-content">
+              <span className="hero__meta">
+                <input
+                  className="career-admin__hero-input"
+                  aria-label="ข้อความเล็กเหนือหัวข้อ (Meta)"
+                  value={shared[`hero_meta_${lang}`] || ""}
+                  placeholder={heroDefaults.heroMeta}
+                  onChange={(e) => updateShared({ [`hero_meta_${lang}`]: e.target.value })}
+                />
+              </span>
+              <h1>
+                <input
+                  className="career-admin__hero-input"
+                  aria-label="หัวข้อหลัก"
+                  value={shared[`hero_title_${lang}`] || ""}
+                  placeholder={heroDefaults.heroTitle}
+                  onChange={(e) => updateShared({ [`hero_title_${lang}`]: e.target.value })}
+                />
+              </h1>
+              <p className="hero__sub">
+                <textarea
+                  className="career-admin__hero-input"
+                  rows={2}
+                  aria-label="คำอธิบายใต้หัวข้อ"
+                  value={shared[`hero_sub_${lang}`] || ""}
+                  placeholder={heroDefaults.heroSub || "คำอธิบายใต้หัวข้อ (ไม่บังคับ)"}
+                  onChange={(e) => updateShared({ [`hero_sub_${lang}`]: e.target.value })}
+                />
+              </p>
+            </div>
+          </section>
+
+          <div className="panel career-admin__hero-bg">
+            <span className="admin-edit-sidebar__label">ภาพพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
+            <ImageUploadField value={shared.hero_bg_image || ""} onChange={(url) => updateShared({ hero_bg_image: url })} />
+          </div>
+        </div>
+      )}
+
+      {tab === "jobs" && (
       <div className="career-board career-admin__board">
         {/* LEFT — job cards, as on the public page */}
         <div className="career-list">
@@ -500,6 +576,7 @@ export default function AdminCareerJobs() {
           </Section>
         </article>
       </div>
+      )}
 
       {deleteTarget && (
         <ConfirmModal

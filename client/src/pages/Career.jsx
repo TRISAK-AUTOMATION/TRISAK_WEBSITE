@@ -110,6 +110,10 @@ export default function Career() {
   ].filter(Boolean);
   const showContact = Boolean(hrName || contactRows.length);
 
+  const hero = (field, fallback) => pageContent?.[`${field}_${lang}`] || fallback;
+  const heroSub = hero("hero_sub", t("career.heroSub"));
+  const heroBgImage = pageContent?.hero_bg_image || "";
+
   const scrollToApply = () => {
     applyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -124,12 +128,19 @@ export default function Career() {
 
   return (
     <>
-      {/* 1. Hero */}
-      <section className="hero hero--compact career-hero">
+      {/* 1. Hero — admin-editable (Admin > ตำแหน่งงาน > Hero), falls back to translations */}
+      <section className={`hero hero--compact career-hero${heroBgImage ? " hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
-          <span className="hero__meta">{t("career.heroMeta")}</span>
-          <h1>{t("career.heroTitle")}</h1>
+          <span className="hero__meta">{hero("hero_meta", t("career.heroMeta"))}</span>
+          <h1>{hero("hero_title", t("career.heroTitle"))}</h1>
+          {heroSub && <p className="hero__sub">{heroSub}</p>}
         </div>
       </section>
 

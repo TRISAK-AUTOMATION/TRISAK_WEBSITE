@@ -2724,3 +2724,68 @@ a.admin-edit-tab {
     align-items: flex-start;
   }
 }
+
+/* ---------- Admin > ตำแหน่งงาน > Hero tab: the real Hero, edited in place ---------- */
+.career-admin__tabbar {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.career-admin__hero-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.career-admin__hero.hero {
+  min-height: 380px;
+  padding: 96px 0 56px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.career-admin__hero-content {
+  width: 100%;
+  z-index: 2;
+}
+.career-admin__hero .hero__sub {
+  margin-bottom: 0;
+}
+.career-admin__hero-input {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  margin-left: -9px;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  line-height: inherit;
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: var(--radius);
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.career-admin__hero-input:hover {
+  border-color: var(--line-strong);
+}
+.career-admin__hero-input:focus {
+  outline: none;
+  border-color: var(--accent-signal);
+  background: rgba(255, 255, 255, 0.6);
+}
+.hero--has-bg .career-admin__hero-input:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.hero--has-bg .career-admin__hero-input:focus {
+  border-color: #ffffff;
+  background: rgba(0, 0, 0, 0.25);
+}
+.career-admin__hero-input::placeholder {
+  color: inherit;
+  opacity: 0.45;
+}
+.career-admin__hero-bg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 560px;
+}

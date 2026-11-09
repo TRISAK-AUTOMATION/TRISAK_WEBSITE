@@ -2066,6 +2066,7 @@
 }
 .career-detail__apply {
   flex: none;
+  white-space: nowrap;
 }
 .career-detail__section {
   display: flex;
