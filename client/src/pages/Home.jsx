@@ -7,6 +7,7 @@ import SolutionPillars from "../components/SolutionPillars.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
 import { translations } from "../i18n/translations.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { LISTING_BASE_PATH } from "../utils/productFilterUrl.js";
 import trisakLogo from "../assets/logos/trisak.png";
 import faccoLogo from "../assets/logos/facco.png";
 import htcLogo from "../assets/logos/htc.png";
@@ -196,9 +197,13 @@ export default function Home() {
           <div className="products-cta-row">
             <div className="tag-list">
               {productTags.map((tag) => (
-                <span className="tag" key={tag}>
+                <Link
+                  className="tag tag--link"
+                  key={tag}
+                  to={`${LISTING_BASE_PATH}?q=${encodeURIComponent(tag)}`}
+                >
                   {tag}
-                </span>
+                </Link>
               ))}
             </div>
             <Link to="/products" className="btn btn-primary">
