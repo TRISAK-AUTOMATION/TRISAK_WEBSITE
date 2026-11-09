@@ -2040,13 +2040,18 @@
   font-weight: 600;
   color: #1f2230;
 }
+/* Chips get their own full-width row under the title + apply button,
+   so location / salary / job type stay on one line on desktop. */
 .career-detail__chips {
+  flex: 1 1 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: -6px;
 }
 .career-chip {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;

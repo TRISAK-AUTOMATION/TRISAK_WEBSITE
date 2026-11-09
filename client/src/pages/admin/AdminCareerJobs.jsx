@@ -398,23 +398,6 @@ export default function AdminCareerJobs() {
                       onChange={(e) => setText("title", e.target.value)}
                     />
                   </label>
-                  <div className="career-detail__chips">
-                    {[
-                      ["location", <PinIcon key="i" />, "สถานที่"],
-                      ["salary", <MoneyIcon key="i" />, "เงินเดือน"],
-                      ["type", <ClockIcon key="i" />, "ประเภทงาน"],
-                    ].map(([field, ic, label]) => (
-                      <label key={field} className="career-chip career-admin__chip">
-                        {ic}
-                        <input
-                          value={active[field][lang] || ""}
-                          placeholder={label}
-                          aria-label={label}
-                          onChange={(e) => setText(field, e.target.value)}
-                        />
-                      </label>
-                    ))}
-                  </div>
                 </div>
                 <div className="career-admin__job-actions">
                   <label className="admin-toggle">
@@ -432,6 +415,23 @@ export default function AdminCareerJobs() {
                   >
                     🗑 ลบตำแหน่งนี้
                   </button>
+                </div>
+                <div className="career-detail__chips">
+                  {[
+                    ["location", <PinIcon key="i" />, "สถานที่"],
+                    ["salary", <MoneyIcon key="i" />, "เงินเดือน"],
+                    ["type", <ClockIcon key="i" />, "ประเภทงาน"],
+                  ].map(([field, ic, label]) => (
+                    <label key={field} className="career-chip career-admin__chip">
+                      {ic}
+                      <input
+                        value={active[field][lang] || ""}
+                        placeholder={label}
+                        aria-label={label}
+                        onChange={(e) => setText(field, e.target.value)}
+                      />
+                    </label>
+                  ))}
                 </div>
               </header>
 

@@ -193,26 +193,26 @@ export default function Career() {
                 <header className="career-detail__head">
                   <div className="career-detail__heading">
                     <h3 className="career-detail__title">{tr(active.title)}</h3>
-                    <div className="career-detail__chips">
-                      <span className="career-chip">
-                        <PinIcon />
-                        {tr(active.location)}
-                      </span>
-                      <span className="career-chip">
-                        <MoneyIcon />
-                        {tr(active.salary)}
-                      </span>
-                      {tr(active.type) && (
-                        <span className="career-chip">
-                          <ClockIcon />
-                          {tr(active.type)}
-                        </span>
-                      )}
-                    </div>
                   </div>
                   <button type="button" className="btn btn-primary career-detail__apply" onClick={scrollToApply}>
                     {t("career.applyNow")}
                   </button>
+                  <div className="career-detail__chips">
+                    <span className="career-chip">
+                      <PinIcon />
+                      {tr(active.location)}
+                    </span>
+                    <span className="career-chip">
+                      <MoneyIcon />
+                      {tr(active.salary)}
+                    </span>
+                    {tr(active.type) && (
+                      <span className="career-chip">
+                        <ClockIcon />
+                        {tr(active.type)}
+                      </span>
+                    )}
+                  </div>
                 </header>
 
                 <section className="career-detail__section">
