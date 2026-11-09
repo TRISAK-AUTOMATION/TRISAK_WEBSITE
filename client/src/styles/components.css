@@ -1792,7 +1792,7 @@
 
 .map-frame__pin--tag {
   top: 14px;
-  left: 14px;
+  right: 14px;
   pointer-events: none;
 }
 
