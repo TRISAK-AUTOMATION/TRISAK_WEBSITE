@@ -2845,3 +2845,141 @@ a.admin-edit-tab {
 .app-phone-cell {
   white-space: nowrap;
 }
+
+/* ---------- Admin > หน้าแรก (Home) > Content: the real Home page, edited in place ---------- */
+.home-admin__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.home-admin__page {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+}
+/* The admin pane is not the viewport: drop the full-screen height of the public hero. */
+.home-admin__page .hero.home-admin__hero {
+  min-height: 460px;
+  padding-top: 72px;
+  padding-bottom: 72px;
+}
+.home-admin__page .section {
+  padding: 64px 0;
+}
+.home-admin__page .cta-band {
+  padding: 80px 0;
+}
+.home-admin__page .cta-band h2 {
+  width: 100%;
+  max-width: 720px;
+}
+.home-admin__hero-bg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px;
+  padding: 16px;
+  max-width: 560px;
+}
+.home-admin__input {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  margin-left: -9px;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  line-height: inherit;
+  background: transparent;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.home-admin__input:hover {
+  border-color: var(--line-strong);
+}
+.home-admin__input:focus {
+  outline: none;
+  border-color: var(--accent-signal);
+  background: rgba(255, 255, 255, 0.6);
+}
+.home-admin__input::placeholder {
+  color: inherit;
+  opacity: 0.45;
+}
+.hero--has-bg .home-admin__input {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.hero--has-bg .home-admin__input:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.hero--has-bg .home-admin__input:focus {
+  border-color: #ffffff;
+  background: rgba(0, 0, 0, 0.25);
+}
+.home-admin__page .eyebrow .home-admin__input {
+  margin-left: 0;
+  min-width: 260px;
+}
+.home-admin__cta-title .home-admin__input {
+  margin-left: 0;
+}
+.home-admin__alt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.home-admin__alt .home-admin__input {
+  margin-left: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.strength-block p .home-admin__input {
+  margin-left: 0;
+}
+.home-admin__static-btn {
+  pointer-events: none;
+}
+.home-admin__managed {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--bg-panel) 0px,
+    var(--bg-panel) 12px,
+    var(--bg) 12px,
+    var(--bg) 24px
+  );
+}
+.home-admin__managed .section-head {
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+.home-admin__managed--slim .section-head h2 {
+  font-size: 1.5rem;
+}
+.home-admin__managed-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+@media (max-width: 900px) {
+  .home-admin__page .grid.cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
