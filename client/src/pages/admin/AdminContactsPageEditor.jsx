@@ -19,7 +19,16 @@ const BILINGUAL_SUFFIXES = [
   "map_title",
 ];
 
-const PLAIN_FIELDS = ["head_office_phone", "head_office_email", "warehouse_phone", "warehouse_email"];
+const PLAIN_FIELDS = [
+  "head_office_phone",
+  "head_office_email",
+  "warehouse_phone",
+  "warehouse_email",
+  "head_office_map",
+  "head_office_map_link",
+  "warehouse_map",
+  "warehouse_map_link",
+];
 
 function emptyForm() {
   const form = { hero_bg_image: "" };
@@ -226,6 +235,33 @@ export default function AdminContactsPageEditor() {
                 <input value={value("map_title")} onChange={(e) => update("map_title", e.target.value)} />
               </label>
             </div>
+            <p className="admin-form__hint" style={{ marginTop: 20 }}>
+              ตำแหน่งบนแผนที่: วางโค้ด/ลิงก์จาก Google Maps → แชร์ → <b>ฝังแผนที่ (Embed a map)</b>,
+              หรือพิกัด "13.7563,100.5018", หรือชื่อสถานที่/ที่อยู่ — เว้นว่างไว้จะใช้ที่อยู่ด้านบน
+            </p>
+            {[
+              ["head_office", "สำนักงานใหญ่"],
+              ["warehouse", "คลังสินค้า"],
+            ].map(([key, label]) => (
+              <div className="admin-form__row" style={{ marginTop: 20 }} key={key}>
+                <label className="contact-form__field">
+                  <span>แผนที่{label} (Embed / พิกัด / ที่อยู่)</span>
+                  <textarea
+                    rows={2}
+                    value={plainValue(`${key}_map`)}
+                    onChange={(e) => updatePlain(`${key}_map`, e.target.value)}
+                  />
+                </label>
+                <label className="contact-form__field">
+                  <span>ลิงก์ "เปิดใน Google Maps" ({label})</span>
+                  <input
+                    value={plainValue(`${key}_map_link`)}
+                    placeholder="https://maps.app.goo.gl/…"
+                    onChange={(e) => updatePlain(`${key}_map_link`, e.target.value)}
+                  />
+                </label>
+              </div>
+            ))}
           </div>
 
           <div className="admin-form__submit-row">

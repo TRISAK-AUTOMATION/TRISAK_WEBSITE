@@ -409,6 +409,10 @@ CREATE TABLE contacts_page_content (
   map_eyebrow_th          VARCHAR(255),
   map_title_en            VARCHAR(255),
   map_title_th            VARCHAR(255),
+  head_office_map         TEXT,
+  head_office_map_link    VARCHAR(500),
+  warehouse_map           TEXT,
+  warehouse_map_link      VARCHAR(500),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
