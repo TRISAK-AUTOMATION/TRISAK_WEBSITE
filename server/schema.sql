@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS about_content CASCADE;
 DROP TABLE IF EXISTS products_page_content CASCADE;
 DROP TABLE IF EXISTS contacts_page_content CASCADE;
 DROP TABLE IF EXISTS career_page_content CASCADE;
+DROP TABLE IF EXISTS career_applications CASCADE;
 DROP TABLE IF EXISTS career_jobs CASCADE;
 DROP TABLE IF EXISTS footer_content CASCADE;
 DROP TABLE IF EXISTS automation_solution_page_content CASCADE;
@@ -462,6 +463,30 @@ SELECT * FROM (VALUES
    true, 4)
 ) AS seed
 WHERE NOT EXISTS (SELECT 1 FROM career_jobs);
+
+-- ============================================================
+-- career_applications — applications from the Career page popup, listed
+-- in Admin > ตำแหน่งงาน > คำขอสมัครงาน. Résumés live in server/private/resumes
+-- (never publicly served).
+-- ============================================================
+CREATE TABLE career_applications (
+  id            SERIAL PRIMARY KEY,
+  job_id        INTEGER REFERENCES career_jobs(id) ON DELETE SET NULL,
+  job_title     VARCHAR(200),
+  full_name     VARCHAR(150) NOT NULL,
+  phone         VARCHAR(50)  NOT NULL,
+  email         VARCHAR(150) NOT NULL,
+  message       TEXT,
+  resume_file   VARCHAR(100),
+  resume_name   VARCHAR(200),
+  resume_size   INTEGER,
+  status        VARCHAR(20)  NOT NULL DEFAULT 'new',
+  created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS career_applications_created_idx ON career_applications (created_at DESC);
+CREATE INDEX IF NOT EXISTS career_applications_job_idx ON career_applications (job_id);
 
 -- ============================================================
 -- career_page_content — Career page "How to Apply" steps (JSON list of

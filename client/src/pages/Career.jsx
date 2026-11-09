@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
+import ApplyJobModal from "../components/ApplyJobModal.jsx";
 
 const PinIcon = () => (
   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -68,6 +69,7 @@ export default function Career() {
   const [activeId, setActiveId] = useState(null);
   const detailRef = useRef(null);
   const applyRef = useRef(null);
+  const [applyJob, setApplyJob] = useState(null); // job the popup is open for
   const [pageContent, setPageContent] = useState(null);
 
   useEffect(() => {
@@ -114,9 +116,6 @@ export default function Career() {
   const heroSub = hero("hero_sub", t("career.heroSub"));
   const heroBgImage = pageContent?.hero_bg_image || "";
 
-  const scrollToApply = () => {
-    applyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   const selectJob = (id) => {
     setActiveId(id);
@@ -205,7 +204,7 @@ export default function Career() {
                   <div className="career-detail__heading">
                     <h3 className="career-detail__title">{tr(active.title)}</h3>
                   </div>
-                  <button type="button" className="btn btn-primary career-detail__apply" onClick={scrollToApply}>
+                  <button type="button" className="btn btn-primary career-detail__apply" onClick={() => setApplyJob(active)}>
                     {t("career.applyNow")}
                   </button>
                   <div className="career-detail__chips">
@@ -318,6 +317,10 @@ export default function Career() {
           )}
         </div>
       </section>
+
+      {applyJob && (
+        <ApplyJobModal job={applyJob} jobTitle={tr(applyJob.title)} onClose={() => setApplyJob(null)} />
+      )}
     </>
   );
 }
