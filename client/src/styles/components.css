@@ -458,6 +458,21 @@
   color: var(--text-muted);
 }
 
+/* Home > Our Products: each tag opens the product list searched by that keyword. */
+.tag--link {
+  display: inline-block;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.tag--link:hover,
+.tag--link:focus-visible {
+  color: #ffffff;
+  border-color: var(--accent-signal);
+  background: var(--accent-signal);
+}
+
 /* =========================================================
    Automation Solutions — four pillar cards (components/SolutionPillars.jsx)
    2 × 2 on desktop, one column on tablet/mobile. The admin-uploaded picture is the
