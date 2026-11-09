@@ -30,6 +30,7 @@ import {
   getContactsPageContent,
   getFooterContent,
   getAutomationSolutionContent,
+  getCareerPageContent,
 } from "../controllers/pageContentController.js";
 import { getHistoryContent } from "../controllers/historyContentController.js";
 
@@ -44,6 +45,7 @@ router.get("/about-content", getAboutContent);
 router.get("/history-content", getHistoryContent);
 router.get("/products-page-content", getProductsPageContent);
 router.get("/contacts-page-content", getContactsPageContent);
+router.get("/career-page-content", getCareerPageContent);
 router.get("/footer-content", getFooterContent);
 router.get("/automation-solution-content", getAutomationSolutionContent);
 

@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { careerJobs } from "../data/careerJobs.js";
+import { api } from "../api/client.js";
 
 const PinIcon = () => (
   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -44,6 +44,18 @@ const sectionIcons = {
       <path d="M20 6L9 17l-5-5" />
     </svg>
   ),
+  apply: (
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" />
+    </svg>
+  ),
+  contact: (
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </svg>
+  ),
   benefits: (
     <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z" />
@@ -55,9 +67,47 @@ export default function Career() {
   const { t, lang } = useLanguage();
   const [activeId, setActiveId] = useState(careerJobs[0]?.id);
   const detailRef = useRef(null);
+  const applyRef = useRef(null);
+  const [pageContent, setPageContent] = useState(null);
+
+  useEffect(() => {
+    api
+      .getCareerPageContent()
+      .then(setPageContent)
+      .catch(() => setPageContent(null));
+  }, []);
 
   const tr = (field) => (field ? field[lang] || field.en : "");
   const active = careerJobs.find((job) => job.id === activeId) || careerJobs[0];
+
+  // How to Apply — admin-managed list of { en, th }; falls back to the
+  // built-in default steps until the content row is loaded / filled in.
+  const adminSteps = Array.isArray(pageContent?.apply_steps) ? pageContent.apply_steps : null;
+  const applySteps = adminSteps && adminSteps.length
+    ? adminSteps.map((s) => s[lang] || s.en || s.th).filter(Boolean)
+    : t("career.defaultApplySteps");
+
+  // HR contact — admin-managed; blank fields are hidden.
+  const hrName = pageContent?.[`hr_name_${lang}`] || pageContent?.hr_name_en || pageContent?.hr_name_th || "";
+  const hrPhone = pageContent?.hr_phone || "";
+  const hrEmail = pageContent?.hr_email || "";
+  const hrLine = pageContent?.hr_line_id || "";
+  const contactRows = [
+    hrPhone && { key: "phone", label: t("career.phoneLabel"), value: hrPhone, href: `tel:${hrPhone.replace(/[^\d+]/g, "")}` },
+    hrEmail && { key: "email", label: t("career.emailLabel"), value: hrEmail, href: `mailto:${hrEmail}` },
+    hrLine && {
+      key: "line",
+      label: t("career.lineLabel"),
+      value: hrLine,
+      href: `https://line.me/ti/p/~${encodeURIComponent(hrLine.replace(/^@/, ""))}`,
+      external: true,
+    },
+  ].filter(Boolean);
+  const showContact = Boolean(hrName || contactRows.length);
+
+  const scrollToApply = () => {
+    applyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const selectJob = (id) => {
     setActiveId(id);
@@ -153,9 +203,9 @@ export default function Career() {
                       )}
                     </div>
                   </div>
-                  <Link to="/contacts" className="btn btn-primary career-detail__apply">
+                  <button type="button" className="btn btn-primary career-detail__apply" onClick={scrollToApply}>
                     {t("career.applyNow")}
-                  </Link>
+                  </button>
                 </header>
 
                 <section className="career-detail__section">
@@ -196,6 +246,55 @@ export default function Career() {
                     ))}
                   </ul>
                 </section>
+
+                {Array.isArray(applySteps) && applySteps.length > 0 && (
+                  <section className="career-detail__section career-detail__section--apply" ref={applyRef}>
+                    <h4 className="career-detail__section-title">
+                      <span className="career-detail__section-icon">{sectionIcons.apply}</span>
+                      {t("career.howToApplyTitle")}
+                    </h4>
+                    <ol className="career-steps">
+                      {applySteps.map((step, i) => (
+                        <li key={i} className="career-steps__item">
+                          <span className="career-steps__no" aria-hidden="true">{i + 1}</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                )}
+
+                {showContact && (
+                  <section className="career-detail__section">
+                    <h4 className="career-detail__section-title">
+                      <span className="career-detail__section-icon">{sectionIcons.contact}</span>
+                      {t("career.contactTitle")}
+                    </h4>
+                    <div className="career-contact">
+                      <div className="career-contact__person">
+                        <span className="career-contact__dept">{t("career.hrDepartment")}</span>
+                        {hrName && <span className="career-contact__name">{hrName}</span>}
+                      </div>
+                      {contactRows.length > 0 && (
+                        <dl className="career-contact__list">
+                          {contactRows.map((row) => (
+                            <div key={row.key} className="career-contact__row">
+                              <dt>{row.label}</dt>
+                              <dd>
+                                <a
+                                  href={row.href}
+                                  {...(row.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                                >
+                                  {row.value}
+                                </a>
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
+                  </section>
+                )}
               </article>
             </div>
           )}

@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS history_timeline CASCADE;
 DROP TABLE IF EXISTS about_content CASCADE;
 DROP TABLE IF EXISTS products_page_content CASCADE;
 DROP TABLE IF EXISTS contacts_page_content CASCADE;
+DROP TABLE IF EXISTS career_page_content CASCADE;
 DROP TABLE IF EXISTS footer_content CASCADE;
 DROP TABLE IF EXISTS automation_solution_page_content CASCADE;
 DROP TABLE IF EXISTS contact_requests CASCADE;
@@ -408,6 +409,27 @@ CREATE TABLE contacts_page_content (
   map_title_th            VARCHAR(255),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- career_page_content — Career page "How to Apply" steps (JSON list of
+-- { en, th }) and HR contact, managed from Admin > Edit > Career.
+-- ============================================================
+CREATE TABLE career_page_content (
+  id           SERIAL PRIMARY KEY,
+  apply_steps  JSONB NOT NULL DEFAULT '[]'::jsonb,
+  hr_name_en   VARCHAR(255),
+  hr_name_th   VARCHAR(255),
+  hr_phone     VARCHAR(50),
+  hr_email     VARCHAR(150),
+  hr_line_id   VARCHAR(100),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO career_page_content (apply_steps) VALUES ('[
+  {"en": "Send your resume by email to Human Resources, stating the position you are applying for.", "th": "ส่งใบสมัครและเรซูเม่ทางอีเมลถึงฝ่ายบุคคล โดยระบุตำแหน่งที่ต้องการสมัคร"},
+  {"en": "Attach copies of your education certificates and a recent photo.", "th": "แนบสำเนาวุฒิการศึกษาและรูปถ่ายปัจจุบัน"},
+  {"en": "Human Resources will contact shortlisted applicants to arrange an interview.", "th": "ฝ่ายบุคคลจะติดต่อกลับผู้ที่ผ่านการคัดเลือกเพื่อนัดหมายสัมภาษณ์"}
+]'::jsonb);
 
 -- ============================================================
 -- footer_content — footer-specific copy (tagline, bottom legal

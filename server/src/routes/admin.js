@@ -103,6 +103,8 @@ import {
   updateFooterContent,
   getAutomationSolutionContent,
   updateAutomationSolutionContent,
+  getCareerPageContent,
+  updateCareerPageContent,
 } from "../controllers/pageContentController.js";
 import { timelineAdmin, statsAdmin, orgAdmin } from "../controllers/historyContentController.js";
 
@@ -169,6 +171,8 @@ router.put("/admin/products-page-content", updateProductsPageContent);
 
 router.get("/admin/contacts-page-content", getContactsPageContent);
 router.put("/admin/contacts-page-content", updateContactsPageContent);
+router.get("/admin/career-page-content", getCareerPageContent);
+router.put("/admin/career-page-content", updateCareerPageContent);
 
 router.get("/admin/footer-content", getFooterContent);
 router.put("/admin/footer-content", updateFooterContent);

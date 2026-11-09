@@ -2121,6 +2121,95 @@
   flex: none;
   margin-top: 3px;
 }
+.career-detail__section--apply {
+  scroll-margin-top: calc(var(--header-height) + 16px);
+}
+.career-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 42px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: none;
+}
+.career-steps__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.career-steps__no {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-signal);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+.career-contact {
+  margin-left: 42px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  padding: 20px 22px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.career-contact__person {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.career-contact__dept {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.career-contact__name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: #1f2230;
+}
+.career-contact__list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 2 1 260px;
+  min-width: 0;
+}
+.career-contact__row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 15px;
+}
+.career-contact__row dt {
+  color: var(--text-muted);
+}
+.career-contact__row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.career-contact__row a {
+  color: var(--accent-signal);
+  text-decoration: none;
+}
+.career-contact__row a:hover {
+  text-decoration: underline;
+}
 .career-empty {
   color: var(--text-muted);
 }
@@ -2136,6 +2225,12 @@
   }
   .career-benefits {
     padding-left: 0;
+  }
+  .career-steps {
+    padding-left: 0;
+  }
+  .career-contact {
+    margin-left: 0;
   }
   .career-detail__apply {
     width: 100%;

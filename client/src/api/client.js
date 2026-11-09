@@ -150,6 +150,7 @@ export const api = {
   getHistoryContent: () => request("/history-content"),
   getProductsPageContent: () => request("/products-page-content"),
   getContactsPageContent: () => request("/contacts-page-content"),
+  getCareerPageContent: () => request("/career-page-content"),
   getFooterContent: () => request("/footer-content"),
   getAutomationSolutionContent: () => request("/automation-solution-content"),
 
@@ -400,6 +401,10 @@ export const api = {
   adminGetContactsPageContent: () => authRequest("/admin/contacts-page-content"),
   adminUpdateContactsPageContent: (payload) =>
     authRequest("/admin/contacts-page-content", { method: "PUT", body: JSON.stringify(payload) }),
+
+  adminGetCareerPageContent: () => authRequest("/admin/career-page-content"),
+  adminUpdateCareerPageContent: (payload) =>
+    authRequest("/admin/career-page-content", { method: "PUT", body: JSON.stringify(payload) }),
 
   adminGetFooterContent: () => authRequest("/admin/footer-content"),
   adminUpdateFooterContent: (payload) =>

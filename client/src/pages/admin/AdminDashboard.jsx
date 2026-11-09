@@ -38,6 +38,7 @@ const ACTIVITY_ICONS = {
   about_updated: "✎",
   products_page_updated: "✎",
   contacts_page_updated: "✎",
+  career_page_updated: "✎",
   footer_updated: "✎",
   automation_solution_updated: "✎",
   solution_added: "🧩",

@@ -19,6 +19,7 @@ const NAV_SECTIONS = [
       { label: "ประวัติบริษัท (History)", to: "/admin/about" },
       { label: "สินค้า (Products)", to: "/admin/products-page" },
       { label: "ติดต่อเรา (Contact Us)", to: "/admin/contact" },
+      { label: "ร่วมงานกับเรา (Career)", to: "/admin/career" },
       { label: "โซลูชันระบบอัตโนมัติ (Automation Solution)", to: "/admin/automation-solution" },
       { label: "ลูกค้าของเรา (Our Customers)", to: "/admin/customers" },
       { label: "สไลด์อุตสาหกรรม (Industries Slider)", to: "/admin/industries" },
