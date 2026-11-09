@@ -123,6 +123,8 @@ const CONTACTS_PAGE_FIELDS = [
   "warehouse_phone", "warehouse_email",
   "map_eyebrow_en", "map_eyebrow_th",
   "map_title_en", "map_title_th",
+  "head_office_map", "head_office_map_link",
+  "warehouse_map", "warehouse_map_link",
 ];
 
 export async function getContactsPageContent(req, res) {

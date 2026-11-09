@@ -387,6 +387,7 @@ export const translations = {
       warehouseAddress: "45 Logistics Park\nSamut Prakan, Thailand 10270",
       mapEyebrow: "Find Us",
       mapTitle: "Map",
+      openInMaps: "Open in Google Maps",
     },
     contactForm: {
       name: "Name *",
@@ -802,6 +803,7 @@ export const translations = {
       warehouseAddress: "45 โลจิสติกส์ปาร์ค\nสมุทรปราการ 10270",
       mapEyebrow: "แผนที่",
       mapTitle: "แผนที่",
+      openInMaps: "เปิดใน Google Maps",
     },
     contactForm: {
       name: "ชื่อ *",

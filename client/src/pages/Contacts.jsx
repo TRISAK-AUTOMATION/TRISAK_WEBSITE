@@ -4,6 +4,29 @@ import ContactForm from "../components/ContactForm.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 
+// Share links for "Open in Google Maps" when the admin hasn't set one.
+const DEFAULT_MAP_LINKS = {
+  head_office: "https://maps.app.goo.gl/oyn9GMxXdquFfps27",
+  warehouse: "https://maps.app.goo.gl/LT1BuDaHmF1mNaMV8",
+};
+
+// Turns what the admin typed into an embeddable Google Maps src. Accepts the
+// "Embed a map" <iframe> code or its src, a google.com/maps URL (its @lat,lng
+// is used), "lat,lng", or any address/place name.
+function toMapEmbedSrc(input, lang) {
+  let v = (input || "").trim();
+  if (!v) return "";
+  const iframeSrc = v.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+  if (iframeSrc) v = iframeSrc[1].replace(/&amp;/g, "&");
+  if (/^https:\/\/(www\.)?google\.[a-z.]+\/maps\/embed/i.test(v)) return v;
+  const at = v.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  const latLng = v.match(/^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/);
+  let q = v.replace(/\n+/g, " ");
+  if (at) q = `${at[1]},${at[2]}`;
+  else if (latLng) q = `${latLng[1]},${latLng[2]}`;
+  return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=16&hl=${lang}&output=embed`;
+}
+
 export default function Contacts() {
   const { t, lang } = useLanguage();
   const [pageContent, setPageContent] = useState(null);
@@ -28,6 +51,14 @@ export default function Contacts() {
 
   const headOfficeAddress = cc("head_office_address", t("contacts.headOfficeAddress"));
   const warehouseAddress = cc("warehouse_address", t("contacts.warehouseAddress"));
+  const mapLocations = [
+    { key: "head_office", label: cc("head_office_label", t("contacts.headOffice")), address: headOfficeAddress },
+    { key: "warehouse", label: cc("warehouse_label", t("contacts.warehouse")), address: warehouseAddress },
+  ].map((loc) => ({
+    ...loc,
+    src: toMapEmbedSrc(ccPlain(`${loc.key}_map`, "") || loc.address, lang),
+    link: ccPlain(`${loc.key}_map_link`, DEFAULT_MAP_LINKS[loc.key]),
+  }));
   const heroBgImage = pageContent?.hero_bg_image || "";
 
   return (
@@ -96,13 +127,25 @@ export default function Contacts() {
       <section className="section">
         <div className="container">
           <SectionLabel eyebrow={cc("map_eyebrow", t("contacts.mapEyebrow"))} title={cc("map_title", t("contacts.mapTitle"))} />
-          <div className="map-frame">
-            <span className="map-frame__pin" style={{ top: "38%", left: "42%" }}>
-              {cc("head_office_label", t("contacts.headOffice"))}
-            </span>
-            <span className="map-frame__pin" style={{ top: "60%", left: "64%" }}>
-              {cc("warehouse_label", t("contacts.warehouse"))}
-            </span>
+          <div className="map-grid">
+            {mapLocations.map((loc) => (
+              <div className="map-frame map-frame--live" key={loc.key}>
+                {loc.src && (
+                  <iframe
+                    className="map-frame__embed"
+                    src={loc.src}
+                    title={loc.label}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                  />
+                )}
+                <span className="map-frame__pin map-frame__pin--tag">{loc.label}</span>
+                <a className="map-frame__open" href={loc.link} target="_blank" rel="noopener noreferrer">
+                  {t("contacts.openInMaps")} ↗
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </section>
