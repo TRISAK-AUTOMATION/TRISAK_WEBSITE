@@ -205,3 +205,49 @@ export async function updateAutomationSolutionContent(req, res) {
     res.status(400).json({ error: err.message });
   }
 }
+
+// ---------------- Career (How to Apply + HR contact) ----------------
+
+const CAREER_PAGE_FIELDS = [
+  "hero_meta_en", "hero_meta_th",
+  "hero_title_en", "hero_title_th",
+  "hero_sub_en", "hero_sub_th",
+  "hero_bg_image",
+  "apply_steps",
+  "hr_name_en", "hr_name_th",
+  "hr_phone", "hr_email", "hr_line_id",
+];
+
+const MAX_APPLY_STEPS = 20;
+
+export async function getCareerPageContent(req, res) {
+  try {
+    res.json(await getSingleton("career_page_content"));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load career page content" });
+  }
+}
+
+export async function updateCareerPageContent(req, res) {
+  try {
+    const body = { ...(req.body || {}) };
+    // How to Apply: ordered list of { en, th }; drop rows that are blank in both languages.
+    const clean = (v) => (typeof v === "string" ? v.trim().slice(0, 1000) : "");
+    const steps = (Array.isArray(body.apply_steps) ? body.apply_steps : [])
+      .map((s) => ({ en: clean(s?.en), th: clean(s?.th) }))
+      .filter((s) => s.en || s.th)
+      .slice(0, MAX_APPLY_STEPS);
+    body.apply_steps = JSON.stringify(steps);
+    // Hero background: same-site upload path or http(s) URL only.
+    const bg = typeof body.hero_bg_image === "string" ? body.hero_bg_image.trim() : "";
+    body.hero_bg_image =
+      bg && bg.length <= 255 && (/^\/(?![/\\])\S*$/.test(bg) || /^https?:\/\/[^\s<>"']+$/i.test(bg)) ? bg : null;
+    const row = await upsertSingleton("career_page_content", CAREER_PAGE_FIELDS, body);
+    logActivity("career_page_updated", "อัปเดตวิธีการสมัครและข้อมูลติดต่อหน้าร่วมงานกับเรา");
+    res.json(row);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+}

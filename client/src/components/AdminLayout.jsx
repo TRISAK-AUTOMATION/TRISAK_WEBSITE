@@ -39,6 +39,12 @@ const NAV_SECTIONS = [
     to: "/admin/contact-requests",
   },
   {
+    key: "career",
+    label: "ตำแหน่งงาน (Career)",
+    icon: "💼",
+    to: "/admin/career",
+  },
+  {
     key: "product",
     label: "สินค้า",
     icon: "🛒",
