@@ -152,6 +152,17 @@ export const api = {
   getContactsPageContent: () => request("/contacts-page-content"),
   getCareerPageContent: () => request("/career-page-content"),
   getCareerJobs: () => request("/career-jobs"),
+  // multipart (résumé file) — no JSON content-type, no admin token
+  submitCareerApplication: async (formData) => {
+    const res = await fetch(`${API_URL}/career-applications`, { method: "POST", body: formData, cache: "no-store" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(body.error || `Request failed: ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    return body;
+  },
   getFooterContent: () => request("/footer-content"),
   getAutomationSolutionContent: () => request("/automation-solution-content"),
 
@@ -411,6 +422,29 @@ export const api = {
   adminDeleteCareerJob: (id) => authRequest(`/admin/career-jobs/${id}`, { method: "DELETE" }),
   adminReorderCareerJob: (id, direction) =>
     authRequest(`/admin/career-jobs/${id}/reorder`, { method: "POST", body: JSON.stringify({ direction }) }),
+
+  adminGetCareerApplications: (params = {}) => authRequest(`/admin/career-applications${qs(params)}`),
+  adminGetCareerApplication: (id) => authRequest(`/admin/career-applications/${id}`),
+  adminUpdateCareerApplicationStatus: (id, status) =>
+    authRequest(`/admin/career-applications/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  adminDeleteCareerApplication: (id) => authRequest(`/admin/career-applications/${id}`, { method: "DELETE" }),
+  // Résumés are private: fetched with the admin token, returned as a Blob.
+  adminDownloadCareerResume: async (id) => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    const res = await fetch(`${API_URL}/admin/career-applications/${id}/resume`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      throw new Error("Session expired — signing you out.");
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Request failed: ${res.status}`);
+    }
+    return res.blob();
+  },
 
   adminGetCareerPageContent: () => authRequest("/admin/career-page-content"),
   adminUpdateCareerPageContent: (payload) =>

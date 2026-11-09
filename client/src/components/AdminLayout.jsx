@@ -42,7 +42,10 @@ const NAV_SECTIONS = [
     key: "career",
     label: "ตำแหน่งงาน (Career)",
     icon: "💼",
-    to: "/admin/career",
+    children: [
+      { label: "จัดการตำแหน่งงาน", to: "/admin/career", end: true },
+      { label: "คำขอสมัครงาน", to: "/admin/career/applications" },
+    ],
   },
   {
     key: "product",
@@ -119,6 +122,7 @@ export default function AdminLayout() {
                       <NavLink
                         key={child.to}
                         to={child.to}
+                        end={child.end}
                         className={({ isActive }) =>
                           `admin-nav-link admin-nav-link--child ${isActive ? "is-active" : ""}`
                         }

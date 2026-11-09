@@ -2789,3 +2789,59 @@ a.admin-edit-tab {
   gap: 10px;
   max-width: 560px;
 }
+
+/* ---------- Admin > ตำแหน่งงาน > คำขอสมัครงาน ---------- */
+.app-toolbar select {
+  max-width: 280px;
+}
+.app-row--new td:first-child {
+  font-weight: 600;
+}
+.app-status-select {
+  font-family: var(--font-body);
+}
+.app-status-select--new {
+  border-color: var(--accent-signal);
+  color: var(--accent-signal);
+}
+.app-status-select--reviewing {
+  border-color: #b3760a;
+  color: #8a5300;
+}
+.app-status-select--interview {
+  border-color: #6d3fc0;
+  color: #5a32a3;
+}
+.app-status-select--hired {
+  border-color: #2fa84f;
+  color: #1f7a38;
+}
+.app-status-select--rejected {
+  border-color: #9497a3;
+  color: #6b6f7d;
+}
+.app-resume-btn {
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+.app-resume-btn--compact {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.app-resume-name {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.app-job-removed {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.app-phone-cell {
+  white-space: nowrap;
+}

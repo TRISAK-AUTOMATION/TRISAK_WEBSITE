@@ -33,6 +33,7 @@ import AdminHistoryOrgForm from "./pages/admin/AdminHistoryOrgForm.jsx";
 import AdminProductsPageEditor from "./pages/admin/AdminProductsPageEditor.jsx";
 import AdminContactsPageEditor from "./pages/admin/AdminContactsPageEditor.jsx";
 import AdminCareerJobs from "./pages/admin/AdminCareerJobs.jsx";
+import AdminCareerApplications from "./pages/admin/AdminCareerApplications.jsx";
 import AdminFooterEditor from "./pages/admin/AdminFooterEditor.jsx";
 import AdminAutomationSolution from "./pages/admin/AdminAutomationSolution.jsx";
 import AdminCustomers from "./pages/admin/AdminCustomers.jsx";
@@ -142,6 +143,7 @@ export default function App() {
           <Route path="products-page" element={<AdminProductsPageEditor />} />
           <Route path="contact" element={<AdminContactsPageEditor />} />
           <Route path="career" element={<AdminCareerJobs />} />
+          <Route path="career/applications" element={<AdminCareerApplications />} />
           <Route path="footer" element={<AdminFooterEditor />} />
           <Route path="automation-solution" element={<AdminAutomationSolution />} />
           <Route path="customers" element={<AdminCustomers />} />

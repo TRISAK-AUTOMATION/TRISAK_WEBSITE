@@ -42,6 +42,8 @@ const ACTIVITY_ICONS = {
   career_job_created: "💼",
   career_job_edited: "✎",
   career_job_deleted: "🗑",
+  career_application_received: "📨",
+  career_application_deleted: "🗑",
   footer_updated: "✎",
   automation_solution_updated: "✎",
   solution_added: "🧩",

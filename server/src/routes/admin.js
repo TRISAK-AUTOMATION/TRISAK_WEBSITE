@@ -73,6 +73,13 @@ import {
   deleteCareerJob,
   reorderCareerJob,
 } from "../controllers/careerJobsController.js";
+import {
+  listApplications,
+  getApplication,
+  updateApplicationStatus,
+  deleteApplication,
+  downloadResume,
+} from "../controllers/careerApplicationsController.js";
 import { updateSiteSettings } from "../controllers/siteSettingsController.js";
 import { getDashboard } from "../controllers/dashboardController.js";
 import {
@@ -184,6 +191,11 @@ router.post("/admin/career-jobs", createCareerJob);
 router.put("/admin/career-jobs/:id", updateCareerJob);
 router.delete("/admin/career-jobs/:id", deleteCareerJob);
 router.post("/admin/career-jobs/:id/reorder", reorderCareerJob);
+router.get("/admin/career-applications", listApplications);
+router.get("/admin/career-applications/:id", getApplication);
+router.patch("/admin/career-applications/:id/status", updateApplicationStatus);
+router.delete("/admin/career-applications/:id", deleteApplication);
+router.get("/admin/career-applications/:id/resume", downloadResume);
 router.put("/admin/career-page-content", updateCareerPageContent);
 
 router.get("/admin/footer-content", getFooterContent);
