@@ -6,7 +6,7 @@ import { HomePageHeader, HOME_AUTOMATION_PATH } from "../../components/HomeAdmin
 
 /**
  * Home → Automation Solutions Management.
- * Same list layout as the History lists (/admin/about/timeline …):
+ * Same list layout as the History lists (/admin/history/timeline …):
  * table with status, order arrows, enable / edit / delete actions, each
  * destructive action behind a ConfirmModal. Add / Edit open on their own page.
  * Uses the existing automation-pillars API — no data is copied or changed.

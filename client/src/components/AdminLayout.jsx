@@ -16,7 +16,7 @@ const NAV_SECTIONS = [
     icon: "✎",
     children: [
       { label: "หน้าแรก (Home)", to: "/admin/home" },
-      { label: "ประวัติบริษัท (History)", to: "/admin/about" },
+      { label: "ประวัติบริษัท (History)", to: "/admin/history" },
       { label: "สินค้า (Products)", to: "/admin/products-page" },
       { label: "ติดต่อเรา (Contact Us)", to: "/admin/contact" },
       { label: "โซลูชันระบบอัตโนมัติ (Automation Solution)", to: "/admin/automation-solution" },
