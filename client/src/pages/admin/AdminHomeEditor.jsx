@@ -5,6 +5,7 @@ import { HomePageHeader, HOME_AUTOMATION_PATH } from "../../components/HomeAdmin
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import SignalLine from "../../components/SignalLine.jsx";
+import { GroupWordmark } from "../../components/GroupSlider.jsx";
 import { translations } from "../../i18n/translations.js";
 import trisakLogo from "../../assets/logos/trisak.png";
 import faccoLogo from "../../assets/logos/facco.png";
@@ -239,8 +240,9 @@ export default function AdminHomeEditor() {
               <span className="eyebrow">
                 <InlineInput {...bind("strength_eyebrow", t.strengthEyebrow, "ข้อความเล็กเหนือหัวข้อ (Eyebrow)")} />
               </span>
+              {/* Fixed brand heading — same as the public Home page. */}
               <h2>
-                <InlineInput {...bind("strength_title", t.strengthTitle, "หัวข้อหลัก")} />
+                <GroupWordmark />
               </h2>
             </div>
             <div className="strength-signal">

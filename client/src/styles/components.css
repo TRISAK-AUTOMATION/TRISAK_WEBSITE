@@ -2748,3 +2748,24 @@
     transition: none;
   }
 }
+
+/* "TRISAK / GROUP" heading of the TRISAK GROUP section. */
+.group-wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  font-family: "Montserrat", var(--font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(44px, 6vw, 72px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.group-wordmark__top {
+  color: #111111;
+}
+
+.group-wordmark__bottom {
+  color: #1d3caf;
+}
