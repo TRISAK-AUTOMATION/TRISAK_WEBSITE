@@ -2503,6 +2503,20 @@
    ========================================================= */
 .group-section {
   overflow: hidden; /* side slides extend past the container */
+  /* Subtle silver low-poly background: a soft diagonal sheen over a
+     light faceted pattern, kept pale so the slides stay in front. */
+  background-color: #f3f4f7;
+  background-image: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.15) 40%,
+      rgba(255, 255, 255, 0.6) 55%,
+      rgba(255, 255, 255, 0.2) 100%
+    ),
+    url("../assets/patterns/silver-polygon.svg");
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat;
 }
 
 .group-slider {
