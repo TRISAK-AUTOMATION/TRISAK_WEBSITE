@@ -12,6 +12,7 @@ const FIELDS = [
   "strength1_title_en", "strength1_title_th", "strength1_body_en", "strength1_body_th",
   "strength2_title_en", "strength2_title_th", "strength2_body_en", "strength2_body_th",
   "strength3_title_en", "strength3_title_th", "strength3_body_en", "strength3_body_th",
+  "strength1_cert_image", "strength2_cert_image", "strength3_cert_image",
   "cta_title_line1_en", "cta_title_line1_th",
   "cta_title_line2_en", "cta_title_line2_th",
 ];

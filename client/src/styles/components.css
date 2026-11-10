@@ -2494,3 +2494,257 @@
   font-size: 13px;
   color: #b3372d;
 }
+
+/* =========================================================
+   TRISAK GROUP — 3-slide carousel (components/GroupSlider.jsx)
+   Center slide in front; the previous/next slides sit behind it,
+   smaller and faded, peeking out left and right. Press and drag
+   (mouse or touch) to move between slides.
+   ========================================================= */
+.group-section {
+  overflow: hidden; /* side slides extend past the container */
+}
+
+.group-slider {
+  --gs-w: 760px;
+  --gs-h: 420px;
+  --gs-step: 420px; /* horizontal distance between slide centers */
+  --gs-side-scale: 0.8;
+  --gs-duration: 0.6s;
+  --gs-easing: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.group-slider__viewport {
+  position: relative;
+  height: calc(var(--gs-h) + 40px);
+  margin: 40px 0 32px;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  outline: none;
+}
+
+.group-slider__viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.group-slide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--gs-w);
+  max-width: calc(100vw - 48px);
+  height: var(--gs-h);
+  box-sizing: border-box;
+  padding: 44px 48px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 2px);
+  transform: translate(-50%, -50%) translateX(calc(var(--gs-offset) * var(--gs-step) + var(--gs-drag, 0px)))
+    scale(var(--gs-scale, 1));
+  transition: transform var(--gs-duration) var(--gs-easing), opacity var(--gs-duration) ease,
+    box-shadow var(--gs-duration) ease, filter var(--gs-duration) ease;
+  will-change: transform, opacity;
+}
+
+.is-dragging .group-slide {
+  transition: none;
+}
+
+.group-slide--center {
+  --gs-scale: 1;
+  z-index: 3;
+  opacity: 1;
+  box-shadow: 0 24px 60px rgba(13, 41, 151, 0.16);
+}
+
+.group-slide--left,
+.group-slide--right {
+  --gs-scale: var(--gs-side-scale);
+  z-index: 1;
+  opacity: 0.55;
+  filter: saturate(0.6);
+  box-shadow: 0 8px 24px rgba(13, 41, 151, 0.08);
+  cursor: pointer;
+}
+
+.group-slide--hidden {
+  --gs-scale: 0.6;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Center slide content eases in a beat after the card arrives. */
+.group-slide__text,
+.group-slide__cert {
+  transition: opacity var(--gs-duration) ease, transform var(--gs-duration) var(--gs-easing);
+}
+
+.group-slide--center .group-slide__text,
+.group-slide--center .group-slide__cert {
+  transition-delay: 0.1s;
+}
+
+.group-slide--left .group-slide__text,
+.group-slide--right .group-slide__text {
+  opacity: 0.7;
+  transform: translateY(8px);
+}
+
+.group-slide--left .group-slide__cert,
+.group-slide--right .group-slide__cert {
+  transform: rotate(0deg) translateY(8px);
+}
+
+.group-slide__text {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 18px;
+}
+
+.group-slide__logo {
+  display: block;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+}
+
+.group-slide__index {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.group-slide__text h3 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.3;
+}
+
+.group-slide__text p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 36ch;
+}
+
+/* The frame follows the uploaded image's own shape (portrait or landscape),
+   so there are never empty bands around it — the image is only scaled
+   down to fit inside --gs-cert-max-w × --gs-cert-max-h. */
+.group-slide {
+  --gs-cert-max-h: 320px;
+}
+
+.group-slide__cert {
+  margin: 0;
+  flex: 0 1 auto;
+  max-width: 46%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(1.5deg);
+}
+
+.group-slide__cert img,
+.group-slide__cert-placeholder {
+  box-sizing: border-box;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(13, 41, 151, 0.12);
+}
+
+.group-slide__cert img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: var(--gs-cert-max-h);
+  background: #fff;
+}
+
+.group-slide__cert-placeholder {
+  width: 236px;
+  height: var(--gs-cert-max-h);
+  max-width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-panel);
+}
+
+@media (max-width: 1024px) {
+  .group-slider {
+    --gs-w: 640px;
+    --gs-h: 380px;
+    --gs-step: 340px;
+  }
+  .group-slide {
+    padding: 36px;
+    gap: 28px;
+  }
+  .group-slide {
+    --gs-cert-max-h: 260px;
+  }
+  .group-slide__cert-placeholder {
+    width: 190px;
+  }
+}
+
+/* Phone: stack text over the certificate; side slides fade further back. */
+@media (max-width: 640px) {
+  .group-slider {
+    --gs-w: 86vw;
+    --gs-h: 540px;
+    --gs-step: 70vw;
+    --gs-side-scale: 0.85;
+  }
+  .group-slide {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 28px 24px;
+    gap: 20px;
+  }
+  .group-slide--left,
+  .group-slide--right {
+    opacity: 0.3;
+  }
+  .group-slide__text h3 {
+    font-size: 21px;
+  }
+  .group-slide__text p {
+    font-size: 15px;
+  }
+  .group-slide {
+    --gs-cert-max-h: 240px;
+  }
+  .group-slide__cert {
+    flex: 1 1 auto;
+    max-width: 100%;
+    min-height: 0;
+    transform: none;
+  }
+  .group-slide__cert-placeholder {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group-slide,
+  .group-slide__text,
+  .group-slide__cert {
+    transition: none;
+  }
+}
