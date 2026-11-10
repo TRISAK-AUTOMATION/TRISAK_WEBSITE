@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 
+const APPLICATION_STATUS_LABELS = {
+  new: "ใหม่",
+  reviewing: "กำลังพิจารณา",
+  interview: "นัดสัมภาษณ์",
+  hired: "รับเข้าทำงาน",
+  rejected: "ไม่ผ่าน",
+};
+
 const STATUS_LABELS = {
   new: "New",
   in_progress: "In Progress",
@@ -87,6 +95,7 @@ export default function AdminDashboard() {
   const actionRequired = data?.actionRequired || [];
   const recentLeads = data?.recentLeads || [];
   const recentActivity = data?.recentActivity || [];
+  const recentApplications = data?.recentApplications || [];
   const contentStatus = data?.contentStatus || [];
   const maxContentCount = Math.max(1, ...contentStatus.map((c) => c.count));
 
@@ -169,6 +178,50 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="admin-list-table__date">{timeAgo(lead.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* 3b — recent job applications */}
+          <section className="dashboard-panel panel">
+            <div className="dashboard-panel__header">
+              <h2 className="dashboard-panel__title">คำขอสมัครงานล่าสุด</h2>
+              <Link to="/admin/career/applications" className="dashboard-view-link">
+                ดูทั้งหมด →
+              </Link>
+            </div>
+            {!loading && recentApplications.length === 0 && (
+              <p className="dashboard-empty">ยังไม่มีคำขอสมัครงาน</p>
+            )}
+            {recentApplications.length > 0 && (
+              <div className="admin-list-table-wrap">
+                <table className="admin-list-table">
+                  <thead>
+                    <tr>
+                      <th>ผู้สมัคร</th>
+                      <th>ตำแหน่ง</th>
+                      <th>สถานะ</th>
+                      <th>วันที่</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentApplications.map((app) => (
+                      <tr key={app.id}>
+                        <td>
+                          {app.full_name}
+                          <div className="admin-list-table__submeta">{app.email}</div>
+                        </td>
+                        <td className="admin-list-table__muted">{app.job_title || "—"}</td>
+                        <td>
+                          <span className={`lead-status-badge app-status-badge--${app.status}`}>
+                            {APPLICATION_STATUS_LABELS[app.status] || app.status}
+                          </span>
+                        </td>
+                        <td className="admin-list-table__date">{timeAgo(app.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
