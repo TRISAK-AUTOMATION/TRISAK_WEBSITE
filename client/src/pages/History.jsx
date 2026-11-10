@@ -3,16 +3,16 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 
-const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
+export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
 // A stat's unit/suffix attaches directly to symbols ("30+"), but gets a
 // space when it's a word ("30 years").
-const unitSep = (unit) => (/^\p{L}/u.test(unit) ? " " : "");
+export const unitSep = (unit) => (/^\p{L}/u.test(unit) ? " " : "");
 
 // One org-chart node plus, recursively, everything reporting to it. The
 // markup/classes match the original static chart: a node, a connector
 // line, then a row of its children.
-function OrgItem({ node, root = false }) {
+export function OrgItem({ node, root = false }) {
   const rich = Boolean(node.image || node.person);
   return (
     <div className="org-item">

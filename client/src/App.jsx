@@ -23,7 +23,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminHomeEditor from "./pages/admin/AdminHomeEditor.jsx";
 import AdminHomeAutomation from "./pages/admin/AdminHomeAutomation.jsx";
 import AdminHomeAutomationForm from "./pages/admin/AdminHomeAutomationForm.jsx";
-import AdminAboutEditor from "./pages/admin/AdminAboutEditor.jsx";
+import AdminHistoryEditor from "./pages/admin/AdminHistoryEditor.jsx";
 import AdminHistoryTimeline from "./pages/admin/AdminHistoryTimeline.jsx";
 import AdminHistoryTimelineForm from "./pages/admin/AdminHistoryTimelineForm.jsx";
 import AdminHistoryStats from "./pages/admin/AdminHistoryStats.jsx";
@@ -52,6 +52,12 @@ import AdminSiteSettings from "./pages/admin/AdminSiteSettings.jsx";
 import AdminMenu from "./pages/admin/AdminMenu.jsx";
 import AdminContactRequests from "./pages/admin/AdminContactRequests.jsx";
 import AdminPopup from "./pages/admin/AdminPopup.jsx";
+
+/** Sends bookmarks of the old /admin/about/... editor URLs to /admin/history/... */
+function AdminAboutRedirect() {
+  const { pathname, search } = useLocation();
+  return <Navigate to={pathname.replace(/^\/admin\/about/, "/admin/history") + search} replace />;
+}
 
 function ScrollToTop() {
   const { pathname, state, key } = useLocation();
@@ -130,16 +136,18 @@ export default function App() {
           <Route path="home/automation-solutions" element={<AdminHomeAutomation />} />
           <Route path="home/automation-solutions/new" element={<AdminHomeAutomationForm />} />
           <Route path="home/automation-solutions/:id/edit" element={<AdminHomeAutomationForm />} />
-          <Route path="about" element={<AdminAboutEditor />} />
-          <Route path="about/timeline" element={<AdminHistoryTimeline />} />
-          <Route path="about/timeline/new" element={<AdminHistoryTimelineForm />} />
-          <Route path="about/timeline/:id/edit" element={<AdminHistoryTimelineForm />} />
-          <Route path="about/statistics" element={<AdminHistoryStats />} />
-          <Route path="about/statistics/new" element={<AdminHistoryStatForm />} />
-          <Route path="about/statistics/:id/edit" element={<AdminHistoryStatForm />} />
-          <Route path="about/organization" element={<AdminHistoryOrg />} />
-          <Route path="about/organization/new" element={<AdminHistoryOrgForm />} />
-          <Route path="about/organization/:id/edit" element={<AdminHistoryOrgForm />} />
+          <Route path="history" element={<AdminHistoryEditor />} />
+          <Route path="history/timeline" element={<AdminHistoryTimeline />} />
+          <Route path="history/timeline/new" element={<AdminHistoryTimelineForm />} />
+          <Route path="history/timeline/:id/edit" element={<AdminHistoryTimelineForm />} />
+          <Route path="history/statistics" element={<AdminHistoryStats />} />
+          <Route path="history/statistics/new" element={<AdminHistoryStatForm />} />
+          <Route path="history/statistics/:id/edit" element={<AdminHistoryStatForm />} />
+          <Route path="history/organization" element={<AdminHistoryOrg />} />
+          <Route path="history/organization/new" element={<AdminHistoryOrgForm />} />
+          <Route path="history/organization/:id/edit" element={<AdminHistoryOrgForm />} />
+          {/* Old /admin/about URLs (the History editor's previous path) */}
+          <Route path="about/*" element={<AdminAboutRedirect />} />
           <Route path="products-page" element={<AdminProductsPageEditor />} />
           <Route path="contact" element={<AdminContactsPageEditor />} />
           <Route path="career" element={<AdminCareerJobs />} />

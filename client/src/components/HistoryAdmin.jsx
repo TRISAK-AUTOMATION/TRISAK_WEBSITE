@@ -14,13 +14,16 @@ import { AdminEditLayout, AdminLanguageSelect, AdminStatusToggle } from "./Admin
  * Add/Edit page with the EN/TH dropdown, status toggle and SuccessModal.
  */
 
-export const HISTORY_ADMIN_BASE = "/admin/about";
+export const HISTORY_ADMIN_BASE = "/admin/history";
+export const HISTORY_TIMELINE_PATH = `${HISTORY_ADMIN_BASE}/timeline`;
+export const HISTORY_STATS_PATH = `${HISTORY_ADMIN_BASE}/statistics`;
+export const HISTORY_ORG_PATH = `${HISTORY_ADMIN_BASE}/organization`;
 
 const TABS = [
-  { to: HISTORY_ADMIN_BASE, label: "ข้อความหน้า (Intro)", end: true },
-  { to: `${HISTORY_ADMIN_BASE}/timeline`, label: "ไทม์ไลน์ (Timeline)" },
-  { to: `${HISTORY_ADMIN_BASE}/statistics`, label: "สถิติ (Statistics)" },
-  { to: `${HISTORY_ADMIN_BASE}/organization`, label: "โครงสร้างองค์กร (Organization)" },
+  { to: HISTORY_ADMIN_BASE, label: "ข้อความหน้า (Content)", end: true },
+  { to: HISTORY_TIMELINE_PATH, label: "ไทม์ไลน์ (Timeline)" },
+  { to: HISTORY_STATS_PATH, label: "สถิติ (Statistics)" },
+  { to: HISTORY_ORG_PATH, label: "โครงสร้างองค์กร (Organization)" },
 ];
 
 /** Tab strip linking the four History editors (it lives inside the existing History menu item). */
@@ -41,13 +44,20 @@ export function AdminHistoryTabs() {
   );
 }
 
-/** Breadcrumb + tab strip shown at the top of every History sub-page. */
-export function HistoryPageHeader({ crumbs = [] }) {
+/**
+ * Breadcrumb + tab strip shown at the top of every History sub-page.
+ * `actions` renders on the right of the tab bar (language, Save button…).
+ */
+export function HistoryPageHeader({ crumbs = [], actions = null }) {
+  const trail = crumbs.length
+    ? [{ label: "ประวัติบริษัท (History)", to: HISTORY_ADMIN_BASE }, ...crumbs]
+    : [{ label: "ประวัติบริษัท (History)" }];
   return (
     <>
-      <AdminBreadcrumb items={[{ label: "ประวัติบริษัท (History)", to: HISTORY_ADMIN_BASE }, ...crumbs]} />
+      <AdminBreadcrumb items={trail} />
       <div className="admin-edit-tabbar">
         <AdminHistoryTabs />
+        {actions && <div className="admin-edit-tabbar__actions">{actions}</div>}
       </div>
     </>
   );

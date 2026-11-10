@@ -6,7 +6,7 @@ import AdminBreadcrumb from "./AdminBreadcrumb.jsx";
  * Same structure as the History editors (components/HistoryAdmin.jsx):
  * a tab strip inside the existing "Home" menu item, with the Save button
  * on the right-hand side of the tab bar. The language selector lives in the right sidebar,
- * exactly like /admin/about.
+ * exactly like /admin/history.
  */
 
 export const HOME_ADMIN_BASE = "/admin/home";
