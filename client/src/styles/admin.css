@@ -3014,3 +3014,25 @@ a.admin-edit-tab {
   border: 1px dashed var(--line-strong);
   border-radius: var(--radius);
 }
+
+/* Dashboard — job application status badges (pair with .lead-status-badge) */
+.app-status-badge--new {
+  background: #e7edff;
+  color: var(--accent-signal);
+}
+.app-status-badge--reviewing {
+  background: #fff4e0;
+  color: #8a5300;
+}
+.app-status-badge--interview {
+  background: #efe8fb;
+  color: #5a32a3;
+}
+.app-status-badge--hired {
+  background: #e7f6ea;
+  color: #1f7a38;
+}
+.app-status-badge--rejected {
+  background: var(--bg-panel-raised);
+  color: #6b6f7d;
+}

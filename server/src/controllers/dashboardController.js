@@ -18,6 +18,8 @@ export async function getDashboard(req, res) {
       missingDatasheetCount,
       recentLeads,
       recentActivity,
+      newApplicationsCount,
+      recentApplications,
     ] = await Promise.all([
       pool.query("SELECT COUNT(*)::int AS n FROM products"),
       pool.query("SELECT COUNT(*)::int AS n FROM categories"),
@@ -42,6 +44,11 @@ export async function getDashboard(req, res) {
         `SELECT id, action_type, description, created_at
          FROM activity_log ORDER BY created_at DESC LIMIT 8`
       ),
+      pool.query("SELECT COUNT(*)::int AS n FROM career_applications WHERE status = 'new'"),
+      pool.query(
+        `SELECT id, full_name, email, job_title, status, created_at
+         FROM career_applications ORDER BY created_at DESC LIMIT 5`
+      ),
     ]);
 
     const actionRequired = [
@@ -63,6 +70,12 @@ export async function getDashboard(req, res) {
         count: newLeadsCount.rows[0].n,
         link: "/admin/contact-requests?status=new",
       },
+      {
+        key: "new-applications",
+        label: "คำขอสมัครงานใหม่",
+        count: newApplicationsCount.rows[0].n,
+        link: "/admin/career/applications?status=new",
+      },
     ].filter((item) => item.count > 0);
 
     res.json({
@@ -78,6 +91,7 @@ export async function getDashboard(req, res) {
         interestLabel: interestLabel(r.interested_in),
       })),
       recentActivity: recentActivity.rows,
+      recentApplications: recentApplications.rows,
       contentStatus: [
         { label: "สินค้า (Products)", count: productsCount.rows[0].n },
         { label: "ซีรีย์ (Series)", count: seriesCount.rows[0].n },
