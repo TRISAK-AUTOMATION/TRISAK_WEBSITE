@@ -21,11 +21,6 @@ const GROUP_LOGOS = [
   { src: htcLogo, height: 66 },
 ];
 
-// Certificate image shown on the right of each TRISAK GROUP slide (same
-// order as the cards). Import the image file and put it here, e.g.
-//   import trisakCert from "../assets/certificates/trisak.jpg";
-// A null entry shows a placeholder frame instead.
-const GROUP_CERTIFICATES = [null, null, null];
 
 const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -167,7 +162,7 @@ export default function Home() {
               ...s,
               logo: GROUP_LOGOS[i]?.src,
               logoHeight: GROUP_LOGOS[i]?.height,
-              certificate: GROUP_CERTIFICATES[i],
+              certificate: homeContent?.[`strength${i + 1}_cert_image`] || null,
             }))}
           />
         </div>

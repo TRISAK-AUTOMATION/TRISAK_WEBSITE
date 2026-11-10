@@ -43,7 +43,7 @@ const FIELD_SUFFIXES = [
 ];
 
 function emptyForm() {
-  const form = { hero_bg_image: "" };
+  const form = { hero_bg_image: "", strength1_cert_image: "", strength2_cert_image: "", strength3_cert_image: "" };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -268,6 +268,18 @@ export default function AdminHomeEditor() {
                       {...bind(`strength${n}_body`, t.strengths[i]?.body, `จุดแข็งข้อที่ ${n} — รายละเอียด`)}
                     />
                   </p>
+                  <div className="home-admin__alt">
+                    <span>รูปใบ Certificate (แสดงด้านขวาของสไลด์ — ใช้ร่วมกันทั้งสองภาษา)</span>
+                    <ImageUploadField
+                      value={form[`strength${n}_cert_image`] || ""}
+                      accept="image/jpeg,image/png,image/webp"
+                      maxSizeMB={5}
+                      onChange={(url) => {
+                        setSuccess(false);
+                        setForm((f) => ({ ...f, [`strength${n}_cert_image`]: url }));
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
