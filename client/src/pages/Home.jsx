@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
-import SignalLine from "../components/SignalLine.jsx";
 import SolutionPillars from "../components/SolutionPillars.jsx";
+import GroupSlider from "../components/GroupSlider.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
 import { translations } from "../i18n/translations.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
@@ -20,6 +20,12 @@ const GROUP_LOGOS = [
   { src: faccoLogo, height: 48 },
   { src: htcLogo, height: 66 },
 ];
+
+// Certificate image shown on the right of each TRISAK GROUP slide (same
+// order as the cards). Import the image file and put it here, e.g.
+//   import trisakCert from "../assets/certificates/trisak.jpg";
+// A null entry shows a placeholder frame instead.
+const GROUP_CERTIFICATES = [null, null, null];
 
 const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -148,34 +154,22 @@ export default function Home() {
       )}
 
       {/* 02 — OUR STRENGTH */}
-      <section className="section strength-grid">
+      <section className="section strength-grid group-section">
         <div className="container">
           <SectionLabel
             eyebrow={hc("strength_eyebrow", t("home.strengthEyebrow"))}
             title={hc("strength_title", t("home.strengthTitle"))}
           />
-          <div className="strength-signal">
-            <SignalLine nodes={3} orientation="horizontal" />
-          </div>
-          <div className="grid cols-3">
-            {strengths.map((s, i) => (
-              <div className="grid-cell strength-block" key={i}>
-                {GROUP_LOGOS[i] ? (
-                  <div className="strength-block__logo-wrap">
-                    <img
-                      className="strength-block__logo"
-                      src={GROUP_LOGOS[i].src}
-                      alt={s.title}
-                      style={{ height: GROUP_LOGOS[i].height }}
-                    />
-                  </div>
-                ) : (
-                  <h3>{s.title}</h3>
-                )}
-                <p>{s.body}</p>
-              </div>
-            ))}
-          </div>
+          <GroupSlider
+            ariaLabel={hc("strength_title", t("home.strengthTitle"))}
+            certificatePlaceholder={lang === "th" ? "รูปใบ Certificate" : "Certificate"}
+            slides={strengths.map((s, i) => ({
+              ...s,
+              logo: GROUP_LOGOS[i]?.src,
+              logoHeight: GROUP_LOGOS[i]?.height,
+              certificate: GROUP_CERTIFICATES[i],
+            }))}
+          />
         </div>
       </section>
 
