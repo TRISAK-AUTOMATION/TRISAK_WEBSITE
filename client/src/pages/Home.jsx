@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
 import SolutionPillars from "../components/SolutionPillars.jsx";
-import GroupSlider from "../components/GroupSlider.jsx";
+import GroupSlider, { GroupWordmark } from "../components/GroupSlider.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
 import { translations } from "../i18n/translations.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
@@ -153,10 +153,10 @@ export default function Home() {
         <div className="container">
           <SectionLabel
             eyebrow={hc("strength_eyebrow", t("home.strengthEyebrow"))}
-            title={hc("strength_title", t("home.strengthTitle"))}
+            title={<GroupWordmark />}
           />
           <GroupSlider
-            ariaLabel={hc("strength_title", t("home.strengthTitle"))}
+            ariaLabel="TRISAK GROUP"
             certificatePlaceholder={lang === "th" ? "รูปใบ Certificate" : "Certificate"}
             slides={strengths.map((s, i) => ({
               ...s,

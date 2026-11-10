@@ -12,6 +12,17 @@ function relativeOffset(i, active, n) {
   return diff;
 }
 
+/** Two-line "TRISAK / GROUP" heading of the TRISAK GROUP section
+ *  (Montserrat black italic; GROUP in the brand blue). */
+export function GroupWordmark() {
+  return (
+    <span className="group-wordmark" aria-label="TRISAK GROUP">
+      <span className="group-wordmark__top" aria-hidden="true">TRISAK</span>
+      <span className="group-wordmark__bottom" aria-hidden="true">GROUP</span>
+    </span>
+  );
+}
+
 /**
  * TRISAK GROUP carousel: one large center slide with the previous/next
  * slides peeking out behind it on the left and right. Each slide has the
