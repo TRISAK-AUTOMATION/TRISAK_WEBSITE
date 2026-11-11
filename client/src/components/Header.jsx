@@ -52,7 +52,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header ref={headerRef} className={`site-header ${scrolled ? "is-scrolled" : ""}`}>
+    <header ref={headerRef} className={`site-header ${scrolled || open ? "is-scrolled" : ""}`}>
       <div className="container site-header__inner">
         <NavLink to="/" className="site-header__logo" onClick={() => setOpen(false)}>
           {headerLogo ? (

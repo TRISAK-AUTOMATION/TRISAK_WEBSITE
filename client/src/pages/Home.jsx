@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
+import Reveal from "../components/Reveal.jsx";
+import { unitSep } from "./History.jsx";
 import SolutionPillars from "../components/SolutionPillars.jsx";
 import GroupSlider, { GroupWordmark } from "../components/GroupSlider.jsx";
 import IndustriesSlider, { buildFallbackIndustries } from "../components/IndustriesSlider.jsx";
@@ -45,8 +47,13 @@ export default function Home() {
   // Automation Solutions cards: undefined = loading, null = request failed
   // (SolutionPillars shows its built-in fallback), array = the active cards.
   const [pillars, setPillars] = useState(undefined);
+  const [stats, setStats] = useState([]);
 
   useEffect(() => {
+    api
+      .getHistoryContent()
+      .then((data) => setStats(Array.isArray(data?.stats) ? data.stats : []))
+      .catch(() => setStats([]));
     api
       .getAutomationPillars()
       .then((data) => setPillars(Array.isArray(data) ? data : null))
@@ -72,6 +79,9 @@ export default function Home() {
   // Reads `${field}_${lang}` from the admin-editable home_content row,
   // falling back to the built-in translation if the DB row isn't
   // loaded yet (or hasn't been edited from its seeded default).
+  // `${base}_${lang}`, English when that translation is blank (as on History).
+  const pick = (row, base) => row[`${base}_${lang}`] || row[`${base}_en`] || "";
+
   const hc = (field, fallback) => {
     if (!homeContent) return fallback;
     const value = homeContent[`${field}_${lang}`];
@@ -116,7 +126,7 @@ export default function Home() {
           <h1>
             {hc("hero_title_line1", t("home.heroTitleLine1"))}
             <br />
-            {hc("hero_title_line2", t("home.heroTitleLine2"))}
+            <span className="hero__title-accent">{hc("hero_title_line2", t("home.heroTitleLine2"))}</span>
           </h1>
           <p className="hero__sub">{hc("hero_sub", t("home.heroSub"))}</p>
           <div className="hero__actions">
@@ -127,7 +137,26 @@ export default function Home() {
               {t("common.automationSolution")} <span className="btn-arrow">→</span>
             </Link>
           </div>
+
+          {/* Milestones — same data as History (Admin → History → Statistics) */}
+          {stats.length > 0 && (
+            <div className="hero-stats">
+              <span className="hero-stats__label">{t("history.statsTitle")}</span>
+              <div className="hero-stats__row">
+                {stats.map((s) => (
+                  <div className="hero-stats__cell" key={s.id}>
+                    <span className="hero-stats__num">
+                      {s.value}
+                      {pick(s, "unit") ? unitSep(pick(s, "unit")) + pick(s, "unit") : ""}
+                    </span>
+                    <span className="hero-stats__name">{pick(s, "label")}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+        <span className="hero__scroll" aria-hidden="true">Scroll</span>
       </section>
 
       {/* 02 — OUR CUSTOMERS */}
@@ -150,7 +179,7 @@ export default function Home() {
 
       {/* 02 — OUR STRENGTH */}
       <section className="section strength-grid group-section">
-        <div className="container">
+        <Reveal className="container">
           <SectionLabel
             eyebrow={hc("strength_eyebrow", t("home.strengthEyebrow"))}
             title={<GroupWordmark />}
@@ -165,12 +194,12 @@ export default function Home() {
               certificate: homeContent?.[`strength${i + 1}_cert_image`] || null,
             }))}
           />
-        </div>
+        </Reveal>
       </section>
 
       {/* 03 — PRODUCTS */}
       <section className="section">
-        <div className="container">
+        <Reveal className="container">
           <SectionLabel eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
           <div className="brand-strip">
             {(brands || BRANDS.map((name) => ({ id: name, name, logo_url: null }))).map((b) => (
@@ -199,27 +228,27 @@ export default function Home() {
               {t("common.viewProducts")} <span className="btn-arrow">→</span>
             </Link>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* 04 — AUTOMATION SOLUTIONS */}
       {/* hidden only when an admin has disabled every card */}
       {!(Array.isArray(pillars) && pillars.length === 0) && (
         <section className="section solutions-section">
-          <div className="container">
+          <Reveal className="container">
             <SectionLabel
               eyebrow={t("home.solutionsEyebrow")}
               title={t("home.solutionsTitle")}
               lede={t("home.solutionsLede")}
             />
             <SolutionPillars pillars={pillars} />
-          </div>
+          </Reveal>
         </section>
       )}
 
       {/* 05 — INDUSTRIES */}
       <section className="section industries-section">
-        <div className="container">
+        <Reveal className="container">
           <SectionLabel eyebrow={t("home.industriesEyebrow")} title={t("home.industriesTitle")} />
           <IndustriesSlider
             industries={
@@ -236,12 +265,12 @@ export default function Home() {
             exploreLabel={t("exploreMore")}
             lang={lang}
           />
-        </div>
+        </Reveal>
       </section>
 
       {/* 06 — CTA */}
       <section className="cta-band">
-        <div className="container cta-band__wrap">
+        <Reveal className="container cta-band__wrap">
           <h2>
             {hc("cta_title_line1", t("home.ctaTitleLine1"))}
             <br />
@@ -250,7 +279,7 @@ export default function Home() {
           <Link to="/contacts" className="btn btn-primary">
             {t("common.contactUs")} <span className="btn-arrow">→</span>
           </Link>
-        </div>
+        </Reveal>
       </section>
     </>
   );
