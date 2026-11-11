@@ -33,16 +33,24 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
   .split(",")
   .map((o) => o.trim());
 
+const isSameHost = (origin, req) => {
+  try {
+    return new URL(origin).host === req.get("host");
+  } catch {
+    return false;
+  }
+};
+
 app.use(
-  cors({
-    origin(origin, callback) {
-      // requests with no origin (curl, server-to-server) are always allowed
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS`));
-      }
-    },
+  cors((req, callback) => {
+    const origin = req.get("origin");
+    // no origin (curl, server-to-server) or the site itself (client/dist served
+    // below, e.g. via the public tunnel domain) is always allowed
+    if (!origin || isSameHost(origin, req) || allowedOrigins.includes(origin)) {
+      callback(null, { origin: true });
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
   })
 );
 app.use(express.json({ limit: "5mb" })); // generous enough for bulk product-import payloads
@@ -64,6 +72,14 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api", productsRoutes);
 app.use("/api", contactRoutes);
 app.use("/api", adminRoutes);
+
+// the built React site (client/dist), so the whole site lives on one origin;
+// any other GET falls back to index.html for client-side routes
+const clientDist = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientDist));
+app.get(/^\/(?!api\/|uploads\/).*/, (req, res, next) =>
+  res.sendFile(path.join(clientDist, "index.html"), (err) => err && next())
+);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
