@@ -140,7 +140,7 @@ export default function ProductsOverview() {
 
   return (
     <>
-      <section className={`hero hero--compact ${hasHeroBg ? "hero--has-bg" : ""}`}>
+      <section className={`hero hero--compact hero--products ${hasHeroBg ? "hero--has-bg" : ""}`}>
         {hasHeroBg && (
           <>
             <HeroSlideshow images={heroBgImages} />

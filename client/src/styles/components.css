@@ -249,6 +249,40 @@
   align-items: flex-end;
 }
 
+/* Products overview: short hero so Latest Products shows above the fold */
+.hero--products {
+  min-height: 0;
+  padding: 36px 0 32px;
+}
+.hero--products h1 {
+  font-size: clamp(2rem, 3.4vw, 3.25rem);
+  margin-bottom: 12px;
+}
+.hero--products .hero__meta {
+  margin-bottom: 10px;
+}
+.hero--products .hero__sub {
+  font-size: 1.05rem;
+  max-width: 60ch;
+  margin-bottom: 0;
+}
+.hero--products .catalog-search {
+  margin-top: 20px;
+}
+/* keep input + both selects on one row (long category names made it wrap) */
+.hero--products .catalog-search input {
+  flex-basis: 200px;
+}
+.hero--products .catalog-search select {
+  max-width: 200px;
+}
+.hero--products + .latest-products {
+  padding: 32px 0 40px;
+}
+.hero--products + .latest-products .latest-products__head {
+  margin-bottom: 20px;
+}
+
 /* =========================================================
    Strength blocks (Home)
    ========================================================= */
