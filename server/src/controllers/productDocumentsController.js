@@ -92,7 +92,7 @@ export async function createProductDocument(req, res) {
   }
 
   try {
-    const fileUrl = `${req.protocol}://${req.get("host")}${productDocumentsPublicPath(productId, req.file.filename)}`;
+    const fileUrl = productDocumentsPublicPath(productId, req.file.filename);
     const { rows } = await pool.query(
       `INSERT INTO product_documents (product_id, title, document_type, file_name, file_url, file_size, mime_type)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -138,7 +138,7 @@ export async function updateProductDocument(req, res) {
   const replacing = Boolean(req.file);
   const fileName = replacing ? sanitizeFileName(req.file.originalname) : existing.fileName;
   const fileUrl = replacing
-    ? `${req.protocol}://${req.get("host")}${productDocumentsPublicPath(productId, req.file.filename)}`
+    ? productDocumentsPublicPath(productId, req.file.filename)
     : existing.fileUrl;
   const fileSize = replacing ? req.file.size : existing.fileSize;
   const mimeType = replacing ? req.file.mimetype : existing.mimeType;

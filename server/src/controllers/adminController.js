@@ -524,7 +524,7 @@ export async function deleteSeries(req, res) {
 
 export async function uploadImage(req, res) {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  const url = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+  const url = `/uploads/${req.file.filename}`; // relative: works on LAN IP and public domain alike
   res.status(201).json({ url, filename: req.file.filename });
 }
 
