@@ -33,6 +33,7 @@ export const translations = {
       heroTitleLine2: "Engineering Solutions",
       heroSub:
         "TRISAK GROUP supplies genuine automation products and delivers engineering solutions built to keep your production running.",
+      heroStatsLabel: "Trusted By",
       strengthEyebrow: "Why TRISAK",
       strengthTitle: "Our Strength",
       strengths: [
@@ -450,6 +451,7 @@ export const translations = {
       heroTitleLine2: "โซลูชันด้านวิศวกรรม",
       heroSub:
         "TRISAK GROUP จำหน่ายสินค้าออโตเมชันของแท้ พร้อมให้บริการโซลูชันวิศวกรรมที่ออกแบบมาเพื่อให้สายการผลิตของคุณเดินเครื่องได้อย่างต่อเนื่อง",
+      heroStatsLabel: "Trusted By",
       strengthEyebrow: "ทำไมต้อง TRISAK",
       strengthTitle: "จุดแข็งของเรา",
       strengths: [

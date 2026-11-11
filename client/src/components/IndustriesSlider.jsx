@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 // Colors cycled for the fallback slides (when the DB has no data yet, or
@@ -58,7 +58,8 @@ const IndustrySlide = memo(function IndustrySlide({ industry, index, offset, onS
   // it currently is, so overlapping navigation never glitches).
   const isVisible = Math.abs(offset) <= 2;
   const style = {
-    transform: `translate3d(${slotOffsetExpr(offset)}, -50%, 0)`,
+    // --ind-drag: live drag distance set on the viewport, so slides follow the pointer
+    transform: `translate3d(calc(${slotOffsetExpr(offset)} + var(--ind-drag, 0px)), -50%, 0)`,
     opacity: isActive ? 1 : isVisible ? 0.85 : 0,
     zIndex: 10 - Math.abs(offset),
   };
@@ -84,18 +85,20 @@ const IndustrySlide = memo(function IndustrySlide({ industry, index, offset, onS
           : undefined
       }
     >
-      {industry.imageUrl && <img src={industry.imageUrl} alt="" className="industry-slide__bg" loading="lazy" />}
+      {industry.imageUrl && (
+        <img src={industry.imageUrl} alt="" className="industry-slide__bg" loading="lazy" draggable={false} />
+      )}
       <div className="industry-slide__overlay" style={{ backgroundColor: industry.overlayColor }} />
 
-      {/* Both orientations stay mounted and crossfade via the
-          .is-active/.is-inactive modifiers below — CSS can't animate
-          writing-mode itself, so a swap-in-place fade+transform is the
-          smooth substitute for "vertical becomes horizontal". */}
+      {/* Both orientations stay mounted. The side title is horizontal text
+          rotated -90°, so when its slide becomes active it swings flat (and
+          the big title swings in from vertical) — a real rotation, which
+          writing-mode can't animate. */}
       <div className={`industry-slide__content ${isActive ? "is-active" : "is-inactive"}`}>
         {industry.number && <span className="industry-slide__number">{industry.number}</span>}
         <h3 className="industry-slide__name">{displayName}</h3>
         <Bullets text={displayDescription} />
-        <Link to={industry.exploreLink || "/products"} className="industry-slide__explore" tabIndex={isActive ? 0 : -1}>
+        <Link to={industry.exploreLink || "/products"} className="industry-slide__explore" tabIndex={isActive ? 0 : -1} draggable={false}>
           {exploreLabel} <span className="btn-arrow">→</span>
         </Link>
       </div>
@@ -116,8 +119,16 @@ const IndustrySlide = memo(function IndustrySlide({ industry, index, offset, onS
 export default function IndustriesSlider({ industries, exploreLabel = "Explore More", lang = "en" }) {
   const n = industries.length;
   const [activeIndex, setActiveIndex] = useState(0);
-  const touchStartX = useRef(null);
-  const touchDeltaX = useRef(0);
+  // Pointer drag state (mouse, touch and pen alike). `moved` lets the click
+  // that ends a drag be swallowed, so dragging never selects a slide or
+  // follows the Explore link.
+  const drag = useRef({ startX: null, dx: 0, moved: false });
+  const [dragging, setDragging] = useState(false);
+  const lastWheel = useRef(0);
+  const viewportRef = useRef(null);
+  // Written straight to the viewport's style (not React state) so following
+  // the pointer doesn't re-render every slide on each pointermove.
+  const setDragOffset = (px) => viewportRef.current?.style.setProperty("--ind-drag", `${px}px`);
 
   // If the underlying list changes (e.g. language switch swaps in a
   // differently-sized fallback list), keep the index in range.
@@ -134,20 +145,49 @@ export default function IndustriesSlider({ industries, exploreLabel = "Explore M
     else if (e.key === "ArrowRight") next();
   };
 
-  const onTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchDeltaX.current = 0;
+  const SWIPE_THRESHOLD = 60;
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    drag.current = { startX: e.clientX, dx: 0, moved: false };
   };
-  const onTouchMove = (e) => {
-    if (touchStartX.current === null) return;
-    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  const onPointerMove = (e) => {
+    const d = drag.current;
+    if (d.startX === null) return;
+    d.dx = e.clientX - d.startX;
+    if (!d.moved && Math.abs(d.dx) > 6) {
+      d.moved = true;
+      setDragging(true);
+    }
+    if (d.moved) setDragOffset(d.dx);
   };
-  const onTouchEnd = () => {
-    const SWIPE_THRESHOLD = 40;
-    if (touchDeltaX.current > SWIPE_THRESHOLD) prev();
-    else if (touchDeltaX.current < -SWIPE_THRESHOLD) next();
-    touchStartX.current = null;
-    touchDeltaX.current = 0;
+  const endDrag = () => {
+    const d = drag.current;
+    if (d.startX === null) return;
+    if (d.dx > SWIPE_THRESHOLD) prev();
+    else if (d.dx < -SWIPE_THRESHOLD) next();
+    d.startX = null;
+    setDragging(false);
+  };
+  // Clear the drag offset in the same commit that turns transitions back on
+  // (is-dragging removed), so slides glide from where they were dropped into
+  // their new slots instead of snapping back first.
+  useLayoutEffect(() => {
+    if (!dragging) setDragOffset(0);
+  }, [dragging]);
+  const onClickCapture = (e) => {
+    if (!drag.current.moved) return;
+    drag.current.moved = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  // Horizontal wheel / trackpad swipe; vertical wheel is left to scroll the page.
+  const onWheel = (e) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 20) return;
+    const now = Date.now();
+    if (now - lastWheel.current < 600) return; // one slide per gesture
+    lastWheel.current = now;
+    if (e.deltaX > 0) next();
+    else prev();
   };
 
   const slides = useMemo(
@@ -160,11 +200,16 @@ export default function IndustriesSlider({ industries, exploreLabel = "Explore M
   return (
     <div className="industries-slider">
       <div
-        className="industries-slider__viewport"
+        ref={viewportRef}
+        className={`industries-slider__viewport${dragging ? " is-dragging" : ""}`}
         onKeyDown={onKeyDown}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={onClickCapture}
+        onWheel={onWheel}
         tabIndex={0}
         role="region"
         aria-roledescription="carousel"

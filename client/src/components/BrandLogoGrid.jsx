@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 /**
- * Displays brands as logo tiles in a 3-column x 2-row grid (6 visible
- * at once). If there are more than 6 brands, the grid scrolls
- * horizontally in pages of 6 — via trackpad/touch, or the arrow
+ * Displays brands as frameless logos in a single row, 3 visible at
+ * once. If there are more than 3 brands, the row scrolls
+ * horizontally in pages of 3 — via trackpad/touch, or the arrow
  * buttons, which only appear once there's actually more to see.
  *
  * `brands` items need { slug, name, logo_url }. `getHref(brand)`

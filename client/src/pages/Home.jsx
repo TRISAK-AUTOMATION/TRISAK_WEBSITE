@@ -141,7 +141,7 @@ export default function Home() {
           {/* Milestones — same data as History (Admin → History → Statistics) */}
           {stats.length > 0 && (
             <div className="hero-stats">
-              <span className="hero-stats__label">{t("history.statsTitle")}</span>
+              <span className="hero-stats__label">{t("home.heroStatsLabel")}</span>
               <div className="hero-stats__row">
                 {stats.map((s) => (
                   <div className="hero-stats__cell" key={s.id}>

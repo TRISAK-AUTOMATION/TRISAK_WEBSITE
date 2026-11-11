@@ -171,8 +171,7 @@
 
 /* =========================================================
    Brand logo grid (Products Overview → Browse by Brand)
-   3 columns x 2 rows visible (6 brands); horizontally scrollable
-   in pages of 6 when there are more.
+   One row, 3 brands visible; horizontally scrollable when there are more.
    ========================================================= */
 .brand-logo-scroll {
   position: relative;
@@ -180,7 +179,7 @@
 
 .brand-logo-grid {
   display: grid;
-  grid-template-rows: repeat(2, 140px);
+  grid-template-rows: 140px;
   grid-auto-flow: column;
   grid-auto-columns: calc((100% - 48px) / 3);
   gap: 24px;
@@ -201,15 +200,6 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: var(--bg-panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.brand-logo-cell:hover {
-  border-color: var(--line-strong);
-  background: var(--bg-panel-raised);
 }
 
 .brand-logo-cell__image {
@@ -277,9 +267,9 @@
 
 @media (max-width: 860px) {
   .brand-logo-grid {
-    grid-template-rows: repeat(2, 110px);
-    grid-auto-columns: calc((100% - 24px) / 2);
-    gap: 24px;
+    grid-template-rows: 110px;
+    grid-auto-columns: calc((100% - 32px) / 3);
+    gap: 16px;
   }
 
   .brand-logo-scroll__arrow--left {
