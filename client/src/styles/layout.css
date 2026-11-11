@@ -208,7 +208,9 @@
     top: 72px;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* explicit height: header's backdrop-filter makes it the containing block, so bottom:0 collapses the panel */
+    height: calc(100dvh - 72px);
+    overflow-y: auto;
     background: var(--bg);
     display: flex;
     flex-direction: column;
