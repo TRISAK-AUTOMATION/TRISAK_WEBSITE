@@ -396,18 +396,30 @@
   }
 }
 
+/* Inner-page hero (every page but Home): short, so the page content starts
+   above the fold — originally tuned on Products. */
 .hero--compact {
-  min-height: 52vh;
-  --hero-pt: 150px;
-  padding-bottom: 72px;
-  align-items: flex-end;
-}
-
-/* Products overview: short hero so Latest Products shows above the fold */
-.hero--products {
-  min-height: 0;
+  /* same height as the Products hero (whose search row makes it the tallest);
+     content sits at the bottom */
+  min-height: calc(324px + var(--hero-under-header, 0px));
   --hero-pt: 36px;
   padding-bottom: 32px;
+  align-items: flex-end;
+}
+.hero--compact h1 {
+  font-size: clamp(2rem, 3.4vw, 3.25rem);
+  margin-bottom: 12px;
+}
+.hero--compact .hero__meta {
+  margin-bottom: 10px;
+}
+.hero--compact .hero__sub {
+  font-size: 1.05rem;
+  max-width: 60ch;
+  margin-bottom: 20px;
+}
+.hero--compact .hero__sub:last-child {
+  margin-bottom: 0;
 }
 
 /* The page's first hero slides up under the fixed header, so the header
@@ -420,20 +432,9 @@
   min-height: 100vh;
   min-height: 100svh;
 }
-.hero--products h1 {
-  font-size: clamp(2rem, 3.4vw, 3.25rem);
-  margin-bottom: 12px;
-}
-.hero--products .hero__meta {
-  margin-bottom: 10px;
-}
-.hero--products .hero__sub {
-  font-size: 1.05rem;
-  max-width: 60ch;
-  margin-bottom: 0;
-}
+/* Products overview hero: search row */
 .hero--products .catalog-search {
-  margin-top: 20px;
+  margin-top: 0;
 }
 /* keep input + both selects on one row (long category names made it wrap) */
 .hero--products .catalog-search input {
@@ -955,6 +956,21 @@
      transition) to this subtree only, so it can never trigger a reflow
      of the rest of the page */
   contain: layout paint;
+  /* mouse drag to change slides; touch keeps vertical page scrolling */
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.industries-slider__viewport.is-dragging,
+.industries-slider__viewport.is-dragging .industry-slide {
+  cursor: grabbing;
+}
+
+/* follow the pointer 1:1 while dragging (same as the TRISAK GROUP slider) */
+.industries-slider__viewport.is-dragging .industry-slide {
+  transition: none;
 }
 
 .industry-slide {
@@ -982,7 +998,7 @@
   width: var(--ind-center-w);
   height: var(--ind-center-h);
   margin-left: calc(var(--ind-center-w) / -2);
-  cursor: default;
+  cursor: inherit;
 }
 
 .industry-slide--side {
@@ -1058,6 +1074,18 @@
   line-height: 1.15;
   font-weight: 600;
   color: #fff;
+  /* swings from vertical (side slide) to horizontal as the slide activates */
+  transform-origin: left bottom;
+  transition: transform var(--ind-duration) var(--ind-easing);
+}
+
+.industry-slide__content.is-inactive .industry-slide__name {
+  transform: rotate(-90deg);
+}
+
+.industry-slide__content.is-active .industry-slide__name {
+  transform: rotate(0deg);
+  transition-delay: 0.12s;
 }
 
 .industry-slide__bullets {
@@ -1124,13 +1152,11 @@
 
 .industry-slide__vertical.is-active {
   opacity: 1;
-  transform: scale(1);
   transition-delay: 0.08s;
 }
 
 .industry-slide__vertical.is-inactive {
   opacity: 0;
-  transform: scale(0.96);
   pointer-events: none;
 }
 
@@ -1142,16 +1168,28 @@
   writing-mode: vertical-rl;
 }
 
+/* Horizontal text turned -90° about its left edge (reads bottom-to-top),
+   rather than writing-mode, so it can rotate back to flat when the slide
+   becomes active. */
 .industry-slide__vname {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  transform-origin: left center;
+  transform: rotate(-90deg);
+  transition: transform var(--ind-duration) var(--ind-easing);
+  white-space: nowrap;
+  max-width: calc(var(--ind-side-h) - 100px);
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: #fff;
-  max-height: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.industry-slide__vertical.is-inactive .industry-slide__vname {
+  transform: rotate(0deg);
 }
 
 /* ---- navigation: arrows + pagination dots ---- */
@@ -1249,6 +1287,8 @@
   .industry-slide,
   .industry-slide__content,
   .industry-slide__vertical,
+  .industry-slide__name,
+  .industry-slide__vname,
   .industry-slide__overlay,
   .industries-slider__dot {
     transition-duration: 0.01ms !important;
