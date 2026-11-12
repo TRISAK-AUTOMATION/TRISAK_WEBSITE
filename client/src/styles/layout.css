@@ -259,9 +259,15 @@
 
 /* ---------- footer ---------- */
 .site-footer {
-  border-top: 1px solid var(--line);
+  /* Blue footer: re-point text/line tokens to white so every child follows. */
+  --text: #fff;
+  --text-muted: rgba(255, 255, 255, 0.85);
+  --text-faint: rgba(255, 255, 255, 0.65);
+  --line: rgba(255, 255, 255, 0.2);
+  --accent-tech: #fff;
   padding: 72px 0 32px;
-  background: var(--bg-panel);
+  background: var(--accent-signal);
+  color: var(--text);
 }
 
 .site-footer__grid {
@@ -287,6 +293,8 @@
   object-fit: contain;
   display: block;
   margin-bottom: 12px;
+  /* Render any uploaded logo as solid white on the blue background. */
+  filter: brightness(0) invert(1);
 }
 
 .site-footer__tagline {
