@@ -572,6 +572,7 @@ CREATE TABLE site_settings (
   footer_logo_url   VARCHAR(255),
   favicon_url       VARCHAR(255),
   header_visible    BOOLEAN NOT NULL DEFAULT TRUE,
+  glass_buttons     BOOLEAN NOT NULL DEFAULT FALSE,
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

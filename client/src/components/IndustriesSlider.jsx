@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import Chevron from "./Chevron.jsx";
 
 // Colors cycled for the fallback slides (when the DB has no data yet, or
 // for the Thai UI, since the database currently only stores English
@@ -230,7 +231,7 @@ export default function IndustriesSlider({ industries, exploreLabel = "Explore M
 
       <div className="industries-slider__nav">
         <button type="button" className="industries-slider__arrow" onClick={prev} aria-label="Previous industry">
-          ←
+          <Chevron dir="left" />
         </button>
         <div className="industries-slider__dots">
           {industries.map((ind, i) => (
@@ -245,7 +246,7 @@ export default function IndustriesSlider({ industries, exploreLabel = "Explore M
           ))}
         </div>
         <button type="button" className="industries-slider__arrow" onClick={next} aria-label="Next industry">
-          →
+          <Chevron dir="right" />
         </button>
       </div>
     </div>

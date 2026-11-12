@@ -2,6 +2,11 @@ import pool from "../config/db.js";
 import { logActivity } from "../utils/activityLog.js";
 
 const FIELDS = ["header_logo_url", "footer_logo_url", "favicon_url"];
+// Optional booleans: older clients that omit them never flip them by accident.
+// Value is the default used when the settings row is first created.
+const BOOL_FIELDS = { header_visible: true, glass_buttons: false };
+const BOOL_NAMES = Object.keys(BOOL_FIELDS);
+const LOG_MESSAGE = "อัปเดตการตั้งค่าเว็บไซต์ (โลโก้ / Favicon / การแสดง Header / สไตล์ปุ่ม)";
 
 export async function getSiteSettings(req, res) {
   try {
@@ -16,42 +21,42 @@ export async function getSiteSettings(req, res) {
 export async function updateSiteSettings(req, res) {
   const body = req.body || {};
 
-  // header_visible is optional so older clients that only send the logo
-  // fields never flip it by accident. When present it must be a boolean.
-  let headerVisible = null;
-  if (body.header_visible !== undefined) {
-    if (typeof body.header_visible !== "boolean") {
-      return res.status(400).json({ error: "header_visible must be true or false" });
+  const bools = [];
+  for (const name of BOOL_NAMES) {
+    const v = body[name];
+    if (v !== undefined && typeof v !== "boolean") {
+      return res.status(400).json({ error: `${name} must be true or false` });
     }
-    headerVisible = body.header_visible;
+    bools.push(v ?? null);
   }
-  const values = [...FIELDS.map((f) => body[f] ?? null), headerVisible];
+  const values = [...FIELDS.map((f) => body[f] ?? null), ...bools];
 
   try {
     const { rows: existing } = await pool.query("SELECT id FROM site_settings ORDER BY id LIMIT 1");
 
     if (existing.length) {
-      const setClause = FIELDS.map((f, i) => `${f} = $${i + 1}`).join(", ");
-      const vIdx = FIELDS.length + 1;
+      const sets = [
+        ...FIELDS.map((f, i) => `${f} = $${i + 1}`),
+        ...BOOL_NAMES.map((b, i) => `${b} = COALESCE($${FIELDS.length + i + 1}, ${b})`),
+      ].join(", ");
       const { rows } = await pool.query(
-        `UPDATE site_settings
-            SET ${setClause},
-                header_visible = COALESCE($${vIdx}, header_visible),
-                updated_at = now()
-          WHERE id = $${vIdx + 1} RETURNING *`,
+        `UPDATE site_settings SET ${sets}, updated_at = now()
+          WHERE id = $${values.length + 1} RETURNING *`,
         [...values, existing[0].id]
       );
-      logActivity("settings_updated", "อัปเดตการตั้งค่าเว็บไซต์ (โลโก้ / Favicon / การแสดง Header)");
+      logActivity("settings_updated", LOG_MESSAGE);
       return res.json(rows[0]);
     }
 
-    const columns = [...FIELDS, "header_visible"].join(", ");
-    const placeholders = values.map((_, i) => (i === FIELDS.length ? `COALESCE($${i + 1}, TRUE)` : `$${i + 1}`)).join(", ");
+    const columns = [...FIELDS, ...BOOL_NAMES].join(", ");
+    const placeholders = values
+      .map((_, i) => (i < FIELDS.length ? `$${i + 1}` : `COALESCE($${i + 1}, ${BOOL_FIELDS[BOOL_NAMES[i - FIELDS.length]]})`))
+      .join(", ");
     const { rows } = await pool.query(
       `INSERT INTO site_settings (${columns}) VALUES (${placeholders}) RETURNING *`,
       values
     );
-    logActivity("settings_updated", "อัปเดตการตั้งค่าเว็บไซต์ (โลโก้ / Favicon / การแสดง Header)");
+    logActivity("settings_updated", LOG_MESSAGE);
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);

@@ -5,7 +5,7 @@ import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 
 function emptyForm() {
-  return { header_logo_url: "", footer_logo_url: "", favicon_url: "", header_visible: true };
+  return { header_logo_url: "", footer_logo_url: "", favicon_url: "", header_visible: true, glass_buttons: false };
 }
 
 export default function AdminSiteSettings() {
@@ -83,6 +83,25 @@ export default function AdminSiteSettings() {
               <span className="admin-toggle__thumb" />
             </span>
             {form.header_visible !== false ? "เปิด — แสดง Header" : "ปิด — ซ่อน Header"}
+          </label>
+        </div>
+
+        <div className="admin-form__section panel">
+          <h3>ปุ่ม — สไตล์ Liquid Glass</h3>
+          <p className="admin-form__hint">
+            เปิดเพื่อให้ปุ่มต่างๆ บนหน้าเว็บไซต์ (เช่น Request Quotation, Contact Us) เป็นแบบกระจกใส Liquid Glass
+            ปิดเพื่อกลับไปใช้ปุ่มแบบปัจจุบัน ไม่มีผลกับหน้า Admin
+          </p>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={form.glass_buttons === true}
+              onChange={(e) => update("glass_buttons", e.target.checked)}
+            />
+            <span className="admin-toggle__track">
+              <span className="admin-toggle__thumb" />
+            </span>
+            {form.glass_buttons === true ? "เปิด — ปุ่ม Liquid Glass" : "ปิด — ปุ่มแบบปัจจุบัน"}
           </label>
         </div>
 

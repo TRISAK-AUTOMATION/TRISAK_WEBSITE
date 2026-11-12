@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
+import BrandLogoGrid from "../components/BrandLogoGrid.jsx";
 import Reveal from "../components/Reveal.jsx";
 import { unitSep } from "./History.jsx";
 import SolutionPillars from "../components/SolutionPillars.jsx";
@@ -201,17 +202,10 @@ export default function Home() {
       <section className="section">
         <Reveal className="container">
           <SectionLabel eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
-          <div className="brand-strip">
-            {(brands || BRANDS.map((name) => ({ id: name, name, logo_url: null }))).map((b) => (
-              <span className="brand-strip__item" key={b.id}>
-                {b.logo_url ? (
-                  <img className="brand-strip__logo" src={b.logo_url} alt={b.name} />
-                ) : (
-                  <span className="brand-strip__name">{b.name}</span>
-                )}
-              </span>
-            ))}
-          </div>
+          <BrandLogoGrid
+            brands={brands || BRANDS.map((name) => ({ slug: name.toLowerCase(), name, logo_url: null }))}
+            getHref={(b) => `/products/${b.slug}`}
+          />
           <div className="products-cta-row">
             <div className="tag-list">
               {productTags.map((tag) => (
