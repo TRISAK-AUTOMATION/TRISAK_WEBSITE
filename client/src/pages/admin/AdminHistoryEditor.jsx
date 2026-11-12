@@ -191,7 +191,7 @@ export default function AdminHistoryEditor() {
 
       <div className="home-admin__page history-admin__page">
         {/* HERO */}
-        <section className={`hero hero--compact${form.hero_bg_image ? " hero--has-bg" : ""}`}>
+        <section className={`hero hero--compact hero--centered${form.hero_bg_image ? " hero--has-bg" : ""}`}>
           {form.hero_bg_image && (
             <>
               <HeroBgMedia src={form.hero_bg_image} />

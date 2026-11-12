@@ -3,6 +3,7 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 import HeroBgMedia from "../components/HeroBgMedia.jsx";
+import BrandLogoGrid from "../components/BrandLogoGrid.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -10,30 +11,18 @@ export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 // space when it's a word ("30 years").
 export const unitSep = (unit) => (/^\p{L}/u.test(unit) ? " " : "");
 
-// One org-chart node plus, recursively, everything reporting to it. The
-// markup/classes match the original static chart: a node, a connector
-// line, then a row of its children.
-export function OrgItem({ node, root = false }) {
-  const rich = Boolean(node.image || node.person);
-  return (
-    <div className="org-item">
-      <div className={`org-node${root ? " org-node--root" : ""}${rich ? " org-node--rich" : ""}`}>
-        {node.image && <img className="org-node__img" src={node.image} alt="" loading="lazy" />}
-        {rich ? <span>{node.name}</span> : node.name}
-        {node.person && <span className="org-node__person">{node.person}</span>}
-      </div>
-      {node.children.length > 0 && (
-        <>
-          <div className="org-connector" />
-          <div className="org-branch">
-            {node.children.map((child) => (
-              <OrgItem key={child.id} node={child} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+// Partners & Brands: the BRANDS from Admin > Brands (for their logos), in
+// BRANDS order. A brand missing from the DB still shows as its name.
+export function PartnerBrands({ brands }) {
+  const items = BRANDS.map(
+    (name) =>
+      (brands || []).find((b) => b.name?.trim().toUpperCase() === name) || {
+        slug: name.toLowerCase(),
+        name,
+        logo_url: null,
+      }
   );
+  return <BrandLogoGrid brands={items} getHref={(b) => `/products/${b.slug}`} />;
 }
 
 export default function History() {
@@ -44,8 +33,13 @@ export default function History() {
   // net for when that request fails, so the page never renders empty.
   const [historyContent, setHistoryContent] = useState(null);
   const [historyFailed, setHistoryFailed] = useState(false);
+  const [brands, setBrands] = useState(null);
 
   useEffect(() => {
+    api
+      .getBrands()
+      .then(setBrands)
+      .catch(() => setBrands(null));
     api
       .getAboutContent()
       .then(setAboutContent)
@@ -61,7 +55,6 @@ export default function History() {
 
   let timeline = [];
   let stats = [];
-  let orgRoots = [];
   if (historyContent) {
     timeline = historyContent.timeline.map((m) => ({
       id: m.id,
@@ -76,26 +69,9 @@ export default function History() {
       unit: pick(s, "unit"),
       label: pick(s, "label"),
     }));
-    const toNode = (n) => ({
-      id: n.id,
-      name: pick(n, "name"),
-      person: pick(n, "person"),
-      image: n.image_url,
-      children: n.children.map(toNode),
-    });
-    orgRoots = historyContent.org.map(toNode);
   } else if (historyFailed) {
     timeline = t("history.milestones").map((m) => ({ id: m.title, ...m, body: m.body, image: null }));
     stats = t("history.stats").map((s) => ({ id: s.label, num: s.num, unit: "", label: s.label }));
-    orgRoots = [
-      {
-        id: "root",
-        name: "TRISAK GROUP",
-        person: "",
-        image: null,
-        children: t("history.structureNodes").map((name) => ({ id: name, name, person: "", image: null, children: [] })),
-      },
-    ];
   }
 
   // Reads `${field}_${lang}` from the admin-editable about_content
@@ -111,7 +87,7 @@ export default function History() {
 
   return (
     <>
-      <section className={`hero hero--compact${heroBgImage ? " hero--has-bg" : ""}`}>
+      <section className={`hero hero--compact hero--centered${heroBgImage ? " hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
             <HeroBgMedia src={heroBgImage} />
@@ -174,25 +150,6 @@ export default function History() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel eyebrow={t("history.structureEyebrow")} title={t("history.structureTitle")} />
-          {orgRoots.length > 0 && (
-            <div className="org-diagram panel">
-              {orgRoots.length === 1 ? (
-                <OrgItem node={orgRoots[0]} root />
-              ) : (
-                <div className="org-branch">
-                  {orgRoots.map((node) => (
-                    <OrgItem key={node.id} node={node} root />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
           <SectionLabel
             eyebrow={t("history.experienceEyebrow")}
             title={t("history.experienceTitle")}
@@ -203,14 +160,8 @@ export default function History() {
 
       <section className="section">
         <div className="container">
-          <SectionLabel index="06" eyebrow={t("history.partnersEyebrow")} title={t("history.partnersTitle")} />
-          <div className="brand-strip">
-            {BRANDS.map((b) => (
-              <span className="brand-strip__name" key={b}>
-                {b}
-              </span>
-            ))}
-          </div>
+          <SectionLabel eyebrow={t("history.partnersEyebrow")} title={t("history.partnersTitle")} />
+          <PartnerBrands brands={brands} />
         </div>
       </section>
     </>

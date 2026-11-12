@@ -43,7 +43,7 @@ export default function AutomationSolution() {
 
   return (
     <>
-      <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
+      <section className={`hero hero--compact hero--centered ${heroBgImage ? "hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
             <HeroBgMedia src={heroBgImage} />

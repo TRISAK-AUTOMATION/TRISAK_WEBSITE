@@ -427,6 +427,11 @@
 .hero--compact .hero__sub:last-child {
   margin-bottom: 0;
 }
+/* History / Automation Solutions / Contact / Career: text vertically centered
+   (top padding already includes the header offset, so this centers below it) */
+.hero--centered {
+  align-items: center;
+}
 
 /* The page's first hero slides up under the fixed header, so the header
    (transparent until scrolled, layout.css) sits on the hero background. */
