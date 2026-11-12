@@ -129,7 +129,7 @@ export default function Career() {
   return (
     <>
       {/* 1. Hero — admin-editable (Admin > ตำแหน่งงาน > Hero), falls back to translations */}
-      <section className={`hero hero--compact career-hero${heroBgImage ? " hero--has-bg" : ""}`}>
+      <section className={`hero hero--compact hero--centered career-hero${heroBgImage ? " hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
             <HeroBgMedia src={heroBgImage} />

@@ -365,7 +365,7 @@ export default function AdminCareerJobs() {
 
       {tab === "hero" && (
         <div className="career-admin__hero-wrap">
-          <section className={`hero hero--compact career-hero career-admin__hero${shared.hero_bg_image ? " hero--has-bg" : ""}`}>
+          <section className={`hero hero--compact hero--centered career-hero career-admin__hero${shared.hero_bg_image ? " hero--has-bg" : ""}`}>
             {shared.hero_bg_image && (
               <>
                 <HeroBgMedia src={shared.hero_bg_image} />
