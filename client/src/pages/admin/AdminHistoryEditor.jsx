@@ -7,6 +7,7 @@ import {
   HISTORY_STATS_PATH,
   HISTORY_ORG_PATH,
 } from "../../components/HistoryAdmin.jsx";
+import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import { OrgItem, unitSep, BRANDS } from "../History.jsx";
@@ -32,7 +33,7 @@ const FIELD_SUFFIXES = [
 ];
 
 function emptyForm() {
-  const form = {};
+  const form = { hero_bg_image: "" };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -189,7 +190,13 @@ export default function AdminHistoryEditor() {
 
       <div className="home-admin__page history-admin__page">
         {/* HERO */}
-        <section className="hero hero--compact">
+        <section className={`hero hero--compact${form.hero_bg_image ? " hero--has-bg" : ""}`}>
+          {form.hero_bg_image && (
+            <>
+              <div className="hero__bg-image" style={{ backgroundImage: `url(${form.hero_bg_image})` }} aria-hidden="true" />
+              <div className="hero__bg-scrim" aria-hidden="true" />
+            </>
+          )}
           <div className="hero__grid-overlay" aria-hidden="true" />
           <div className="container hero__content">
             <span className="hero__meta">
@@ -203,6 +210,17 @@ export default function AdminHistoryEditor() {
             </p>
           </div>
         </section>
+
+        <div className="panel home-admin__hero-bg">
+          <span className="admin-edit-sidebar__label">ภาพพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
+          <ImageUploadField
+            value={form.hero_bg_image || ""}
+            onChange={(url) => {
+              setSuccess(false);
+              setForm((f) => ({ ...f, hero_bg_image: url }));
+            }}
+          />
+        </div>
 
         {/* INTRODUCTION */}
         <section className="section">
