@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
+import HeroBgMedia from "../components/HeroBgMedia.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -106,9 +107,17 @@ export default function History() {
     return value || fallback;
   };
 
+  const heroBgImage = aboutContent?.hero_bg_image || "";
+
   return (
     <>
-      <section className="hero hero--compact">
+      <section className={`hero hero--compact${heroBgImage ? " hero--has-bg" : ""}`}>
+        {heroBgImage && (
+          <>
+            <HeroBgMedia src={heroBgImage} />
+            <div className="hero__bg-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
           <span className="hero__meta">{ac("hero_meta", t("history.heroMeta"))}</span>

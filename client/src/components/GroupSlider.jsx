@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import Chevron from "./Chevron.jsx";
 
 // How far (px) a mouse/touch drag has to travel before it counts as
 // "go to the next/previous slide" when released.
@@ -135,7 +136,7 @@ export default function GroupSlider({ slides, certificatePlaceholder = "Certific
 
       <div className="industries-slider__nav">
         <button type="button" className="industries-slider__arrow" onClick={() => goTo(active - 1)} aria-label="Previous">
-          ←
+          <Chevron dir="left" />
         </button>
         <div className="industries-slider__dots">
           {slides.map((s, i) => (
@@ -150,7 +151,7 @@ export default function GroupSlider({ slides, certificatePlaceholder = "Certific
           ))}
         </div>
         <button type="button" className="industries-slider__arrow" onClick={() => goTo(active + 1)} aria-label="Next">
-          →
+          <Chevron dir="right" />
         </button>
       </div>
     </div>

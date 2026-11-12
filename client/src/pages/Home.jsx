@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import SectionLabel from "../components/SectionLabel.jsx";
+import BrandLogoGrid from "../components/BrandLogoGrid.jsx";
 import Reveal from "../components/Reveal.jsx";
 import { unitSep } from "./History.jsx";
 import SolutionPillars from "../components/SolutionPillars.jsx";
@@ -13,6 +14,7 @@ import { LISTING_BASE_PATH } from "../utils/productFilterUrl.js";
 import trisakLogo from "../assets/logos/trisak.png";
 import faccoLogo from "../assets/logos/facco.png";
 import htcLogo from "../assets/logos/htc.png";
+import HeroBgMedia from "../components/HeroBgMedia.jsx";
 
 // Company logos for the three "Our Strength" cards (same order as the cards).
 // Heights are tuned per logo so all three have the same visual size (equal
@@ -112,11 +114,7 @@ export default function Home() {
       <section className={`hero hero--home ${heroBgImage ? "hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
-            <div
-              className="hero__bg-image"
-              style={{ backgroundImage: `url(${heroBgImage})` }}
-              aria-hidden="true"
-            />
+            <HeroBgMedia src={heroBgImage} />
             <div className="hero__bg-scrim" aria-hidden="true" />
           </>
         )}
@@ -201,17 +199,10 @@ export default function Home() {
       <section className="section">
         <Reveal className="container">
           <SectionLabel eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
-          <div className="brand-strip">
-            {(brands || BRANDS.map((name) => ({ id: name, name, logo_url: null }))).map((b) => (
-              <span className="brand-strip__item" key={b.id}>
-                {b.logo_url ? (
-                  <img className="brand-strip__logo" src={b.logo_url} alt={b.name} />
-                ) : (
-                  <span className="brand-strip__name">{b.name}</span>
-                )}
-              </span>
-            ))}
-          </div>
+          <BrandLogoGrid
+            brands={brands || BRANDS.map((name) => ({ slug: name.toLowerCase(), name, logo_url: null }))}
+            getHref={(b) => `/products/${b.slug}`}
+          />
           <div className="products-cta-row">
             <div className="tag-list">
               {productTags.map((tag) => (

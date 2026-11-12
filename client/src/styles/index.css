@@ -227,6 +227,90 @@ p {
   transform: translateX(3px);
 }
 
+/* ---------- buttons: Liquid Glass (Admin > Settings > Website, <html>.glass-buttons) ---------- */
+.glass-buttons .btn {
+  position: relative;
+  isolation: isolate;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.22));
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.25),
+    0 6px 20px rgba(13, 41, 151, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+/* glossy top highlight */
+.glass-buttons .btn::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px 50% 1px;
+  border-radius: 999px 999px 40% 40% / 999px 999px 100% 100%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glass-buttons .btn:hover {
+  color: var(--accent-tech);
+  border-color: rgba(255, 255, 255, 0.75);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.32));
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+    0 10px 28px rgba(13, 41, 151, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.glass-buttons .btn:active {
+  transform: translateY(0);
+}
+
+.glass-buttons .btn-primary {
+  color: var(--on-accent);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, rgba(48, 82, 214, 0.82), rgba(13, 41, 151, 0.78));
+}
+
+.glass-buttons .btn-primary::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0));
+}
+
+.glass-buttons .btn-primary:hover {
+  color: var(--on-accent);
+  border-color: rgba(255, 255, 255, 0.45);
+  background: linear-gradient(180deg, rgba(60, 96, 230, 0.88), rgba(21, 55, 158, 0.85));
+}
+
+.glass-buttons .btn:disabled {
+  opacity: 0.6;
+  transform: none;
+  cursor: not-allowed;
+}
+
+/* No backdrop-filter support: keep text readable with a more opaque fill. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-buttons .btn {
+    background: rgba(255, 255, 255, 0.85);
+  }
+  .glass-buttons .btn-primary {
+    background: var(--accent-signal);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-buttons .btn,
+  .glass-buttons .btn:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
 /* ---------- section scaffolding ---------- */
 .section {
   padding: 96px 0;

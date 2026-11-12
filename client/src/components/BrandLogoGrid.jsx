@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import Chevron from "./Chevron.jsx";
 
 /**
  * Displays brands as frameless logos in a single row, 3 visible at
@@ -48,7 +49,7 @@ export default function BrandLogoGrid({ brands, getHref }) {
         aria-label="Scroll left"
         tabIndex={canScrollLeft ? 0 : -1}
       >
-        ‹
+        <Chevron dir="left" />
       </button>
 
       <div className="brand-logo-grid" ref={scrollRef} onScroll={updateScrollState}>
@@ -72,7 +73,7 @@ export default function BrandLogoGrid({ brands, getHref }) {
         aria-label="Scroll right"
         tabIndex={canScrollRight ? 0 : -1}
       >
-        ›
+        <Chevron dir="right" />
       </button>
     </div>
   );

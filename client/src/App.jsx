@@ -86,6 +86,12 @@ export default function App() {
   // Show the Header unless an admin has explicitly turned it off. While
   // settings are loading (or failed to load) we keep the Header visible.
   const showHeader = !isAdmin && siteSettings?.header_visible !== false;
+  const glassButtons = !isAdmin && siteSettings?.glass_buttons === true;
+
+  // On <html> so portaled modals (contact / apply forms) pick it up too.
+  useEffect(() => {
+    document.documentElement.classList.toggle("glass-buttons", glassButtons);
+  }, [glassButtons]);
 
   return (
     <div className={`page-shell${!isAdmin && !showHeader ? " page-shell--no-header" : ""}`}>

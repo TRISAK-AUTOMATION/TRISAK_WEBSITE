@@ -13,7 +13,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "video/mp4"]; // mp4: hero background videos
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
@@ -28,14 +28,14 @@ function fileFilter(req, file, cb) {
   if (ALLOWED_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed (jpg, png, webp, gif, svg)"));
+    cb(new Error("Only image files (jpg, png, webp, gif, svg) or MP4 video are allowed"));
   }
 }
 
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB — hero backgrounds; sharp shrinks them after upload
 });
 
 // Re-encodes the just-uploaded file in place: caps its longest edge and

@@ -10,6 +10,7 @@ import { translations } from "../../i18n/translations.js";
 import trisakLogo from "../../assets/logos/trisak.png";
 import faccoLogo from "../../assets/logos/facco.png";
 import htcLogo from "../../assets/logos/htc.png";
+import HeroBgMedia from "../../components/HeroBgMedia.jsx";
 
 /**
  * Admin > Home > Content — laid out exactly like the public Home page
@@ -181,11 +182,7 @@ export default function AdminHomeEditor() {
         <section className={`hero hero--home home-admin__hero ${heroBgImage ? "hero--has-bg" : ""}`}>
           {heroBgImage && (
             <>
-              <div
-                className="hero__bg-image"
-                style={{ backgroundImage: `url(${heroBgImage})` }}
-                aria-hidden="true"
-              />
+              <HeroBgMedia src={heroBgImage} />
               <div className="hero__bg-scrim" aria-hidden="true" />
             </>
           )}
@@ -215,6 +212,8 @@ export default function AdminHomeEditor() {
         <div className="panel home-admin__hero-bg">
           <span className="admin-edit-sidebar__label">ภาพพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
           <ImageUploadField
+            accept="image/*,video/mp4"
+            maxSizeMB={10}
             value={heroBgImage}
             onChange={(url) => {
               setSuccess(false);

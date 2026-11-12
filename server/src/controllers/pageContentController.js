@@ -31,6 +31,12 @@ async function upsertSingleton(table, fields, body) {
   return rows[0];
 }
 
+// Hero background: same-site upload path or http(s) URL only; anything else -> null.
+function cleanHeroBg(value) {
+  const bg = typeof value === "string" ? value.trim() : "";
+  return bg && bg.length <= 255 && (/^\/(?![/\\])\S*$/.test(bg) || /^https?:\/\/[^\s<>"']+$/i.test(bg)) ? bg : null;
+}
+
 // ---------------- About Us ----------------
 
 const ABOUT_FIELDS = [
@@ -41,6 +47,7 @@ const ABOUT_FIELDS = [
   "intro_title_en", "intro_title_th",
   "intro_lede_en", "intro_lede_th",
   "intro_body_en", "intro_body_th",
+  "hero_bg_image",
 ];
 
 export async function getAboutContent(req, res) {
@@ -54,7 +61,9 @@ export async function getAboutContent(req, res) {
 
 export async function updateAboutContent(req, res) {
   try {
-    const row = await upsertSingleton("about_content", ABOUT_FIELDS, req.body || {});
+    const body = { ...(req.body || {}) };
+    body.hero_bg_image = cleanHeroBg(body.hero_bg_image);
+    const row = await upsertSingleton("about_content", ABOUT_FIELDS, body);
     logActivity("about_updated", "อัปเดตเนื้อหาหน้าประวัติบริษัท (History)");
     res.json(row);
   } catch (err) {
@@ -241,10 +250,7 @@ export async function updateCareerPageContent(req, res) {
       .filter((s) => s.en || s.th)
       .slice(0, MAX_APPLY_STEPS);
     body.apply_steps = JSON.stringify(steps);
-    // Hero background: same-site upload path or http(s) URL only.
-    const bg = typeof body.hero_bg_image === "string" ? body.hero_bg_image.trim() : "";
-    body.hero_bg_image =
-      bg && bg.length <= 255 && (/^\/(?![/\\])\S*$/.test(bg) || /^https?:\/\/[^\s<>"']+$/i.test(bg)) ? bg : null;
+    body.hero_bg_image = cleanHeroBg(body.hero_bg_image);
     const row = await upsertSingleton("career_page_content", CAREER_PAGE_FIELDS, body);
     logActivity("career_page_updated", "อัปเดตวิธีการสมัครและข้อมูลติดต่อหน้าร่วมงานกับเรา");
     res.json(row);

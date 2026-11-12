@@ -3,6 +3,7 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 import ApplyJobModal from "../components/ApplyJobModal.jsx";
+import HeroBgMedia from "../components/HeroBgMedia.jsx";
 
 const PinIcon = () => (
   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -131,7 +132,7 @@ export default function Career() {
       <section className={`hero hero--compact career-hero${heroBgImage ? " hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
-            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <HeroBgMedia src={heroBgImage} />
             <div className="hero__bg-scrim" aria-hidden="true" />
           </>
         )}

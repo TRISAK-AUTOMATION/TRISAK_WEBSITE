@@ -6,6 +6,7 @@ import { ConfirmModal } from "../../components/AdminModal.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import { translations } from "../../i18n/translations.js";
+import HeroBgMedia from "../../components/HeroBgMedia.jsx";
 
 /**
  * Admin > ตำแหน่งงาน (Career) — /admin/career
@@ -367,7 +368,7 @@ export default function AdminCareerJobs() {
           <section className={`hero hero--compact career-hero career-admin__hero${shared.hero_bg_image ? " hero--has-bg" : ""}`}>
             {shared.hero_bg_image && (
               <>
-                <div className="hero__bg-image" style={{ backgroundImage: `url(${shared.hero_bg_image})` }} aria-hidden="true" />
+                <HeroBgMedia src={shared.hero_bg_image} />
                 <div className="hero__bg-scrim" aria-hidden="true" />
               </>
             )}
@@ -406,7 +407,7 @@ export default function AdminCareerJobs() {
 
           <div className="panel career-admin__hero-bg">
             <span className="admin-edit-sidebar__label">ภาพพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
-            <ImageUploadField value={shared.hero_bg_image || ""} onChange={(url) => updateShared({ hero_bg_image: url })} />
+            <ImageUploadField accept="image/*,video/mp4" maxSizeMB={10} value={shared.hero_bg_image || ""} onChange={(url) => updateShared({ hero_bg_image: url })} />
           </div>
         </div>
       )}
