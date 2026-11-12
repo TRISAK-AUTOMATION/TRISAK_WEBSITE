@@ -130,6 +130,8 @@ export default function AdminContactsPageEditor() {
             <label className="contact-form__field" style={{ marginTop: 20 }}>
               <span>Hero background image (Contacts page only — optional)</span>
               <ImageUploadField
+                accept="image/*,video/mp4"
+                maxSizeMB={10}
                 value={form.hero_bg_image}
                 onChange={(url) => {
                   setSuccess(false);

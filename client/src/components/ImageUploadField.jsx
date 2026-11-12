@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api/client.js";
+import { isVideoUrl } from "./HeroBgMedia.jsx";
 
 /**
  * Controlled image field: shows the current image (by URL) with Change/
@@ -31,7 +32,9 @@ export default function ImageUploadField({
     e.target.value = ""; // allow re-selecting the same file later
     if (!file) return;
 
-    if (accept !== "image/*" && !accept.split(",").map((t) => t.trim()).includes(file.type)) {
+    const allowed = accept.split(",").map((t) => t.trim());
+    const typeOk = allowed.some((t) => t === file.type || (t.endsWith("/*") && file.type.startsWith(t.slice(0, -1))));
+    if (!typeOk) {
       setError(`Unsupported file type. Allowed: ${accept.split(",").map((t) => t.split("/")[1].replace("svg+xml", "svg")).join(", ")}.`);
       return;
     }
@@ -55,7 +58,12 @@ export default function ImageUploadField({
   if (value) {
     return (
       <div className="image-upload image-upload--filled">
-        {!hidePreview && <img src={value} alt="" className="image-upload__preview" />}
+        {!hidePreview &&
+          (isVideoUrl(value) ? (
+            <video src={value} className="image-upload__preview" muted loop autoPlay playsInline />
+          ) : (
+            <img src={value} alt="" className="image-upload__preview" />
+          ))}
         <div className="image-upload__actions">
           <label className={`btn ${uploading ? "is-uploading" : ""}`}>
             {uploading ? "Uploading…" : "Change image"}

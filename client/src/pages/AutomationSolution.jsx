@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
+import HeroBgMedia from "../components/HeroBgMedia.jsx";
 
 export default function AutomationSolution() {
   const { t, lang } = useLanguage();
@@ -45,7 +46,7 @@ export default function AutomationSolution() {
       <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
-            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <HeroBgMedia src={heroBgImage} />
             <div className="hero__bg-scrim" aria-hidden="true" />
           </>
         )}

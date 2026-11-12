@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
+import HeroBgMedia from "../../components/HeroBgMedia.jsx";
 import {
   HistoryPageHeader,
   HISTORY_TIMELINE_PATH,
@@ -193,7 +194,7 @@ export default function AdminHistoryEditor() {
         <section className={`hero hero--compact${form.hero_bg_image ? " hero--has-bg" : ""}`}>
           {form.hero_bg_image && (
             <>
-              <div className="hero__bg-image" style={{ backgroundImage: `url(${form.hero_bg_image})` }} aria-hidden="true" />
+              <HeroBgMedia src={form.hero_bg_image} />
               <div className="hero__bg-scrim" aria-hidden="true" />
             </>
           )}
@@ -214,6 +215,8 @@ export default function AdminHistoryEditor() {
         <div className="panel home-admin__hero-bg">
           <span className="admin-edit-sidebar__label">ภาพพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
           <ImageUploadField
+            accept="image/*,video/mp4"
+            maxSizeMB={10}
             value={form.hero_bg_image || ""}
             onChange={(url) => {
               setSuccess(false);

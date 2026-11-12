@@ -3,6 +3,7 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import ContactForm from "../components/ContactForm.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
+import HeroBgMedia from "../components/HeroBgMedia.jsx";
 
 // Share links for "Open in Google Maps" when the admin hasn't set one.
 const DEFAULT_MAP_LINKS = {
@@ -66,7 +67,7 @@ export default function Contacts() {
       <section className={`hero hero--compact ${heroBgImage ? "hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
-            <div className="hero__bg-image" style={{ backgroundImage: `url(${heroBgImage})` }} aria-hidden="true" />
+            <HeroBgMedia src={heroBgImage} />
             <div className="hero__bg-scrim" aria-hidden="true" />
           </>
         )}

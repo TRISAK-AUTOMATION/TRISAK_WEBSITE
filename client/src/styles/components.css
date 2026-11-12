@@ -53,6 +53,12 @@
   z-index: 0;
 }
 
+.hero__bg-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* Hero background slideshow (Products page): stacked layers that
    cross-fade. Each slide reuses .hero__bg-image for sizing. */
 .hero__bg-slideshow {

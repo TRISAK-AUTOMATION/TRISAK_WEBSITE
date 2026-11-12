@@ -14,6 +14,7 @@ import { LISTING_BASE_PATH } from "../utils/productFilterUrl.js";
 import trisakLogo from "../assets/logos/trisak.png";
 import faccoLogo from "../assets/logos/facco.png";
 import htcLogo from "../assets/logos/htc.png";
+import HeroBgMedia from "../components/HeroBgMedia.jsx";
 
 // Company logos for the three "Our Strength" cards (same order as the cards).
 // Heights are tuned per logo so all three have the same visual size (equal
@@ -113,11 +114,7 @@ export default function Home() {
       <section className={`hero hero--home ${heroBgImage ? "hero--has-bg" : ""}`}>
         {heroBgImage && (
           <>
-            <div
-              className="hero__bg-image"
-              style={{ backgroundImage: `url(${heroBgImage})` }}
-              aria-hidden="true"
-            />
+            <HeroBgMedia src={heroBgImage} />
             <div className="hero__bg-scrim" aria-hidden="true" />
           </>
         )}
