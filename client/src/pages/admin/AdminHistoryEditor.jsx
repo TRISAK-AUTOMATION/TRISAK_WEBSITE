@@ -6,12 +6,11 @@ import {
   HistoryPageHeader,
   HISTORY_TIMELINE_PATH,
   HISTORY_STATS_PATH,
-  HISTORY_ORG_PATH,
 } from "../../components/HistoryAdmin.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
-import { OrgItem, unitSep, BRANDS } from "../History.jsx";
+import { PartnerBrands, unitSep } from "../History.jsx";
 import { translations } from "../../i18n/translations.js";
 
 /**
@@ -74,8 +73,13 @@ export default function AdminHistoryEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [brands, setBrands] = useState(null);
 
   useEffect(() => {
+    api
+      .getBrands()
+      .then(setBrands)
+      .catch(() => setBrands(null));
     api
       .adminGetAboutContent()
       .then((d) => {
@@ -145,14 +149,6 @@ export default function AdminHistoryEditor() {
     unit: pick(s, "unit"),
     label: pick(s, "label"),
   }));
-  const toNode = (n) => ({
-    id: n.id,
-    name: pick(n, "name"),
-    person: pick(n, "person"),
-    image: n.image_url,
-    children: n.children.map(toNode),
-  });
-  const orgRoots = (historyContent?.org || []).map(toNode);
   const previewLoading = !historyContent;
   const emptyNote = (text) => (
     <p className="empty-state history-admin__empty">{previewLoading ? "กำลังโหลด…" : text}</p>
@@ -298,33 +294,6 @@ export default function AdminHistoryEditor() {
           </div>
         </section>
 
-        {/* ORGANIZATION */}
-        <section className="section history-admin__managed">
-          <div className="container">
-            <ManagedBar
-              note="แผนผังองค์กรแก้ไขได้จากแท็บ “โครงสร้างองค์กร (Organization)”"
-              to={HISTORY_ORG_PATH}
-              linkLabel="แก้ไขโครงสร้างองค์กร"
-            />
-            <SectionLabel eyebrow={t.structureEyebrow} title={t.structureTitle} />
-            {orgRoots.length ? (
-              <div className="org-diagram panel">
-                {orgRoots.length === 1 ? (
-                  <OrgItem node={orgRoots[0]} root />
-                ) : (
-                  <div className="org-branch">
-                    {orgRoots.map((node) => (
-                      <OrgItem key={node.id} node={node} root />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              emptyNote("ยังไม่มีโครงสร้างองค์กรที่เปิดใช้งาน")
-            )}
-          </div>
-        </section>
-
         {/* EXPERIENCE + PARTNERS (static on the public page) */}
         <section className="section history-admin__managed">
           <div className="container">
@@ -335,15 +304,9 @@ export default function AdminHistoryEditor() {
 
         <section className="section history-admin__managed">
           <div className="container">
-            <ManagedBar note="ส่วนนี้เป็นข้อความคงที่ของหน้าเว็บ (แก้ไขจากระบบหลังบ้านไม่ได้)" />
-            <SectionLabel index="06" eyebrow={t.partnersEyebrow} title={t.partnersTitle} />
-            <div className="brand-strip">
-              {BRANDS.map((b) => (
-                <span className="brand-strip__name" key={b}>
-                  {b}
-                </span>
-              ))}
-            </div>
+            <ManagedBar note="โลโก้ OMRON / YASKAWA / NITTO ดึงจากเมนู แบรนด์ (Brands)" />
+            <SectionLabel eyebrow={t.partnersEyebrow} title={t.partnersTitle} />
+            <PartnerBrands brands={brands} />
           </div>
         </section>
       </div>
