@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
-import HeroBgMedia from "../../components/HeroBgMedia.jsx";
 import {
   HistoryPageHeader,
   HISTORY_TIMELINE_PATH,
@@ -10,7 +9,8 @@ import {
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
-import { PartnerBrands, unitSep } from "../History.jsx";
+import WhyTrisak from "../../components/WhyTrisak.jsx";
+import { PartnerBrands, ExperienceBanner, BrandLanesTimeline, INTRO_IMAGE_DEFAULT } from "../History.jsx";
 import { translations } from "../../i18n/translations.js";
 
 /**
@@ -33,7 +33,7 @@ const FIELD_SUFFIXES = [
 ];
 
 function emptyForm() {
-  const form = { hero_bg_image: "" };
+  const form = { hero_bg_image: "", intro_image: "" };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -186,60 +186,36 @@ export default function AdminHistoryEditor() {
       </div>
 
       <div className="home-admin__page history-admin__page">
-        {/* HERO */}
-        <section className={`hero hero--compact hero--centered${form.hero_bg_image ? " hero--has-bg" : ""}`}>
-          {form.hero_bg_image && (
-            <>
-              <HeroBgMedia src={form.hero_bg_image} />
-              <div className="hero__bg-scrim" aria-hidden="true" />
-            </>
-          )}
-          <div className="hero__grid-overlay" aria-hidden="true" />
-          <div className="container hero__content">
-            <span className="hero__meta">
-              <InlineInput {...bind("hero_meta", t.heroMeta, "ข้อความเล็กเหนือหัวข้อ (Meta)")} />
-            </span>
+        {/* HERO: Company Introduction */}
+        <section className="intro">
+          <img className="intro__bg" src={form.intro_image || INTRO_IMAGE_DEFAULT} alt="" />
+          <div className="container intro__text">
             <h1>
-              <InlineInput {...bind("hero_title", t.heroTitle, "หัวข้อหลัก")} />
+              <InlineInput {...bind("intro_title", t.introTitle, "หัวข้อ")} />
             </h1>
-            <p className="hero__sub">
-              <InlineInput multiline rows={3} {...bind("hero_sub", t.heroSub, "คำอธิบายใต้หัวข้อ")} />
+            <p className="intro__lede">
+              <InlineInput multiline rows={3} {...bind("intro_lede", t.introLede, "ข้อความเกริ่นนำ (Lede)")} />
+            </p>
+            <p className="intro__body">
+              <InlineInput multiline rows={4} {...bind("intro_body", t.introBody, "เนื้อหาย่อหน้าหลัก")} />
             </p>
           </div>
         </section>
 
         <div className="panel home-admin__hero-bg">
-          <span className="admin-edit-sidebar__label">ภาพพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
+          <span className="admin-edit-sidebar__label">
+            ภาพพื้นหลัง “แนะนำบริษัท” (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา, ว่าง = รูปเริ่มต้น)
+          </span>
           <ImageUploadField
-            accept="image/*,video/mp4"
+            accept="image/*"
             maxSizeMB={10}
-            value={form.hero_bg_image || ""}
+            value={form.intro_image || ""}
             onChange={(url) => {
               setSuccess(false);
-              setForm((f) => ({ ...f, hero_bg_image: url }));
+              setForm((f) => ({ ...f, intro_image: url }));
             }}
           />
         </div>
-
-        {/* INTRODUCTION */}
-        <section className="section">
-          <div className="container">
-            <div className="section-head">
-              <span className="eyebrow">
-                <InlineInput {...bind("intro_eyebrow", t.introEyebrow, "ข้อความเล็กเหนือหัวข้อ (Eyebrow)")} />
-              </span>
-              <h2>
-                <InlineInput {...bind("intro_title", t.introTitle, "หัวข้อ")} />
-              </h2>
-              <p className="lede">
-                <InlineInput multiline rows={2} {...bind("intro_lede", t.introLede, "ข้อความเกริ่นนำ (Lede)")} />
-              </p>
-            </div>
-            <p className="lede" style={{ maxWidth: "62ch" }}>
-              <InlineInput multiline rows={4} {...bind("intro_body", t.introBody, "เนื้อหาย่อหน้าหลัก")} />
-            </p>
-          </div>
-        </section>
 
         {/* TIMELINE */}
         <section className="section history-admin__managed">
@@ -249,65 +225,48 @@ export default function AdminHistoryEditor() {
               to={HISTORY_TIMELINE_PATH}
               linkLabel="แก้ไขไทม์ไลน์"
             />
-            <SectionLabel eyebrow={t.timelineEyebrow} title={t.timelineTitle} />
+            <SectionLabel title={t.timelineTitle} />
             {timeline.length ? (
-              <div className="timeline">
-                {timeline.map((m) => (
-                  <div className="timeline__item" key={m.id}>
-                    <span className="timeline__year">{m.year}</span>
-                    <h3>{m.title}</h3>
-                    {m.body && <p>{m.body}</p>}
-                    {m.image && <img className="timeline__image" src={m.image} alt="" loading="lazy" />}
-                  </div>
-                ))}
-              </div>
+              <BrandLanesTimeline items={timeline} brands={brands} />
             ) : (
               emptyNote("ยังไม่มีรายการไทม์ไลน์ที่เปิดใช้งาน")
             )}
           </div>
         </section>
 
-        {/* STATISTICS */}
+        {/* WHY TRISAK GROUP (static text, preview only) */}
+        <div className="history-admin__managed">
+          <div className="container">
+            <ManagedBar note="ส่วน “Why TRISAK Group” เป็นข้อความคงที่ (แก้ไขในโค้ด)" />
+          </div>
+          <WhyTrisak
+            title={t.whyTitle}
+            lede={t.whyLede}
+            reasons={t.whyReasons}
+            processTitle={t.whyProcessTitle}
+            steps={t.whySteps}
+          />
+        </div>
+
+        {/* EXPERIENCE + STATISTICS + PARTNERS (heading text is static; numbers from the Statistics tab) */}
         <section className="section history-admin__managed">
           <div className="container">
             <ManagedBar
-              note="ตัวเลขสถิติแก้ไขได้จากแท็บ “สถิติ (Statistics)”"
+              note="หัวข้อ “ประสบการณ์ของเรา” เป็นข้อความคงที่ — ตัวเลขสถิติแก้ไขได้จากแท็บ “สถิติ (Statistics)” · โลโก้ OMRON / YASKAWA / NITTO ดึงจากเมนู แบรนด์ (Brands)"
               to={HISTORY_STATS_PATH}
               linkLabel="แก้ไขสถิติ"
             />
-            <SectionLabel eyebrow={t.statsEyebrow} title={t.statsTitle} />
-            {stats.length ? (
-              <div className="stat-row">
-                {stats.map((s) => (
-                  <div className="stat-cell" key={s.id}>
-                    <span className="stat-cell__num">
-                      {s.num}
-                      {s.unit ? unitSep(s.unit) + s.unit : ""}
-                    </span>
-                    <span className="stat-cell__label">{s.label}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              emptyNote("ยังไม่มีสถิติที่เปิดใช้งาน")
-            )}
+            {!stats.length && emptyNote("ยังไม่มีสถิติที่เปิดใช้งาน")}
           </div>
-        </section>
-
-        {/* EXPERIENCE + PARTNERS (static on the public page) */}
-        <section className="section history-admin__managed">
-          <div className="container">
-            <ManagedBar note="ส่วนนี้เป็นข้อความคงที่ของหน้าเว็บ (แก้ไขจากระบบหลังบ้านไม่ได้)" />
-            <SectionLabel eyebrow={t.experienceEyebrow} title={t.experienceTitle} lede={t.experienceLede} />
-          </div>
-        </section>
-
-        <section className="section history-admin__managed">
-          <div className="container">
-            <ManagedBar note="โลโก้ OMRON / YASKAWA / NITTO ดึงจากเมนู แบรนด์ (Brands)" />
+          <ExperienceBanner
+            eyebrow={t.experienceEyebrow}
+            title={t.experienceTitle}
+            lede={t.experienceLede}
+            stats={stats}
+          >
             <SectionLabel eyebrow={t.partnersEyebrow} title={t.partnersTitle} />
             <PartnerBrands brands={brands} />
-          </div>
+          </ExperienceBanner>
         </section>
       </div>
 

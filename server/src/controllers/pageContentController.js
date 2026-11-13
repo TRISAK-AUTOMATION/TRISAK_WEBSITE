@@ -48,6 +48,7 @@ const ABOUT_FIELDS = [
   "intro_lede_en", "intro_lede_th",
   "intro_body_en", "intro_body_th",
   "hero_bg_image",
+  "intro_image",
 ];
 
 export async function getAboutContent(req, res) {
@@ -63,6 +64,7 @@ export async function updateAboutContent(req, res) {
   try {
     const body = { ...(req.body || {}) };
     body.hero_bg_image = cleanHeroBg(body.hero_bg_image);
+    body.intro_image = cleanHeroBg(body.intro_image);
     const row = await upsertSingleton("about_content", ABOUT_FIELDS, body);
     logActivity("about_updated", "อัปเดตเนื้อหาหน้าประวัติบริษัท (History)");
     res.json(row);

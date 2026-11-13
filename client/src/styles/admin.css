@@ -2916,10 +2916,10 @@ a.admin-edit-tab {
 .hero--has-bg .home-admin__input {
   border-color: rgba(255, 255, 255, 0.25);
 }
-.hero--has-bg .home-admin__input:hover {
+.hero--has-bg .home-admin__input:hover:hover {
   border-color: rgba(255, 255, 255, 0.5);
 }
-.hero--has-bg .home-admin__input:focus {
+.hero--has-bg .home-admin__input:focus:focus {
   border-color: #ffffff;
   background: rgba(0, 0, 0, 0.25);
 }
@@ -2985,17 +2985,12 @@ a.admin-edit-tab {
 }
 
 /* ---------- Admin > ประวัติบริษัท (History) > Content: the real History page, edited in place ---------- */
-.history-admin__page .hero.hero--compact {
-  padding-top: 72px;
-  padding-bottom: 56px;
+.history-admin__page .intro {
+  min-height: 560px;
 }
-.history-admin__page .section-head .lede .home-admin__input,
-.history-admin__page > .section .container > .lede .home-admin__input {
+.history-admin__page .intro .home-admin__input {
   margin-left: 0;
-}
-.history-admin__page .section-head .eyebrow .home-admin__input {
-  margin-left: 0;
-  min-width: 260px;
+  width: 100%;
 }
 /* Sections previewed here but edited elsewhere: a soft frame and a bar with the link. */
 .history-admin__managed {

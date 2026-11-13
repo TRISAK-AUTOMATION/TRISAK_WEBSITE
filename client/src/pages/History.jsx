@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
-import HeroBgMedia from "../components/HeroBgMedia.jsx";
 import BrandLogoGrid from "../components/BrandLogoGrid.jsx";
+import WhyTrisak from "../components/WhyTrisak.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
+
+// Company Introduction photo when none is uploaded in Admin > History.
+export const INTRO_IMAGE_DEFAULT = "/images/solutions/smart-factory.webp";
 
 // A stat's unit/suffix attaches directly to symbols ("30+"), but gets a
 // space when it's a word ("30 years").
@@ -13,8 +16,8 @@ export const unitSep = (unit) => (/^\p{L}/u.test(unit) ? " " : "");
 
 // Partners & Brands: the BRANDS from Admin > Brands (for their logos), in
 // BRANDS order. A brand missing from the DB still shows as its name.
-export function PartnerBrands({ brands }) {
-  const items = BRANDS.map(
+const brandRows = (brands) =>
+  BRANDS.map(
     (name) =>
       (brands || []).find((b) => b.name?.trim().toUpperCase() === name) || {
         slug: name.toLowerCase(),
@@ -22,7 +25,117 @@ export function PartnerBrands({ brands }) {
         logo_url: null,
       }
   );
-  return <BrandLogoGrid brands={items} getHref={(b) => `/products/${b.slug}`} />;
+
+export function PartnerBrands({ brands }) {
+  return <BrandLogoGrid brands={brandRows(brands)} getHref={(b) => `/products/${b.slug}`} />;
+}
+
+// shortcut: an entry's brand is guessed from the BRANDS name in its title/description;
+// add a brand field to Admin > Timeline if entries ever get misplaced.
+const brandOf = (m) => {
+  const text = `${m.title} ${m.body || ""}`.toUpperCase();
+  const hits = BRANDS.filter((b) => text.includes(b));
+  return hits.length === 1 ? hits[0] : null;
+};
+
+const yearNum = (y) => {
+  const n = parseInt(y, 10);
+  return Number.isNaN(n) ? Infinity : n;
+};
+
+function LaneEntry({ m, side }) {
+  return (
+    <li className={`lanes__item lanes__item--${side}`}>
+      <span className="lanes__year">{m.year}</span>
+      <div className="lanes__body">
+        {m.brand && <span className="lanes__brand">{m.brand}</span>}
+        <h3>{m.title}</h3>
+        {m.body && <p>{m.body}</p>}
+        {m.image && <img className="lanes__image" src={m.image} alt="" loading="lazy" />}
+      </div>
+    </li>
+  );
+}
+
+// Company timeline on one year spine: each group company sits in the lane of
+// the brand it distributes (OMRON left, YASKAWA right), companies tied to no
+// single brand sit on the spine. Falls back to one lane unless exactly two
+// brands appear.
+export function BrandLanesTimeline({ items, brands }) {
+  const entries = items
+    .map((m) => ({ ...m, brand: brandOf(m) }))
+    .sort((a, b) => yearNum(a.year) - yearNum(b.year));
+  const laneNames = BRANDS.filter((b) => entries.some((m) => m.brand === b));
+  const twoLanes = laneNames.length === 2;
+  const sideOf = (m) => (!m.brand ? "center" : m.brand === laneNames[0] ? "left" : "right");
+  const firstBranded = entries.findIndex((m) => m.brand);
+  const head = firstBranded === -1 ? entries : entries.slice(0, firstBranded);
+  const rest = firstBranded === -1 ? [] : entries.slice(firstBranded);
+  const logos = brandRows(brands);
+
+  return (
+    <div className={`lanes${twoLanes ? "" : " lanes--single"}`}>
+      {head.length > 0 && (
+        <ol className="lanes__list">
+          {head.map((m) => (
+            <LaneEntry key={m.id} m={m} side="center" />
+          ))}
+        </ol>
+      )}
+      {twoLanes && (
+        <div className="lanes__heads" aria-hidden="true">
+          {laneNames.map((name) => {
+            const b = logos.find((l) => l.name.trim().toUpperCase() === name);
+            return (
+              <span className="lanes__head" key={name}>
+                {b?.logo_url ? <img src={b.logo_url} alt="" /> : name}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {rest.length > 0 && (
+        <ol className="lanes__list">
+          {rest.map((m) => (
+            <LaneEntry key={m.id} m={m} side={twoLanes ? sideOf(m) : "center"} />
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+// "Our Experience" full-bleed banner: text + statistics row, then whatever
+// is passed as children (Partners & Brands) inside the same background.
+export function ExperienceBanner({ eyebrow, title, lede, stats, children }) {
+  return (
+    <section className="exp-banner">
+      <div className="exp-banner__dots" aria-hidden="true" />
+      <div className="exp-banner__photo" aria-hidden="true" />
+      <div className="exp-banner__edge" aria-hidden="true" />
+      <div className="container exp-banner__inner">
+        <div className="exp-banner__text">
+          <span className="exp-banner__eyebrow">{eyebrow}</span>
+          <h2>{title}</h2>
+          {lede && <p>{lede}</p>}
+          {stats.length > 0 && (
+          <div className="exp-banner__stats">
+            {stats.map((s) => (
+              <div className="exp-banner__stat" key={s.id}>
+                <span className="exp-banner__num">
+                  {s.num}
+                  {s.unit ? unitSep(s.unit) + s.unit : ""}
+                </span>
+                <span className="exp-banner__label">{s.label}</span>
+              </div>
+            ))}
+          </div>
+          )}
+        </div>
+      </div>
+      {children && <div className="container exp-banner__after">{children}</div>}
+    </section>
+  );
 }
 
 export default function History() {
@@ -83,87 +196,42 @@ export default function History() {
     return value || fallback;
   };
 
-  const heroBgImage = aboutContent?.hero_bg_image || "";
 
   return (
     <>
-      <section className={`hero hero--compact hero--centered${heroBgImage ? " hero--has-bg" : ""}`}>
-        {heroBgImage && (
-          <>
-            <HeroBgMedia src={heroBgImage} />
-            <div className="hero__bg-scrim" aria-hidden="true" />
-          </>
-        )}
-        <div className="hero__grid-overlay" aria-hidden="true" />
-        <div className="container hero__content">
-          <span className="hero__meta">{ac("hero_meta", t("history.heroMeta"))}</span>
-          <h1>{ac("hero_title", t("history.heroTitle"))}</h1>
-          <p className="hero__sub">{ac("hero_sub", t("history.heroSub"))}</p>
+      <section className="intro">
+        <img className="intro__bg" src={aboutContent?.intro_image || INTRO_IMAGE_DEFAULT} alt="" />
+        <div className="container intro__text">
+          <h1>{ac("intro_title", t("history.introTitle"))}</h1>
+          <p className="intro__lede">{ac("intro_lede", t("history.introLede"))}</p>
+          <p className="intro__body">{ac("intro_body", t("history.introBody"))}</p>
         </div>
       </section>
 
       <section className="section">
         <div className="container">
-          <SectionLabel
-            eyebrow={ac("intro_eyebrow", t("history.introEyebrow"))}
-            title={ac("intro_title", t("history.introTitle"))}
-            lede={ac("intro_lede", t("history.introLede"))}
-          />
-          <p className="lede" style={{ maxWidth: "62ch" }}>
-            {ac("intro_body", t("history.introBody"))}
-          </p>
+          <SectionLabel title={t("history.timelineTitle")} />
+          <BrandLanesTimeline items={timeline} brands={brands} />
         </div>
       </section>
 
-      <section className="section">
-        <div className="container">
-          <SectionLabel eyebrow={t("history.timelineEyebrow")} title={t("history.timelineTitle")} />
-          <div className="timeline">
-            {timeline.map((m) => (
-              <div className="timeline__item" key={m.id}>
-                <span className="timeline__year">{m.year}</span>
-                <h3>{m.title}</h3>
-                {m.body && <p>{m.body}</p>}
-                {m.image && <img className="timeline__image" src={m.image} alt="" loading="lazy" />}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <WhyTrisak
+        title={t("history.whyTitle")}
+        lede={t("history.whyLede")}
+        reasons={t("history.whyReasons")}
+        processTitle={t("history.whyProcessTitle")}
+        steps={t("history.whySteps")}
+      />
 
-      <section className="section">
-        <div className="container">
-          <SectionLabel eyebrow={t("history.statsEyebrow")} title={t("history.statsTitle")} />
-          <div className="stat-row">
-            {stats.map((s) => (
-              <div className="stat-cell" key={s.id}>
-                <span className="stat-cell__num">
-                  {s.num}
-                  {s.unit ? unitSep(s.unit) + s.unit : ""}
-                </span>
-                <span className="stat-cell__label">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <SectionLabel
-            eyebrow={t("history.experienceEyebrow")}
-            title={t("history.experienceTitle")}
-            lede={t("history.experienceLede")}
-          />
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <SectionLabel eyebrow={t("history.partnersEyebrow")} title={t("history.partnersTitle")} />
-          <PartnerBrands brands={brands} />
-        </div>
-      </section>
+      <ExperienceBanner
+        eyebrow={t("history.experienceEyebrow")}
+        title={t("history.experienceTitle")}
+        lede={t("history.experienceLede")}
+        stats={stats}
+      >
+        <SectionLabel eyebrow={t("history.partnersEyebrow")} title={t("history.partnersTitle")} />
+        <PartnerBrands brands={brands} />
+      </ExperienceBanner>
     </>
   );
 }

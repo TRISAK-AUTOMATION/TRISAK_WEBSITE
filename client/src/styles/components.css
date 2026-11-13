@@ -1308,49 +1308,787 @@
 }
 
 /* =========================================================
-   History — timeline
+   History hero — Company Introduction: plain white ground behind the text,
+   the photo (true colours) on the right blending into it. Fills the
+   viewport below the fixed header, like the Home hero.
    ========================================================= */
-.timeline {
+.intro {
   position: relative;
-  padding-left: 32px;
-  border-left: 1px solid var(--line-strong);
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: calc(100vh - var(--header-offset, var(--header-height)));
+  min-height: calc(100svh - var(--header-offset, var(--header-height)));
+  padding: clamp(48px, 8vh, 96px) 0;
+  background: var(--bg);
 }
 
-.timeline__item {
-  position: relative;
-  padding-bottom: 56px;
+.intro__text {
+  width: 100%;
 }
 
-.timeline__item:last-child {
-  padding-bottom: 0;
+/* photo sits on the right */
+.intro__bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: -2;
+  width: 65%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.timeline__item::before {
+/* --veil pushes every stop of the white veil to the right; the load
+   animation runs it back to 0% to uncover the photo */
+@property --veil {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+/* plain white behind the text, fading out to leave the photo uncovered on
+   the right. Solid until the photo's left edge, so no seam shows. */
+.intro::before {
   content: "";
   position: absolute;
-  left: -37px;
-  top: 4px;
-  width: 10px;
-  height: 10px;
-  background: var(--bg);
-  border: 2px solid var(--accent-signal);
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    #fff 0%,
+    #fff calc(34% + var(--veil)),
+    rgba(255, 255, 255, 0.95) calc(40% + var(--veil)),
+    rgba(255, 255, 255, 0.78) calc(47% + var(--veil)),
+    rgba(255, 255, 255, 0.5) calc(55% + var(--veil)),
+    rgba(255, 255, 255, 0.22) calc(63% + var(--veil)),
+    rgba(255, 255, 255, 0) calc(72% + var(--veil))
+  );
 }
 
-.timeline__year {
-  font-family: var(--font-mono);
-  font-size: 13px;
+/* narrow screens: text spans the width, so the photo sits under it and the
+   white fades down into it */
+@media (max-width: 760px) {
+  .intro {
+    align-items: flex-start;
+    padding-bottom: 260px;
+  }
+  .intro__bg {
+    width: 100%;
+  }
+  .intro::before {
+    background: linear-gradient(
+      180deg,
+      #fff 0%,
+      #fff calc(62% + var(--veil)),
+      rgba(255, 255, 255, 0) calc(85% + var(--veil))
+    );
+  }
+}
+
+.intro__text h1 {
+  margin: 0 0 24px;
+  max-width: 18ch;
+  font-size: clamp(2.4rem, 5vw, 4.25rem);
+  line-height: 1.05;
+  color: #0b1b3f;
+  text-wrap: balance;
+}
+
+.intro__lede {
+  margin: 0 0 20px;
+  max-width: 40ch;
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  line-height: 1.5;
+  font-weight: 500;
   color: var(--accent-signal);
+  text-wrap: pretty;
+}
+
+.intro__body {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+/* Hero entrance, on page load: the white veil draws back to the left to
+   uncover the photo while it settles from a zoom, then the heading, lead and
+   body rise in one after another. */
+@media (prefers-reduced-motion: no-preference) {
+  .intro::before {
+    animation: intro-veil 1.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+  .intro__bg {
+    animation: intro-zoom 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .intro__text > * {
+    animation: intro-rise 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .intro__text > :nth-child(1) {
+    animation-delay: 0.35s;
+  }
+  .intro__text > :nth-child(2) {
+    animation-delay: 0.5s;
+  }
+  .intro__text > :nth-child(3) {
+    animation-delay: 0.65s;
+  }
+}
+
+@keyframes intro-veil {
+  from {
+    --veil: 70%;
+  }
+}
+
+@keyframes intro-zoom {
+  from {
+    scale: 1.14;
+  }
+}
+
+@keyframes intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(6px);
+  }
+}
+
+/* while scrolling the first screen away, the photo drifts slower than the
+   page (parallax). The hero is the top of the page, so the root scroll is
+   its timeline. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .intro__bg {
+      animation: intro-zoom 2.4s cubic-bezier(0.16, 1, 0.3, 1) both, intro-drift linear both;
+      animation-timeline: auto, scroll(root);
+      animation-range: normal, 0px 100vh;
+    }
+  }
+}
+
+@keyframes intro-drift {
+  to {
+    translate: 0 18%;
+  }
+}
+
+/* =========================================================
+   History — company timeline in brand lanes
+   ========================================================= */
+.lanes {
+  --spine: 112px;
+  --lane-gap: 40px;
+  --node: rgba(13, 41, 151, 0.3);
+  position: relative;
+  margin-top: 56px;
+}
+
+/* the year spine */
+.lanes::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: linear-gradient(var(--accent-signal), var(--node));
+  transform-origin: top;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lanes::before {
+      animation: lanes-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 55%;
+    }
+  }
+}
+
+@keyframes lanes-draw {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Each company arrives from its lane side as it scrolls in: the year pill
+   pops on the spine, the connector grows out of it, the text settles.
+   Scroll-driven only, so content stays visible wherever it isn't supported. */
+.lanes__item--left {
+  --from-x: -32px;
+}
+.lanes__item--right {
+  --from-x: 32px;
+}
+.lanes__item--center {
+  --from-x: 0px;
+  --from-y: 20px;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lanes__year,
+    .lanes__body,
+    .lanes__body::after,
+    .lanes__head {
+      animation-timeline: view();
+      animation-fill-mode: both;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .lanes__year {
+      animation-name: lanes-pop;
+      animation-range: entry 10% entry 70%;
+    }
+    .lanes__body {
+      animation-name: lanes-settle;
+      animation-range: entry 20% cover 35%;
+    }
+    .lanes__body::after {
+      animation-name: lanes-reach;
+      animation-range: entry 10% entry 80%;
+    }
+    .lanes__item--left .lanes__body::after {
+      transform-origin: right;
+    }
+    .lanes__item--right .lanes__body::after {
+      transform-origin: left;
+    }
+    .lanes__head {
+      animation-name: lanes-split;
+      animation-range: entry 20% cover 40%;
+    }
+    .lanes__head:first-child {
+      --from-x: 48px;
+    }
+    .lanes__head:last-child {
+      --from-x: -48px;
+    }
+  }
+}
+
+@keyframes lanes-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes lanes-settle {
+  from {
+    transform: translate(var(--from-x, 0px), var(--from-y, 8px));
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes lanes-reach {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* the brand logos part from the spine junction, like the group branching */
+@keyframes lanes-split {
+  from {
+    transform: translateX(var(--from-x, 0px));
+    opacity: 0;
+  }
+}
+
+.lanes__list {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lanes__item {
+  display: grid;
+  grid-template-columns: 1fr var(--spine) 1fr;
+  align-items: start;
+  padding-bottom: 48px;
+}
+
+.lanes__year {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  position: relative;
+  z-index: 1;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 2px solid var(--accent-signal);
+  color: var(--accent-signal);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.lanes__body {
+  grid-row: 1;
+  position: relative;
+  max-width: 460px;
+  padding-top: 2px;
+}
+
+.lanes__body h3 {
+  margin: 0 0 8px;
+  color: #0b1b3f;
+  text-wrap: balance;
+}
+
+.lanes__body p {
+  margin: 0;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+/* hairline from the card to the spine */
+.lanes__item--left .lanes__body::after,
+.lanes__item--right .lanes__body::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  /* from 12px off the text to the year pill's edge (pill ≈ 60px wide) */
+  width: calc(var(--lane-gap) + var(--spine) / 2 - 42px);
+  height: 1px;
+  background: var(--node);
+}
+
+.lanes__item--left .lanes__body {
+  grid-column: 1;
+  justify-self: end;
+  margin-right: var(--lane-gap);
+  text-align: right;
+}
+
+.lanes__item--left .lanes__body::after {
+  right: calc(-1 * (var(--lane-gap) + var(--spine) / 2 - 30px));
+}
+
+.lanes__item--right .lanes__body {
+  grid-column: 3;
+  justify-self: start;
+  margin-left: var(--lane-gap);
+}
+
+.lanes__item--right .lanes__body::after {
+  left: calc(-1 * (var(--lane-gap) + var(--spine) / 2 - 30px));
+}
+
+/* group companies tied to no single brand sit on the spine */
+.lanes__item--center {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+}
+
+.lanes__item--center .lanes__year {
+  grid-column: 1;
+}
+
+.lanes__item--center .lanes__body {
+  grid-column: 1;
+  grid-row: 2;
+  margin-top: 14px;
+  padding: 4px 16px 0;
+  background: var(--bg);
+}
+
+.lanes__brand {
+  display: none;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  color: var(--accent-signal);
+}
+
+.lanes__image {
+  display: inline-block;
+  max-width: min(100%, 420px);
+  height: auto;
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* lane headers: the brand each lane distributes for */
+.lanes__heads {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr var(--spine) 1fr;
+  align-items: center;
+  margin-bottom: 40px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.lanes__heads::after {
+  content: "";
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-signal);
+  box-shadow: 0 0 0 5px var(--bg-panel), 0 0 0 6px var(--node);
+}
+
+.lanes__head {
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  color: #0b1b3f;
+}
+
+.lanes__head:first-child {
+  grid-column: 1;
+  justify-self: end;
+  margin-right: var(--lane-gap);
+}
+
+.lanes__head:last-child {
+  grid-column: 3;
+  justify-self: start;
+  margin-left: var(--lane-gap);
+}
+
+.lanes__head img {
+  height: 100%;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+}
+
+/* one lane: spine on the left, every company to its right */
+.lanes--single::before {
+  left: calc(var(--spine) / 2);
+}
+
+.lanes--single .lanes__item,
+.lanes--single .lanes__item--center {
+  grid-template-columns: var(--spine) 1fr;
+  justify-items: start;
+  text-align: left;
+}
+
+.lanes--single .lanes__year {
+  grid-column: 1;
+  justify-self: center;
+}
+
+.lanes--single .lanes__body {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  margin: 0;
+  padding: 2px 0 0 8px;
+  background: none;
+  text-align: left;
+}
+
+.lanes--single .lanes__body::after {
+  display: none;
+}
+
+.lanes--single .lanes__brand {
   display: block;
 }
 
-.timeline__item h3 {
-  margin-bottom: 10px;
+@media (max-width: 760px) {
+  .lanes {
+    --spine: 76px;
+    margin-top: 40px;
+  }
+  .lanes::before {
+    left: calc(var(--spine) / 2);
+  }
+  .lanes__heads {
+    display: none;
+  }
+  .lanes__item,
+  .lanes__item--center {
+    --from-x: 20px;
+    --from-y: 0px;
+    grid-template-columns: var(--spine) 1fr;
+    justify-items: start;
+    text-align: left;
+    padding-bottom: 36px;
+  }
+  .lanes__year {
+    grid-column: 1;
+    justify-self: center;
+    padding: 4px 10px;
+    font-size: 14px;
+  }
+  .lanes__item .lanes__body {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    margin: 0;
+    padding: 2px 0 0 4px;
+    background: none;
+    text-align: left;
+  }
+  .lanes__body::after {
+    display: none;
+  }
+  .lanes__brand {
+    display: block;
+  }
 }
 
-.timeline__item p {
-  max-width: 56ch;
+/* =========================================================
+   History — Why TRISAK Group: reasons + six-step way of working
+   ========================================================= */
+.why {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--bg-panel);
+}
+
+/* factory photo faded in behind the process column */
+.why__bg {
+  position: absolute;
+  inset: 0 0 0 45%;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 45%);
+}
+
+.why__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(40px, 6vw, 88px);
+  align-items: start;
+}
+
+.why__intro h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4.4vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--accent-signal);
+  text-wrap: balance;
+}
+
+.why__intro h2::after {
+  content: "";
+  display: block;
+  width: 120px;
+  height: 3px;
+  margin-top: 22px;
+  border-radius: 2px;
+  background: var(--accent-signal);
+}
+
+.why__lede {
+  margin: 20px 0 32px;
+  max-width: 52ch;
+  color: var(--text);
+}
+
+.why__reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.why__reason {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.why__reason:last-child {
+  border-bottom: 0;
+}
+
+.why__disc {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent-signal);
+  color: var(--on-accent);
+  box-shadow: 0 10px 20px -10px rgba(13, 41, 151, 0.6);
+}
+
+.why__disc .why__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.why__reason h3,
+.why__step h4 {
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--accent-signal);
+}
+
+.why__reason p,
+.why__step p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.why__process-title {
+  margin: 8px 0 20px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #0b1b3f;
+}
+
+/* the chain: one navy line through every ring, with a chevron between steps */
+.why__steps {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.why__steps::before {
+  content: "";
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  left: 44px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent-signal);
+}
+
+.why__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 20px 12px 12px;
+  border-radius: calc(var(--radius) * 2) var(--radius) var(--radius) calc(var(--radius) * 2);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 28px -18px rgba(11, 27, 63, 0.45);
+}
+
+.why__step + .why__step::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 38px;
+  z-index: 1;
+  width: 12px;
+  height: 8px;
+  background: var(--accent-signal);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.why__ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 3px solid var(--accent-signal);
+  color: var(--accent-signal);
+}
+
+.why__ring .why__icon {
+  width: 30px;
+  height: 30px;
+}
+
+/* reasons slide in from the left, steps from the right, as they scroll in */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .why__reason,
+    .why__step {
+      animation: why-in linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 30%;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .why__reason {
+      --from-x: -28px;
+    }
+    .why__step {
+      --from-x: 28px;
+    }
+  }
+}
+
+@keyframes why-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--from-x, 0px));
+  }
+}
+
+@media (max-width: 900px) {
+  .why__grid {
+    grid-template-columns: 1fr;
+  }
+  .why__bg {
+    inset: 50% 0 0 0;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 40%);
+    mask-image: linear-gradient(180deg, transparent 0%, #000 40%);
+  }
+}
+
+@media (max-width: 480px) {
+  .why__reason,
+  .why__step {
+    grid-template-columns: 52px 1fr;
+    gap: 14px;
+  }
+  .why__disc,
+  .why__ring {
+    width: 52px;
+    height: 52px;
+  }
+  .why__steps::before {
+    left: 38px;
+  }
+  .why__step + .why__step::before {
+    left: 32px;
+  }
 }
 
 /* structure diagram */
@@ -1424,52 +2162,162 @@
   color: var(--text-muted);
 }
 
-/* optional image on a timeline entry */
-.timeline__image {
-  display: block;
-  max-width: min(100%, 420px);
-  height: auto;
-  margin-top: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.stat-row {
-  display: flex;
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+/* "Our Experience" full-bleed banner (History page) */
+.exp-banner {
+  position: relative;
   overflow: hidden;
+  background: linear-gradient(100deg, #fff 0%, #f1f5ff 45%, #e3ecff 100%);
+  border-top: 1px solid var(--line);
 }
 
-.stat-cell {
-  flex: 1;
-  background: var(--bg);
-  padding: 32px 24px;
-  text-align: center;
+.exp-banner__dots,
+.exp-banner__photo,
+.exp-banner__edge {
+  position: absolute;
+  top: 0;
+  /* shortcut: fixed height covers the text + stats block; raise if that block grows taller */
+  height: 460px;
 }
 
-.stat-cell__num {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3rem);
-  color: var(--accent-tech);
-  display: block;
+.exp-banner__dots {
+  left: 22%;
+  width: 56%;
+  background: url("../assets/patterns/world-dots.svg") center / contain no-repeat;
+  opacity: 0.22;
 }
 
-.stat-cell__label {
+.exp-banner__photo,
+.exp-banner__edge {
+  right: 0;
+  width: 36%;
+}
+
+.exp-banner__photo {
+  background: linear-gradient(135deg, #c9d8f5 0%, #6f8fd6 50%, #2443a8 100%);
+  clip-path: polygon(24% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.exp-banner__edge {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(160, 190, 255, 0.5));
+  clip-path: polygon(24% 0, 27% 0, 3% 100%, 0 100%);
+}
+
+.exp-banner__inner {
+  position: relative;
+  padding-top: 96px;
+  min-height: 460px;
+  box-sizing: border-box;
+}
+
+.exp-banner__text {
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.exp-banner__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  margin-top: 8px;
-  display: block;
+  color: var(--accent-signal);
+}
+
+.exp-banner__eyebrow::before {
+  content: "";
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.exp-banner__text h2 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(2rem, 3vw, 2.5rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: #0b1b3f;
+}
+
+.exp-banner__text p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #2a3558;
+}
+
+.exp-banner__stats {
+  display: flex;
+  margin: 8px 0 0 -20px;
+}
+
+.exp-banner__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 20px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.exp-banner__stat + .exp-banner__stat {
+  border-left: 1px solid rgba(13, 41, 151, 0.22);
+}
+
+.exp-banner__num {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 2.8vw, 40px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--accent-signal);
+}
+
+.exp-banner__label {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* Partners & Brands, inside the same background */
+.exp-banner__after {
+  position: relative;
+  padding-top: 72px;
+  padding-bottom: 96px;
+}
+
+@media (max-width: 1000px) {
+  .exp-banner__photo,
+  .exp-banner__edge {
+    display: none;
+  }
 }
 
 @media (max-width: 700px) {
-  .stat-row {
+  .exp-banner__inner {
+    padding-top: 72px;
+    min-height: 0;
+  }
+  .exp-banner__stats {
+    margin-left: 0;
     flex-direction: column;
+  }
+  .exp-banner__stat {
+    align-items: flex-start;
+    padding: 12px 0;
+  }
+  .exp-banner__stat + .exp-banner__stat {
+    border-left: 0;
+    border-top: 1px solid rgba(13, 41, 151, 0.22);
+  }
+  .exp-banner__after {
+    padding-top: 56px;
+    padding-bottom: 72px;
   }
 }
 
