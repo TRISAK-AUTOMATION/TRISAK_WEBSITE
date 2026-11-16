@@ -37,6 +37,7 @@ import {
   createSolution,
   updateSolution,
   deleteSolution,
+  reorderSolution,
   listCustomersAdmin,
   createCustomer,
   updateCustomer,
@@ -258,6 +259,7 @@ router.get("/admin/solutions/:id", getSolutionAdmin);
 router.post("/admin/solutions", createSolution);
 router.put("/admin/solutions/:id", updateSolution);
 router.delete("/admin/solutions/:id", deleteSolution);
+router.post("/admin/solutions/:id/reorder", reorderSolution);
 
 router.get("/admin/customers", listCustomersAdmin);
 router.post("/admin/customers", createCustomer);

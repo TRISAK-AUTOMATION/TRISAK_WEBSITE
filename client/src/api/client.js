@@ -499,6 +499,8 @@ export const api = {
   adminUpdateSolution: (id, payload) =>
     authRequest(`/admin/solutions/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   adminDeleteSolution: (id) => authRequest(`/admin/solutions/${id}`, { method: "DELETE" }),
+  adminReorderSolution: (id, direction) =>
+    authRequest(`/admin/solutions/${id}/reorder`, { method: "POST", body: JSON.stringify({ direction }) }),
 
   adminGetCustomers: () => authRequest("/admin/customers"),
   adminCreateCustomer: (payload) =>

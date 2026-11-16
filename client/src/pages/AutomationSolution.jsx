@@ -11,7 +11,21 @@ import IndustriesSlider from "../components/IndustriesSlider.jsx";
 
 // One icon per engineering-process step, in order (same set as History's
 // "How we work").
-const STEP_ICONS = ["consult", "design", "box", "wrench", "check", "headset"];
+export const STEP_ICONS = ["consult", "design", "box", "wrench", "check", "headset"];
+
+/**
+ * Engineering-process steps: the admin-edited list (process_steps JSON) when
+ * there is one, otherwise the built-in steps. Each language falls back to the
+ * other, so a step translated only once still shows.
+ */
+export function parseProcessSteps(text) {
+  try {
+    const list = JSON.parse(text || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
 
 // Contact page link that pre-selects "Automation Solution" and names the
 // solution in the message (read by ContactForm), landing on the form.
@@ -23,7 +37,7 @@ const isInternal = (url) => url.startsWith("/") && !url.startsWith("//");
 export default function AutomationSolution() {
   const { t, lang } = useLanguage();
   const staticSolutions = t("automationSolution.solutions");
-  const process = t("automationSolution.process");
+  const builtInProcess = t("automationSolution.process");
 
   const [heroContent, setHeroContent] = useState(null);
   const [dbSolutions, setDbSolutions] = useState(null);
@@ -59,9 +73,22 @@ export default function AutomationSolution() {
   // been entered in the admin editor, use it for the Thai public view and
   // gracefully fall back to canonical content for legacy blocks.
   const solutions = dbSolutions || staticSolutions;
+  const other = lang === "th" ? "en" : "th";
+  const dbSteps = parseProcessSteps(heroContent?.process_steps);
+  const process = dbSteps.length
+    ? dbSteps.map((step) => ({
+        icon: step.icon,
+        label: step[`label_${lang}`] || step[`label_${other}`] || "",
+        desc: step[`desc_${lang}`] || step[`desc_${other}`] || "",
+      }))
+    : builtInProcess.map((step, i) => ({ ...step, icon: STEP_ICONS[i] }));
   const heroBgImage = heroContent?.hero_bg_image || "";
-  const solutionText = (solution, field) =>
-    lang === "th" ? solution[`${field}_th`] || solution[field] : solution[field];
+  // An empty Thai list ([]) also falls back to the English one.
+  const solutionText = (solution, field) => {
+    if (lang !== "th") return solution[field];
+    const thValue = solution[`${field}_th`];
+    return (Array.isArray(thValue) ? thValue.length > 0 : thValue) ? thValue : solution[field];
+  };
 
   // Highlight the jump-nav chip of the solution currently mid-screen.
   const slugs = solutions.map((s) => s.slug).join("|");
@@ -241,12 +268,15 @@ export default function AutomationSolution() {
       {/* Signature section — Our Engineering Process */}
       <section className="section sol-process">
         <Reveal className="container">
-          <SectionLabel title={t("automationSolution.processTitle")} lede={t("automationSolution.processLede")} />
-          <ol className="sol-steps">
+          <SectionLabel
+            title={hc("process_title", t("automationSolution.processTitle"))}
+            lede={hc("process_lede", t("automationSolution.processLede"))}
+          />
+          <ol className="sol-steps" style={{ "--n": process.length }}>
             {process.map((step, i) => (
-              <li className="sol-step" key={step.label} style={{ "--i": i }}>
+              <li className="sol-step" key={i} style={{ "--i": i }}>
                 <span className="sol-step__ring">
-                  <StepIcon name={STEP_ICONS[i] || "check"} />
+                  <StepIcon name={step.icon || "check"} />
                 </span>
                 <span className="sol-step__num">{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="sol-step__label">{step.label}</h3>

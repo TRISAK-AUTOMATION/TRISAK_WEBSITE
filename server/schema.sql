@@ -578,6 +578,12 @@ CREATE TABLE automation_solution_page_content (
   hero_sub_en    TEXT,
   hero_sub_th    TEXT,
   hero_bg_image  VARCHAR(255),
+  -- "Our Engineering Process" (migration 050); steps = JSON [{icon,label_en,label_th,desc_en,desc_th}]
+  process_title_en VARCHAR(255),
+  process_title_th VARCHAR(255),
+  process_lede_en  TEXT,
+  process_lede_th  TEXT,
+  process_steps    TEXT,
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

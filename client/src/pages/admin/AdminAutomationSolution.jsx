@@ -1,17 +1,141 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
 import { ConfirmModal } from "../../components/AdminModal.jsx";
-import { AdminEditLayout, AdminLanguageSelect } from "../../components/AdminEditSidebar.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import ImagePositionField from "../../components/ImagePositionField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
+import HeroBgMedia from "../../components/HeroBgMedia.jsx";
+import SectionLabel from "../../components/SectionLabel.jsx";
+import ContactIcon from "../../components/contactIcons.jsx";
+import IndustriesSlider from "../../components/IndustriesSlider.jsx";
+import { Icon as StepIcon, ICON_NAMES, isIconUrl } from "../../components/WhyTrisak.jsx";
+import { translations } from "../../i18n/translations.js";
+import { STEP_ICONS, parseProcessSteps } from "../AutomationSolution.jsx";
 
-const HERO_SUFFIXES = ["hero_meta", "hero_title", "hero_sub"];
-const toLines = (value) => value.split("\n").map((item) => item.trim()).filter(Boolean);
+/**
+ * Admin > Automation Solution — laid out like the public page
+ * (pages/AutomationSolution.jsx), the same way Admin > Contact / History /
+ * Home mirror theirs. Hero text and every Solution Block are edited in
+ * place; one Save button stores the hero and every changed block.
+ * The engineering process, industries and closing CTA are preview only.
+ */
+
+const HERO_SUFFIXES = ["hero_meta", "hero_title", "hero_sub", "process_title", "process_lede"];
+// Thai names for the built-in icons (tooltip in the icon picker).
+const ICON_LABELS = {
+  consult: "ให้คำปรึกษา", design: "ออกแบบ", box: "จัดหาสินค้า", wrench: "ติดตั้ง", check: "ตรวจสอบ/เสร็จสิ้น",
+  headset: "ซัพพอร์ต", gear: "ระบบ/เฟือง", team: "ทีมงาน", handshake: "ความร่วมมือ", globe: "ทั่วโลก",
+  search: "สำรวจ/ค้นหา", clipboard: "เช็กลิสต์", document: "เอกสาร/สเปก", chip: "PLC/ชิป", robot: "หุ่นยนต์",
+  factory: "โรงงาน", chart: "ผลลัพธ์/กราฟ", shield: "ความปลอดภัย", truck: "ขนส่ง/ส่งมอบ", bolt: "ไฟฟ้า/พลังงาน",
+  bulb: "ไอเดีย", target: "เป้าหมาย", rocket: "เริ่มใช้งาน", calendar: "วางแผน", clock: "เวลา/ตรงเวลา",
+  award: "รับรองคุณภาพ", leaf: "ประหยัดพลังงาน", graduation: "ฝึกอบรม",
+};
+const MAX_ICON_MB = 1;
+
+/**
+ * Popover under a step's ring: every built-in icon as a clickable tile, plus
+ * uploading an own icon (SVG/PNG with a transparent background — it is tinted
+ * to the theme colour on the public page).
+ */
+function IconPicker({ value, align, onChange, onClose }) {
+  const ref = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const onDown = (e) => {
+      // clicks on the ring itself are handled by the ring's own toggle
+      if (ref.current && !ref.current.contains(e.target) && !e.target.closest?.(".sol-admin__ring")) onClose();
+    };
+    const onKey = (e) => e.key === "Escape" && onClose();
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!["image/svg+xml", "image/png", "image/webp"].includes(file.type)) return setError("ใช้ไฟล์ SVG, PNG หรือ WebP");
+    if (file.size > MAX_ICON_MB * 1024 * 1024) return setError(`ไฟล์ต้องไม่เกิน ${MAX_ICON_MB} MB`);
+    setBusy(true);
+    setError("");
+    try {
+      const { url } = await api.adminUploadImage(file);
+      onChange(url);
+      onClose();
+    } catch (err) {
+      setError(err.message || "อัปโหลดไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div ref={ref} className={`sol-admin__picker sol-admin__picker--${align}`} role="dialog" aria-label="เลือกไอคอน">
+      <div className="sol-admin__picker-title">เลือกไอคอน</div>
+      <div className="sol-admin__picker-grid">
+        {ICON_NAMES.map((key) => (
+          <button
+            key={key}
+            type="button"
+            className={`sol-admin__picker-tile${value === key ? " is-selected" : ""}`}
+            title={ICON_LABELS[key] || key}
+            aria-label={ICON_LABELS[key] || key}
+            aria-pressed={value === key}
+            onClick={() => {
+              onChange(key);
+              onClose();
+            }}
+          >
+            <StepIcon name={key} />
+          </button>
+        ))}
+      </div>
+      <div className="sol-admin__picker-upload">
+        {isIconUrl(value) && (
+          <span className="sol-admin__picker-tile is-selected" title="ไอคอนที่อัปโหลดไว้">
+            <StepIcon name={value} />
+          </span>
+        )}
+        <label className="btn contact-admin__small-btn" style={{ cursor: busy ? "wait" : "pointer" }}>
+          {busy ? "กำลังอัปโหลด…" : isIconUrl(value) ? "⬆ เปลี่ยนไอคอนที่อัปโหลด" : "⬆ อัปโหลดไอคอนเอง"}
+          <input type="file" accept="image/svg+xml,image/png,image/webp" hidden onChange={upload} disabled={busy} />
+        </label>
+      </div>
+      <p className="contact-admin__hint">
+        SVG หรือ PNG พื้นหลังใส ไม่เกิน {MAX_ICON_MB} MB — ระบบลงสีให้เข้ากับธีมเอง
+      </p>
+      {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
+    </div>
+  );
+}
+
+const MAX_STEPS = 8;
+const MIN_STEPS = 2;
+
+// The built-in steps (both languages), used to start editing when the
+// page has never had its own steps saved.
+function builtInSteps() {
+  const en = translations.en.automationSolution.process;
+  const thSteps = translations.th.automationSolution.process;
+  return en.map((step, i) => ({
+    icon: STEP_ICONS[i] || "check",
+    label_en: step.label,
+    label_th: thSteps[i]?.label || "",
+    desc_en: step.desc,
+    desc_th: thSteps[i]?.desc || "",
+  }));
+}
 
 function emptyHeroForm() {
-  const form = { hero_bg_image: "" };
+  const form = { hero_bg_image: "", process_steps: "" };
   for (const base of HERO_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -20,21 +144,62 @@ function emptyHeroForm() {
 }
 
 function emptyBlockForm() {
-  return { name: "", nameTh: "", summary: "", summaryTh: "", services: "", servicesTh: "", benefits: "", benefitsTh: "", imageUrl: "", imagePositionX: 50, imagePositionY: 50, relatedUrl: "", relatedLabel: "", relatedLabelTh: "", brochureUrl: "" };
-}
-
-function rowToBlockForm(block) {
   return {
-    name: block.name || "", nameTh: block.name_th || "", summary: block.summary || "", summaryTh: block.summary_th || "",
-    services: (block.services || []).join("\n"), servicesTh: (block.services_th || []).join("\n"),
-    benefits: (block.benefits || []).join("\n"), benefitsTh: (block.benefits_th || []).join("\n"), imageUrl: block.image_url || "",
-    imagePositionX: block.image_position_x ?? 50, imagePositionY: block.image_position_y ?? 50,
-    relatedUrl: block.related_url || "", relatedLabel: block.related_label || "", relatedLabelTh: block.related_label_th || "", brochureUrl: block.brochure_url || "",
+    name: "", nameTh: "", summary: "", summaryTh: "",
+    services: [], servicesTh: [], benefits: [], benefitsTh: [],
+    imageUrl: "", imagePositionX: 50, imagePositionY: 50,
+    relatedUrl: "", relatedLabel: "", relatedLabelTh: "", brochureUrl: "",
   };
 }
 
-/** Uploads one PDF brochure through the admin upload endpoint (returns { url }). */
-function BrochureUploadField({ value, onChange }) {
+function rowToBlockForm(row) {
+  return {
+    name: row.name || "", nameTh: row.name_th || "", summary: row.summary || "", summaryTh: row.summary_th || "",
+    services: row.services || [], servicesTh: row.services_th || [],
+    benefits: row.benefits || [], benefitsTh: row.benefits_th || [],
+    imageUrl: row.image_url || "", imagePositionX: row.image_position_x ?? 50, imagePositionY: row.image_position_y ?? 50,
+    relatedUrl: row.related_url || "", relatedLabel: row.related_label || "", relatedLabelTh: row.related_label_th || "",
+    brochureUrl: row.brochure_url || "",
+  };
+}
+
+const cleanList = (list) => list.map((x) => x.trim()).filter(Boolean);
+
+function toPayload(f) {
+  return {
+    name: f.name.trim(), nameTh: f.nameTh.trim() || null, summary: f.summary.trim() || null, summaryTh: f.summaryTh.trim() || null,
+    services: cleanList(f.services), servicesTh: cleanList(f.servicesTh),
+    benefits: cleanList(f.benefits), benefitsTh: cleanList(f.benefitsTh),
+    imageUrl: f.imageUrl || null,
+    imagePositionX: f.imageUrl ? f.imagePositionX : 50, imagePositionY: f.imageUrl ? f.imagePositionY : 50,
+    relatedUrl: f.relatedUrl.trim() || null, relatedLabel: f.relatedLabel.trim() || null,
+    relatedLabelTh: f.relatedLabelTh.trim() || null, brochureUrl: f.brochureUrl || null,
+  };
+}
+
+let nextKey = 1;
+const makeBlock = (row) => {
+  const form = row ? rowToBlockForm(row) : emptyBlockForm();
+  return { key: `b${nextKey++}`, id: row ? row.id : null, form, saved: row ? JSON.stringify(form) : "" };
+};
+const isDirty = (b) => JSON.stringify(b.form) !== b.saved;
+
+/** Text box that takes the look of the element it sits in (font, colour, size). */
+function InlineInput({ multiline = false, rows = 2, ...props }) {
+  return multiline ? (
+    <textarea className="home-admin__input" rows={rows} {...props} />
+  ) : (
+    <input className="home-admin__input" {...props} />
+  );
+}
+
+/** Bar above a part of the page that is preview only or edited elsewhere. */
+function ManagedNote({ children }) {
+  return <div className="home-admin__managed-note contact-admin__note">🔒 {children}</div>;
+}
+
+/** Uploads one PDF brochure through the admin upload endpoint. */
+function PdfUploadButton({ value, onChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const pick = async (e) => {
@@ -43,137 +208,703 @@ function BrochureUploadField({ value, onChange }) {
     if (!file) return;
     if (file.type !== "application/pdf") return setError("ต้องเป็นไฟล์ PDF");
     if (file.size > 10 * 1024 * 1024) return setError("ไฟล์ต้องไม่เกิน 10 MB");
-    setBusy(true); setError("");
+    setBusy(true);
+    setError("");
     try {
       const { url } = await api.adminUploadImage(file);
       onChange(url);
-    } catch (err) { setError(err.message || "อัปโหลดไม่สำเร็จ"); } finally { setBusy(false); }
+    } catch (err) {
+      setError(err.message || "อัปโหลดไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+    }
   };
-  return <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-    {value && <a href={value} target="_blank" rel="noopener noreferrer">ดูไฟล์ปัจจุบัน</a>}
-    <label className="btn" style={{ cursor: busy ? "wait" : "pointer" }}>{busy ? "กำลังอัปโหลด…" : value ? "เปลี่ยนไฟล์ PDF" : "อัปโหลด PDF"}<input type="file" accept="application/pdf" hidden onChange={pick} disabled={busy} /></label>
-    {value && !busy && <button type="button" className="btn" onClick={() => { setError(""); onChange(""); }}>ลบไฟล์</button>}
-    {error && <span className="contact-form__status contact-form__status--error">{error}</span>}
-  </span>;
+  return (
+    <span className="contact-admin__pdf">
+      {value && (
+        <a href={value} target="_blank" rel="noopener noreferrer">
+          ดูไฟล์
+        </a>
+      )}
+      <label className="btn contact-admin__small-btn" style={{ cursor: busy ? "wait" : "pointer" }}>
+        {busy ? "กำลังอัปโหลด…" : value ? "เปลี่ยน PDF" : "อัปโหลด PDF"}
+        <input type="file" accept="application/pdf" hidden onChange={pick} disabled={busy} />
+      </label>
+      {value && !busy && (
+        <button type="button" className="btn contact-admin__small-btn" onClick={() => onChange("")}>
+          ลบไฟล์
+        </button>
+      )}
+      {error && <span className="contact-form__status contact-form__status--error">{error}</span>}
+    </span>
+  );
+}
+
+/**
+ * Bullet list edited in place. In Thai, an empty Thai list falls back to
+ * the English items on the public page — those are shown faded, with a
+ * one-click copy to start translating from.
+ */
+function ListEditor({ items, fallback, onChange, renderBullet, addLabel, ulClassName }) {
+  const usingFallback = !items.length && fallback.length > 0;
+  return (
+    <>
+      <ul className={ulClassName}>
+        {usingFallback
+          ? fallback.map((item, i) => (
+              <li key={i} className="sol-admin__fallback" style={{ "--i": i }}>
+                {renderBullet?.()}
+                {item}
+              </li>
+            ))
+          : items.map((item, i) => (
+              <li key={i} className="sol-admin__item" style={{ "--i": i }}>
+                {renderBullet?.()}
+                <InlineInput
+                  multiline
+                  rows={1}
+                  value={item}
+                  aria-label={`รายการที่ ${i + 1}`}
+                  placeholder="พิมพ์รายการ"
+                  onChange={(e) => onChange(items.map((x, idx) => (idx === i ? e.target.value : x)))}
+                />
+                <button
+                  type="button"
+                  className="contact-admin__remove"
+                  aria-label={`ลบรายการที่ ${i + 1}`}
+                  title="ลบรายการ"
+                  onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+      </ul>
+      {usingFallback && <p className="contact-admin__hint">ยังไม่มีภาษาไทย — หน้าเว็บใช้รายการภาษาอังกฤษ (ตัวจาง) แทน</p>}
+      <div className="sol-admin__list-actions">
+        <button type="button" className="btn contact-admin__small-btn" onClick={() => onChange([...items, ""])}>
+          + {addLabel}
+        </button>
+        {usingFallback && (
+          <button type="button" className="btn contact-admin__small-btn" onClick={() => onChange([...fallback])}>
+            คัดลอก EN มาแปล
+          </button>
+        )}
+      </div>
+    </>
+  );
 }
 
 export default function AdminAutomationSolution() {
-  const [activeTab, setActiveTab] = useState("hero");
-  const [heroForm, setHeroForm] = useState(emptyHeroForm);
-  const [heroLang, setHeroLang] = useState("th");
-  const [heroLoading, setHeroLoading] = useState(true);
-  const [heroSaving, setHeroSaving] = useState(false);
-  const [heroError, setHeroError] = useState("");
+  const [lang, setLang] = useState("th");
+  const [hero, setHero] = useState(emptyHeroForm);
+  const [savedHero, setSavedHero] = useState("");
   const [blocks, setBlocks] = useState([]);
-  const [blocksLoading, setBlocksLoading] = useState(true);
-  const [blocksError, setBlocksError] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [blockForm, setBlockForm] = useState(emptyBlockForm);
-  const [blockSnapshot, setBlockSnapshot] = useState("");
-  const [blockLang, setBlockLang] = useState("th");
-  const [blockSaving, setBlockSaving] = useState(false);
-  const [discardTarget, setDiscardTarget] = useState(null);
+  const [industries, setIndustries] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [pickerFor, setPickerFor] = useState(null); // index of the step whose icon picker is open
+  const [positioning, setPositioning] = useState(null); // key of the block whose crop is being adjusted
+  const [moving, setMoving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-
-  const loadBlocks = () => {
-    setBlocksLoading(true);
-    return api.adminGetSolutions().then(setBlocks).catch((err) => setBlocksError(err.message)).finally(() => setBlocksLoading(false));
-  };
 
   useEffect(() => {
-    api.adminGetAutomationSolutionContent().then((data) => data && setHeroForm((form) => ({ ...form, ...data }))).catch((err) => setHeroError(err.message)).finally(() => setHeroLoading(false));
-    loadBlocks();
+    Promise.all([
+      api.adminGetAutomationSolutionContent().then((d) => {
+        const next = { ...emptyHeroForm(), ...(d || {}) };
+        // start from the built-in steps so they can be edited in place;
+        // counted as saved, so this alone does not enable the Save button
+        if (!parseProcessSteps(next.process_steps).length) next.process_steps = JSON.stringify(builtInSteps());
+        setHero(next);
+        setSavedHero(JSON.stringify(next));
+      }),
+      api.adminGetSolutions().then((rows) => setBlocks((rows || []).map(makeBlock))),
+    ])
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+    api
+      .getIndustries()
+      .then((rows) => setIndustries(rows && rows.length ? rows : null))
+      .catch(() => setIndustries(null));
   }, []);
 
-  const heroField = (base) => `${base}_${heroLang}`;
-  const heroValue = (base) => heroForm[heroField(base)] || "";
-  const updateHero = (base, value) => setHeroForm((form) => ({ ...form, [heroField(base)]: value }));
-  const handleHeroSubmit = async (event) => {
-    event.preventDefault(); setHeroSaving(true); setHeroError("");
-    try {
-      const updated = await api.adminUpdateAutomationSolutionContent(heroForm);
-      setHeroForm((form) => ({ ...form, ...updated }));
-      setSuccessMessage("Hero changes have been saved successfully.");
-    } catch (err) { setHeroError(err.message); } finally { setHeroSaving(false); }
+  const t = translations[lang]?.automationSolution || translations.en.automationSolution;
+  const common = translations[lang]?.common || translations.en.common;
+  const exploreMore = translations[lang]?.exploreMore || translations.en.exploreMore;
+  const th = lang === "th";
+
+  // ── hero ──
+  const heroBind = (base, placeholder, label) => ({
+    value: hero[`${base}_${lang}`] || "",
+    placeholder,
+    "aria-label": label,
+    onChange: (e) => {
+      setSuccess(false);
+      setHero((h) => ({ ...h, [`${base}_${lang}`]: e.target.value }));
+    },
+  });
+
+  // ── engineering process steps (JSON text in hero.process_steps) ──
+  const steps = parseProcessSteps(hero.process_steps);
+  const setSteps = (list) => {
+    setSuccess(false);
+    setHero((h) => ({ ...h, process_steps: JSON.stringify(list) }));
+  };
+  const updateStep = (i, patch) => setSteps(steps.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
+  const moveStep = (i, dir) => {
+    const next = [...steps];
+    [next[i], next[i + dir]] = [next[i + dir], next[i]];
+    setSteps(next);
+  };
+  const otherLang = lang === "th" ? "en" : "th";
+
+  // ── blocks ──
+  const updateBlock = (key, patch) => {
+    setSuccess(false);
+    setBlocks((list) => list.map((b) => (b.key === key ? { ...b, form: { ...b.form, ...patch } } : b)));
+  };
+  // field name for the language being edited: name → nameTh in Thai
+  const lf = (field) => (th ? `${field}Th` : field);
+
+  const addBlock = () => {
+    const b = makeBlock(null);
+    setBlocks((list) => [...list, b]);
+    requestAnimationFrame(() =>
+      document.getElementById(`sol-admin-${b.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
   };
 
-  const isBlockDirty = editingId !== null && JSON.stringify(blockForm) !== blockSnapshot;
-  const openBlock = (block) => {
-    const form = block ? rowToBlockForm(block) : emptyBlockForm();
-    setBlockForm(form); setBlockSnapshot(JSON.stringify(form)); setBlockLang(block ? "th" : "en"); setEditingId(block ? block.id : "new");
-  };
-  const closeBlock = () => { setEditingId(null); setBlockForm(emptyBlockForm()); setBlockSnapshot(""); };
-  const performTransition = (target) => {
-    setDiscardTarget(null);
-    if (target.type === "tab") { closeBlock(); setActiveTab(target.tab); return; }
-    closeBlock();
-    if (target.type === "edit") openBlock(target.block);
-    if (target.type === "add") openBlock(null);
-  };
-  const requestTransition = (target) => isBlockDirty ? setDiscardTarget(target) : performTransition(target);
-  const selectTab = (tab) => {
-    if (tab === activeTab) return;
-    if (tab === "hero") requestTransition({ type: "tab", tab });
-    else setActiveTab(tab);
-  };
-  const updateBlock = (field, value) => setBlockForm((form) => ({ ...form, [field]: value }));
-  const handleBlockSubmit = async (event) => {
-    event.preventDefault(); setBlockSaving(true); setBlocksError("");
-    const payload = {
-      name: blockForm.name, nameTh: blockForm.nameTh || null, summary: blockForm.summary || null, summaryTh: blockForm.summaryTh || null,
-      services: toLines(blockForm.services), servicesTh: toLines(blockForm.servicesTh), benefits: toLines(blockForm.benefits), benefitsTh: toLines(blockForm.benefitsTh),
-      imageUrl: blockForm.imageUrl || null, imagePositionX: blockForm.imageUrl ? blockForm.imagePositionX : 50, imagePositionY: blockForm.imageUrl ? blockForm.imagePositionY : 50,
-      relatedUrl: blockForm.relatedUrl.trim() || null, relatedLabel: blockForm.relatedLabel.trim() || null, relatedLabelTh: blockForm.relatedLabelTh.trim() || null, brochureUrl: blockForm.brochureUrl || null,
-    };
+  const move = async (index, dir) => {
+    const other = index + dir;
+    const a = blocks[index];
+    const b = blocks[other];
+    if (!a || !b || !a.id || !b.id || moving) return;
+    setMoving(true);
+    setError("");
     try {
-      if (editingId === "new") await api.adminCreateSolution(payload); else await api.adminUpdateSolution(editingId, payload);
-      closeBlock(); await loadBlocks(); setSuccessMessage("Solution Block changes have been saved successfully.");
-    } catch (err) { setBlocksError(err.message); } finally { setBlockSaving(false); }
+      await api.adminReorderSolution(a.id, dir < 0 ? "up" : "down");
+      setBlocks((list) => {
+        const next = [...list];
+        [next[index], next[other]] = [next[other], next[index]];
+        return next;
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMoving(false);
+    }
   };
+
   const confirmDelete = async () => {
     if (!deleteTarget || deleting) return;
-    setDeleting(true); setDeleteError("");
+    if (!deleteTarget.id) {
+      setBlocks((list) => list.filter((b) => b.key !== deleteTarget.key));
+      setDeleteTarget(null);
+      return;
+    }
+    setDeleting(true);
+    setDeleteError("");
     try {
       await api.adminDeleteSolution(deleteTarget.id);
-      if (editingId === deleteTarget.id) closeBlock();
-      setDeleteTarget(null); await loadBlocks();
-    } catch (err) { setDeleteError(err.message); } finally { setDeleting(false); }
+      setBlocks((list) => list.filter((b) => b.key !== deleteTarget.key));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
   };
-  const blockTitle = (block) => block.name_th ? `${block.name} / ${block.name_th}` : block.name;
-  const fields = blockLang === "th"
-    ? { name: "nameTh", summary: "summaryTh", services: "servicesTh", benefits: "benefitsTh", suffix: "TH", heading: "Thai (ไทย)" }
-    : { name: "name", summary: "summary", services: "services", benefits: "benefits", suffix: "EN", heading: "English" };
-  const blockEditor = (id) => <form onSubmit={handleBlockSubmit} className="admin-solution-block-editor">
-    <AdminEditLayout sidebar={<AdminLanguageSelect value={blockLang} onChange={setBlockLang} />}>
-      <div className="admin-form__section panel"><h3>{id === "new" ? "Add Solution Block" : "Edit Solution Block"} — {fields.heading}</h3>
-        <label className="contact-form__field"><span>Title ({fields.suffix}){blockLang === "en" && <span className="admin-required">*</span>}</span><input required={blockLang === "en"} value={blockForm[fields.name]} onChange={(e) => updateBlock(fields.name, e.target.value)} /></label>
-        <label className="contact-form__field" style={{ marginTop: 20 }}><span>Summary ({fields.suffix})</span><textarea rows={3} value={blockForm[fields.summary]} onChange={(e) => updateBlock(fields.summary, e.target.value)} /></label>
-        <div className="admin-form__row" style={{ marginTop: 20 }}><label className="contact-form__field"><span>Services ({fields.suffix}) — one per line</span><textarea rows={4} value={blockForm[fields.services]} onChange={(e) => updateBlock(fields.services, e.target.value)} /></label><label className="contact-form__field"><span>Benefits ({fields.suffix}) — one per line</span><textarea rows={4} value={blockForm[fields.benefits]} onChange={(e) => updateBlock(fields.benefits, e.target.value)} /></label></div>
-        <div style={{ marginTop: 20 }}><span className="admin-edit-sidebar__label" style={{ display: "block", marginBottom: 10 }}>Image</span>{blockForm.imageUrl && <ImagePositionField imageUrl={blockForm.imageUrl} positionX={blockForm.imagePositionX} positionY={blockForm.imagePositionY} onChange={({ x, y }) => setBlockForm((form) => ({ ...form, imagePositionX: x, imagePositionY: y }))} />}<div style={{ marginTop: blockForm.imageUrl ? 12 : 0 }}><ImageUploadField value={blockForm.imageUrl} hidePreview onChange={(url) => setBlockForm((form) => ({ ...form, imageUrl: url, imagePositionX: 50, imagePositionY: 50 }))} /></div></div>
-        <div style={{ marginTop: 28 }}>
-          <span className="admin-edit-sidebar__label" style={{ display: "block", marginBottom: 10 }}>ลิงก์สินค้าที่เกี่ยวข้อง / โบรชัวร์ (ไม่บังคับ)</span>
-          <p className="admin-form__hint">ใช้ร่วมกันทั้งภาษาไทยและอังกฤษ — แสดงบนหน้าเว็บเฉพาะเมื่อกรอกข้อมูลไว้</p>
-          <label className="contact-form__field"><span>ลิงก์สินค้าที่เกี่ยวข้อง (URL)</span><input value={blockForm.relatedUrl} maxLength={500} placeholder="/products/omron" onChange={(e) => updateBlock("relatedUrl", e.target.value)} /></label>
-          <p className="admin-form__hint">พาธในเว็บที่ขึ้นต้นด้วย "/" (เช่น /products/omron) หรือ URL ที่ขึ้นต้นด้วย https://</p>
-          <div className="admin-form__row" style={{ marginTop: 12 }}><label className="contact-form__field"><span>ข้อความลิงก์ (EN)</span><input value={blockForm.relatedLabel} maxLength={150} placeholder="View related products" onChange={(e) => updateBlock("relatedLabel", e.target.value)} /></label><label className="contact-form__field"><span>ข้อความลิงก์ (TH)</span><input value={blockForm.relatedLabelTh} maxLength={150} placeholder="ดูสินค้าที่เกี่ยวข้อง" onChange={(e) => updateBlock("relatedLabelTh", e.target.value)} /></label></div>
-          <div className="contact-form__field" style={{ marginTop: 20 }}><span>โบรชัวร์ (PDF)</span><BrochureUploadField value={blockForm.brochureUrl} onChange={(url) => updateBlock("brochureUrl", url)} /></div>
-          <p className="admin-form__hint">ไฟล์ PDF ไม่เกิน 10 MB — ไฟล์จะถูกบันทึกเมื่อกด Save</p>
-        </div>
-        <div className="admin-form__submit-row"><button type="button" className="btn admin-btn-cancel" onClick={closeBlock}>Cancel</button><button type="submit" className="btn btn-primary" disabled={blockSaving}>{blockSaving ? "Saving…" : "Save"}</button></div>
-      </div>
-    </AdminEditLayout>
-  </form>;
 
-  return <>
-    <AdminBreadcrumb items={[{ label: "โซลูชันระบบอัตโนมัติ (Automation Solution)" }]} />
-    <div className="admin-edit-tabbar"><div className="admin-edit-tabs" role="tablist" aria-label="Automation Solution editor"><button type="button" role="tab" aria-selected={activeTab === "hero"} className={`admin-edit-tab ${activeTab === "hero" ? "is-active" : ""}`} onClick={() => selectTab("hero")}>Edit HERO</button><button type="button" role="tab" aria-selected={activeTab === "blocks"} className={`admin-edit-tab ${activeTab === "blocks" ? "is-active" : ""}`} onClick={() => selectTab("blocks")}>Edit Solution Block</button></div>{activeTab === "hero" && <div className="admin-edit-tabbar__actions"><button type="submit" form="automation-hero-form" className="btn btn-primary" disabled={heroSaving || heroLoading}>💾 {heroSaving ? "Saving…" : "Save HERO"}</button></div>}</div>
-    {activeTab === "hero" && <form id="automation-hero-form" onSubmit={handleHeroSubmit}>{heroError && <p className="contact-form__status contact-form__status--error">{heroError}</p>}{!heroLoading && <AdminEditLayout sidebar={<AdminLanguageSelect value={heroLang} onChange={setHeroLang} />}><div className="admin-form"><div className="admin-form__section panel"><h3>Hero</h3><label className="contact-form__field"><span>ข้อความเล็กเหนือหัวข้อ (Meta)</span><input value={heroValue("hero_meta")} onChange={(e) => updateHero("hero_meta", e.target.value)} /></label><label className="contact-form__field" style={{ marginTop: 20 }}><span>หัวข้อหลัก</span><input value={heroValue("hero_title")} onChange={(e) => updateHero("hero_title", e.target.value)} /></label><label className="contact-form__field" style={{ marginTop: 20 }}><span>คำอธิบายใต้หัวข้อ</span><textarea rows={3} value={heroValue("hero_sub")} onChange={(e) => updateHero("hero_sub", e.target.value)} /></label><label className="contact-form__field" style={{ marginTop: 20 }}><span>Hero background image (Automation Solution page only — optional)</span><ImageUploadField accept="image/*,video/mp4" maxSizeMB={10} value={heroForm.hero_bg_image} onChange={(url) => setHeroForm((form) => ({ ...form, hero_bg_image: url }))} /></label></div></div></AdminEditLayout>}</form>}
-    {activeTab === "blocks" && <><div className="admin-edit-notice">Manage the solution blocks shown on the Automation Solution page. Edit opens only the selected block; image upload and crop positioning are retained.</div>{blocksError && <p className="contact-form__status contact-form__status--error">{blocksError}</p>}{!blocksLoading && <div className="admin-solution-blocks">{blocks.map((block, index) => <div key={block.id} className="admin-solution-block-item"><div className="admin-solution-block-row panel">{block.image_url ? <img src={block.image_url} alt="" className="admin-list-thumb" /> : <span className="admin-list-thumb admin-list-thumb--empty" />}<div className="admin-solution-block-row__info"><strong>{blockTitle(block)}</strong>{block.summary && <p className="admin-list-table__submeta">{block.summary}</p>}</div><span className="admin-solution-block-order">#{index + 1}</span><div className="admin-row-actions"><button type="button" className="admin-icon-btn admin-icon-btn--edit" onClick={() => requestTransition({ type: "edit", block })} title="Edit">✎</button><button type="button" className="admin-icon-btn admin-icon-btn--delete" onClick={() => { setDeleteError(""); setDeleteTarget(block); }} title="Delete">🗑</button></div></div>{editingId === block.id && blockEditor(block.id)}</div>)}{!blocks.length && editingId === null && <p className="empty-state">No Solution Blocks yet — add the first block below.</p>}{editingId === "new" && blockEditor("new")}{editingId === null && <button type="button" className="btn" onClick={() => requestTransition({ type: "add" })}>+ Add Solution Block</button>}</div>}</>}
-    {successMessage && <SuccessModal message={successMessage} onClose={() => setSuccessMessage("")} />}
-    {discardTarget && <ConfirmModal title="Discard unsaved changes?" message="Your unsaved Solution Block changes will be discarded." detail="This cannot be undone." confirmLabel="Discard changes" onCancel={() => setDiscardTarget(null)} onConfirm={() => performTransition(discardTarget)} />}
-    {deleteTarget && <ConfirmModal title="Delete Solution Block?" message="Are you sure you want to delete this Solution Block? This action cannot be undone." detail={blockTitle(deleteTarget)} confirmLabel="Delete" busy={deleting} error={deleteError} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
-  </>;
+  const heroDirty = savedHero !== "" && JSON.stringify(hero) !== savedHero;
+  const dirtyBlocks = blocks.filter(isDirty);
+  const hasChanges = heroDirty || dirtyBlocks.length > 0;
+
+  const handleSave = async () => {
+    const missing = blocks.findIndex((b) => isDirty(b) && !b.form.name.trim());
+    if (missing !== -1) {
+      setError(`Solution #${missing + 1} ยังไม่มีชื่อภาษาอังกฤษ (จำเป็น) — สลับเป็น English แล้วกรอกชื่อก่อนบันทึก`);
+      document.getElementById(`sol-admin-${blocks[missing].key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setSaving(true);
+    setError("");
+    setSuccess(false);
+    try {
+      if (heroDirty) {
+        const updated = await api.adminUpdateAutomationSolutionContent(hero);
+        const next = { ...hero, ...updated };
+        setHero(next);
+        setSavedHero(JSON.stringify(next));
+      }
+      // one at a time, in page order, so new blocks keep their position
+      for (const b of blocks) {
+        if (!isDirty(b)) continue;
+        const row = b.id
+          ? await api.adminUpdateSolution(b.id, toPayload(b.form))
+          : await api.adminCreateSolution(toPayload(b.form));
+        const form = rowToBlockForm(row);
+        setBlocks((list) => list.map((x) => (x.key === b.key ? { ...x, id: row.id, form, saved: JSON.stringify(form) } : x)));
+      }
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <p className="empty-state">กำลังโหลด…</p>;
+  }
+
+  const blockName = (b) => (th && b.form.nameTh) || b.form.name || b.form.nameTh || "Solution ใหม่";
+
+  return (
+    <div className="sol-admin">
+      <AdminBreadcrumb items={[{ label: "โซลูชันระบบอัตโนมัติ (Automation Solution)" }]} />
+
+      <div className="admin-edit-tabbar admin-edit-tabbar--actions-only">
+        <div className="admin-edit-tabbar__actions home-admin__toolbar">
+          <label className="career-admin__lang">
+            <span>ภาษา</span>
+            <select value={lang} onChange={(e) => setLang(e.target.value)}>
+              <option value="th">🇹🇭 ภาษาไทย</option>
+              <option value="en">🇬🇧 English</option>
+            </select>
+          </label>
+          <a className="btn" href="/automation-solution" target="_blank" rel="noopener noreferrer">
+            ดูหน้าเว็บ ↗
+          </a>
+          <button type="button" className="btn btn-primary" disabled={saving || !hasChanges} onClick={handleSave}>
+            💾 {saving ? "กำลังบันทึก…" : hasChanges ? "บันทึก" : "บันทึกแล้ว"}
+          </button>
+        </div>
+      </div>
+
+      {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
+      {success && <SuccessModal onClose={() => setSuccess(false)} />}
+
+      <div className="admin-edit-notice">
+        🔔 กำลังแก้ไขเวอร์ชัน <strong>{th ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — หน้าด้านล่างแสดงเหมือนหน้า Automation Solution จริง
+        คลิกที่ข้อความเพื่อพิมพ์แก้ได้ทันที ช่องที่เว้นว่างจะใช้ข้อความเริ่มต้นหรือข้อความภาษาอังกฤษ (ตัวจาง)
+        รูปภาพ ลิงก์สินค้า และโบรชัวร์ ใช้ร่วมกันทั้งสองภาษา — กด “บันทึก” ครั้งเดียวเพื่อบันทึกทุกส่วนที่แก้
+      </div>
+
+      <div className="home-admin__page">
+        {/* HERO */}
+        <section className={`hero hero--compact hero--centered${hero.hero_bg_image ? " hero--has-bg" : ""}`}>
+          {hero.hero_bg_image && (
+            <>
+              <HeroBgMedia src={hero.hero_bg_image} />
+              <div className="hero__bg-scrim" aria-hidden="true" />
+            </>
+          )}
+          <div className="hero__grid-overlay" aria-hidden="true" />
+          <div className="container hero__content">
+            <span className="hero__meta">
+              <InlineInput {...heroBind("hero_meta", t.heroMeta, "ข้อความเล็กเหนือหัวข้อ")} />
+            </span>
+            <h1>
+              <InlineInput {...heroBind("hero_title", t.heroTitle, "หัวข้อหลัก")} />
+            </h1>
+            <p className="hero__sub">
+              <InlineInput multiline rows={2} {...heroBind("hero_sub", t.heroSub, "คำอธิบายใต้หัวข้อ")} />
+            </p>
+          </div>
+        </section>
+        <div className="panel home-admin__hero-bg">
+          <span className="admin-edit-sidebar__label">ภาพหรือวิดีโอพื้นหลัง Hero (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา)</span>
+          <ImageUploadField
+            accept="image/*,video/mp4"
+            maxSizeMB={10}
+            value={hero.hero_bg_image || ""}
+            onChange={(url) => {
+              setSuccess(false);
+              setHero((h) => ({ ...h, hero_bg_image: url }));
+            }}
+          />
+        </div>
+
+        {/* JUMP NAV — follows the block names automatically */}
+        {blocks.length > 0 && (
+          <nav className="sol-nav sol-admin__nav" aria-label="ตัวอย่างแถบเมนูลัด">
+            <div className="container sol-nav__inner">
+              {blocks.map((b, i) => (
+                <a
+                  key={b.key}
+                  href={`#sol-admin-${b.key}`}
+                  className={`sol-nav__chip${i === 0 ? " is-active" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(`sol-admin-${b.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  {blockName(b)}
+                </a>
+              ))}
+            </div>
+          </nav>
+        )}
+
+        {/* SOLUTION BLOCKS */}
+        <section className="section sol-list">
+          <div className="container">
+            {!blocks.length && (
+              <p className="sol-admin__empty">
+                ยังไม่มี Solution — หน้าเว็บจะแสดง Solution ตัวอย่างที่ติดมากับระบบ กด “+ เพิ่ม Solution” เพื่อสร้างของจริง
+              </p>
+            )}
+
+            {blocks.map((b, i) => {
+              const f = b.form;
+              const dirty = isDirty(b);
+              const name = th ? f.nameTh : f.name;
+              const fallbackName = th ? f.name : "";
+              const relatedLabelPlaceholder =
+                (th && f.relatedLabel) || t.relatedProducts;
+              return (
+                <div className="sol-admin__block" key={b.key} id={`sol-admin-${b.key}`}>
+                  <div className="sol-admin__bar">
+                    <span className="sol-admin__order">#{i + 1}</span>
+                    {!b.id && <span className="career-admin__badge career-admin__badge--new">ใหม่ · ยังไม่บันทึก</span>}
+                    {b.id && dirty && <span className="career-admin__badge career-admin__badge--dirty">มีการแก้ไข</span>}
+                    <span className="sol-admin__bar-spacer" />
+                    <button
+                      type="button"
+                      className="btn contact-admin__small-btn"
+                      disabled={moving || i === 0 || !b.id || !blocks[i - 1]?.id}
+                      onClick={() => move(i, -1)}
+                      aria-label="เลื่อนขึ้น"
+                      title="เลื่อนขึ้น"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn contact-admin__small-btn"
+                      disabled={moving || i === blocks.length - 1 || !b.id || !blocks[i + 1]?.id}
+                      onClick={() => move(i, 1)}
+                      aria-label="เลื่อนลง"
+                      title="เลื่อนลง"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="btn contact-admin__small-btn sol-admin__delete"
+                      onClick={() => {
+                        setDeleteError("");
+                        setDeleteTarget(b);
+                      }}
+                    >
+                      ลบ
+                    </button>
+                  </div>
+
+                  <article className={`solution-block ${i % 2 ? "solution-block--flip" : ""}`}>
+                    <div className="sol-admin__media">
+                      {positioning === b.key && f.imageUrl ? (
+                        <ImagePositionField
+                          imageUrl={f.imageUrl}
+                          positionX={f.imagePositionX}
+                          positionY={f.imagePositionY}
+                          onChange={({ x, y }) => updateBlock(b.key, { imagePositionX: x, imagePositionY: y })}
+                        />
+                      ) : (
+                        <div className="solution-block__visual">
+                          {f.imageUrl ? (
+                            <img
+                              src={f.imageUrl}
+                              alt=""
+                              className="solution-block__image"
+                              style={{ objectPosition: `${f.imagePositionX}% ${f.imagePositionY}%` }}
+                            />
+                          ) : (
+                            <span className="solution-block__glyph">{(name || fallbackName || "S").charAt(0)}</span>
+                          )}
+                        </div>
+                      )}
+                      <div className="panel sol-admin__media-tools">
+                        <span className="admin-edit-sidebar__label">รูปภาพ (อัตราส่วน 4:3 — ใช้ร่วมกันทั้งสองภาษา)</span>
+                        <ImageUploadField
+                          value={f.imageUrl}
+                          hidePreview
+                          onChange={(url) => {
+                            updateBlock(b.key, { imageUrl: url, imagePositionX: 50, imagePositionY: 50 });
+                            if (!url) setPositioning(null);
+                          }}
+                        />
+                        {f.imageUrl && (
+                          <button
+                            type="button"
+                            className="btn contact-admin__small-btn"
+                            onClick={() => setPositioning(positioning === b.key ? null : b.key)}
+                          >
+                            {positioning === b.key ? "✓ เสร็จสิ้นการจัดตำแหน่ง" : "✥ ลากจัดตำแหน่งภาพ"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="solution-block__content">
+                      <h2>
+                        <InlineInput
+                          multiline
+                          rows={1}
+                          value={name}
+                          placeholder={fallbackName || (th ? "ชื่อ Solution (ภาษาไทย)" : "Solution name (required)")}
+                          aria-label="ชื่อ Solution"
+                          onChange={(e) => updateBlock(b.key, { [lf("name")]: e.target.value })}
+                        />
+                      </h2>
+                      {!th && !f.name.trim() && <p className="contact-admin__hint sol-admin__required">* จำเป็นต้องมีชื่อภาษาอังกฤษ</p>}
+                      <div className="solution-block__summary">
+                        <InlineInput
+                          multiline
+                          rows={3}
+                          value={th ? f.summaryTh : f.summary}
+                          placeholder={(th && f.summary) || "คำอธิบายสั้นๆ ของ Solution นี้"}
+                          aria-label="คำอธิบาย"
+                          onChange={(e) => updateBlock(b.key, { [lf("summary")]: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="solution-block__lists">
+                        <div>
+                          <h3 className="solution-block__list-title">{t.servicesLabel}</h3>
+                          <ListEditor
+                            ulClassName="solution-block__services"
+                            items={th ? f.servicesTh : f.services}
+                            fallback={th ? f.services : []}
+                            addLabel="เพิ่มบริการ"
+                            onChange={(list) => updateBlock(b.key, { [lf("services")]: list })}
+                          />
+                        </div>
+                        <div className="solution-block__benefits">
+                          <h3 className="solution-block__list-title">{t.benefitsLabel}</h3>
+                          <ListEditor
+                            items={th ? f.benefitsTh : f.benefits}
+                            fallback={th ? f.benefits : []}
+                            addLabel="เพิ่มประโยชน์"
+                            renderBullet={() => (
+                              <span className="solution-block__tick" aria-hidden="true">
+                                <ContactIcon name="check" size={14} />
+                              </span>
+                            )}
+                            onChange={(list) => updateBlock(b.key, { [lf("benefits")]: list })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="solution-block__actions">
+                        <span className="btn btn-primary sol-admin__fake-btn" title="ปุ่มนี้พาไปฟอร์มขอใบเสนอราคาโดยอัตโนมัติ">
+                          {t.discuss} <span className="btn-arrow">→</span>
+                        </span>
+                        {f.relatedUrl.trim() && (
+                          <span className="solution-block__link sol-admin__link">
+                            <InlineInput
+                              value={th ? f.relatedLabelTh : f.relatedLabel}
+                              placeholder={relatedLabelPlaceholder}
+                              aria-label="ข้อความลิงก์สินค้าที่เกี่ยวข้อง"
+                              onChange={(e) => updateBlock(b.key, { [lf("relatedLabel")]: e.target.value })}
+                            />
+                            <ContactIcon name="arrow" size={16} />
+                          </span>
+                        )}
+                        {f.brochureUrl && (
+                          <a href={f.brochureUrl} className="solution-block__link" target="_blank" rel="noopener noreferrer">
+                            <ContactIcon name="download" size={16} />
+                            {t.brochure}
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="panel sol-admin__links">
+                        <label>
+                          <span className="admin-edit-sidebar__label">ลิงก์สินค้าที่เกี่ยวข้อง (ไม่บังคับ)</span>
+                          <input
+                            className="sol-admin__url"
+                            value={f.relatedUrl}
+                            maxLength={500}
+                            placeholder="/products/omron หรือ https://…"
+                            onChange={(e) => updateBlock(b.key, { relatedUrl: e.target.value })}
+                          />
+                        </label>
+                        <div className="sol-admin__pdf-row">
+                          <span className="admin-edit-sidebar__label">โบรชัวร์ PDF (ไม่บังคับ, ไม่เกิน 10 MB)</span>
+                          <PdfUploadButton value={f.brochureUrl} onChange={(url) => updateBlock(b.key, { brochureUrl: url })} />
+                        </div>
+                        <p className="contact-admin__hint">
+                          กรอกลิงก์แล้วปุ่มลิงก์จะโผล่ด้านบน คลิกที่ข้อความปุ่มเพื่อแก้ได้ — ว่าง = ไม่แสดงปุ่ม
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              );
+            })}
+
+            <button type="button" className="btn sol-admin__add" onClick={addBlock}>
+              + เพิ่ม Solution
+            </button>
+          </div>
+        </section>
+
+        {/* PROCESS — edited in place */}
+        <section className="section sol-process sol-admin__process">
+          <div className="container">
+            <div className="section-head">
+              <h2>
+                <InlineInput multiline rows={1} {...heroBind("process_title", t.processTitle, "หัวข้อขั้นตอนการทำงาน")} />
+              </h2>
+              <div className="lede">
+                <InlineInput multiline rows={2} {...heroBind("process_lede", t.processLede, "คำอธิบายใต้หัวข้อ")} />
+              </div>
+            </div>
+            <ol className="sol-steps" style={{ "--n": steps.length }}>
+              {steps.map((step, i) => (
+                <li className="sol-step" key={i} style={{ "--i": i }}>
+                  <button
+                    type="button"
+                    className="sol-step__ring sol-admin__ring"
+                    title="คลิกเพื่อเปลี่ยนไอคอน"
+                    aria-label={`เปลี่ยนไอคอนขั้นตอนที่ ${i + 1}`}
+                    aria-expanded={pickerFor === i}
+                    onClick={() => setPickerFor(pickerFor === i ? null : i)}
+                  >
+                    <StepIcon name={step.icon || "check"} />
+                    <span className="sol-admin__ring-edit" aria-hidden="true">✎</span>
+                  </button>
+                  {pickerFor === i && (
+                    <IconPicker
+                      value={step.icon || "check"}
+                      align={i < steps.length / 2 ? "start" : "end"}
+                      onChange={(icon) => updateStep(i, { icon })}
+                      onClose={() => setPickerFor(null)}
+                    />
+                  )}
+                  <span className="sol-step__num">{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="sol-step__label">
+                    <InlineInput
+                      multiline
+                      rows={1}
+                      value={step[`label_${lang}`] || ""}
+                      placeholder={step[`label_${otherLang}`] || "ชื่อขั้นตอน"}
+                      aria-label={`ชื่อขั้นตอนที่ ${i + 1}`}
+                      onChange={(e) => updateStep(i, { [`label_${lang}`]: e.target.value })}
+                    />
+                  </h3>
+                  <div className="sol-step__desc">
+                    <InlineInput
+                      multiline
+                      rows={2}
+                      value={step[`desc_${lang}`] || ""}
+                      placeholder={step[`desc_${otherLang}`] || "คำอธิบายสั้นๆ"}
+                      aria-label={`คำอธิบายขั้นตอนที่ ${i + 1}`}
+                      onChange={(e) => updateStep(i, { [`desc_${lang}`]: e.target.value })}
+                    />
+                  </div>
+                  <div className="sol-admin__step-tools">
+                    <button
+                      type="button"
+                      className="contact-admin__remove"
+                      disabled={i === 0}
+                      onClick={() => moveStep(i, -1)}
+                      aria-label={`เลื่อนขั้นตอนที่ ${i + 1} ไปก่อนหน้า`}
+                      title="เลื่อนไปก่อนหน้า"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className="contact-admin__remove"
+                      disabled={i === steps.length - 1}
+                      onClick={() => moveStep(i, 1)}
+                      aria-label={`เลื่อนขั้นตอนที่ ${i + 1} ไปถัดไป`}
+                      title="เลื่อนไปถัดไป"
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      className="contact-admin__remove"
+                      disabled={steps.length <= MIN_STEPS}
+                      onClick={() => setSteps(steps.filter((_, idx) => idx !== i))}
+                      aria-label={`ลบขั้นตอนที่ ${i + 1}`}
+                      title="ลบขั้นตอน"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="sol-admin__list-actions sol-admin__process-actions">
+              <button
+                type="button"
+                className="btn contact-admin__small-btn"
+                disabled={steps.length >= MAX_STEPS}
+                onClick={() => setSteps([...steps, { icon: "check", label_en: "", label_th: "", desc_en: "", desc_th: "" }])}
+              >
+                + เพิ่มขั้นตอน
+              </button>
+              <button type="button" className="btn contact-admin__small-btn" onClick={() => setSteps(builtInSteps())}>
+                ↺ กลับไปใช้ขั้นตอนเริ่มต้น
+              </button>
+              <span className="contact-admin__hint">
+                คลิกที่วงกลมเพื่อเปลี่ยนไอคอนหรืออัปโหลดไอคอนเอง · {MIN_STEPS}–{MAX_STEPS} ขั้นตอน · ข้อความที่ยังไม่แปลจะแสดงอีกภาษาแทน (ตัวจาง)
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* INDUSTRIES — managed elsewhere */}
+        {industries && (
+          <>
+            <ManagedNote>
+              อุตสาหกรรม — แก้ไขรายการได้ที่ <Link to="/admin/industries">สไลด์อุตสาหกรรม (Industries Slider)</Link>
+            </ManagedNote>
+            <section className="section industries-section sol-industries" inert="">
+              <div className="container">
+                <SectionLabel title={t.industriesTitle} lede={t.industriesLede} />
+                <IndustriesSlider industries={industries} exploreLabel={exploreMore} lang={lang} />
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* CTA — preview only */}
+        <ManagedNote>แถบปิดท้ายหน้า — แสดงตัวอย่างเท่านั้น</ManagedNote>
+        <section className="cta-band history-cta" inert="">
+          <div className="container cta-band__wrap">
+            <h2>{t.ctaTitle}</h2>
+            <p className="history-cta__sub">{t.ctaSub}</p>
+            <div className="history-cta__actions">
+              <span className="btn btn-primary">
+                {common.contactUs} <span className="btn-arrow">→</span>
+              </span>
+              <span className="btn">{common.viewProducts}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="ลบ Solution นี้?"
+          message={deleteTarget.id ? "Solution นี้จะถูกลบออกจากหน้าเว็บทันที และกู้คืนไม่ได้" : "Solution ใหม่ที่ยังไม่ได้บันทึกนี้จะถูกนำออก"}
+          detail={blockName(deleteTarget)}
+          confirmLabel="ลบ"
+          busy={deleting}
+          error={deleteError}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
+    </div>
+  );
 }
