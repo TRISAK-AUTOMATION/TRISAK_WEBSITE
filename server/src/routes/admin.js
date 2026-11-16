@@ -87,6 +87,7 @@ import {
   getContactRequest,
   updateContactRequestStatus,
   deleteContactRequest,
+  downloadContactAttachment,
 } from "../controllers/contactRequestsController.js";
 import {
   createProductDocument,
@@ -149,6 +150,7 @@ router.get("/admin/contact-requests", listContactRequests);
 router.get("/admin/contact-requests/:id", getContactRequest);
 router.patch("/admin/contact-requests/:id/status", updateContactRequestStatus);
 router.delete("/admin/contact-requests/:id", deleteContactRequest);
+router.get("/admin/contact-requests/:id/attachment", downloadContactAttachment);
 
 router.get("/admin/menu-items", listMenuItemsAdmin);
 router.get("/admin/menu-items/:id", getMenuItemAdmin);

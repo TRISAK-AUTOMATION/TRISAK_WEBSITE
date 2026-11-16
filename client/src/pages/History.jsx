@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
@@ -105,6 +106,37 @@ export function BrandLanesTimeline({ items, brands }) {
   );
 }
 
+// Organization chart (Admin > History > Organization): a node, then its
+// children joined by one bracket line, recursively.
+function OrgNode({ node, root = false }) {
+  return (
+    <li className="org-tree__item">
+      <div className={`org-tree__node${root ? " org-tree__node--root" : ""}`}>
+        {node.image && <img className="org-tree__img" src={node.image} alt="" loading="lazy" />}
+        <span className="org-tree__name">{node.name}</span>
+        {node.person && <span className="org-tree__person">{node.person}</span>}
+      </div>
+      {node.children.length > 0 && (
+        <ul className="org-tree__children">
+          {node.children.map((child) => (
+            <OrgNode key={child.id} node={child} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+export function OrgChart({ roots }) {
+  return (
+    <ul className="org-tree">
+      {roots.map((node) => (
+        <OrgNode key={node.id} node={node} root />
+      ))}
+    </ul>
+  );
+}
+
 // "Our Experience" full-bleed banner: text + statistics row, then whatever
 // is passed as children (Partners & Brands) inside the same background.
 export function ExperienceBanner({ eyebrow, title, lede, stats, children }) {
@@ -168,7 +200,16 @@ export default function History() {
 
   let timeline = [];
   let stats = [];
+  let orgRoots = [];
   if (historyContent) {
+    const toNode = (n) => ({
+      id: n.id,
+      name: pick(n, "name"),
+      person: pick(n, "person"),
+      image: n.image_url,
+      children: (n.children || []).map(toNode),
+    });
+    orgRoots = (historyContent.org || []).map(toNode);
     timeline = historyContent.timeline.map((m) => ({
       id: m.id,
       year: pick(m, "year"),
@@ -196,6 +237,11 @@ export default function History() {
     return value || fallback;
   };
 
+  // Founding year = the earliest numeric year on the timeline (e.g. 1978);
+  // the intro facts only show when the timeline actually has one.
+  const firstYear = Math.min(...timeline.map((m) => yearNum(m.year)));
+  const founded = Number.isFinite(firstYear) && firstYear > 1800 ? firstYear : null;
+  const yearsActive = founded ? new Date().getFullYear() - founded : null;
 
   return (
     <>
@@ -205,15 +251,40 @@ export default function History() {
           <h1>{ac("intro_title", t("history.introTitle"))}</h1>
           <p className="intro__lede">{ac("intro_lede", t("history.introLede"))}</p>
           <p className="intro__body">{ac("intro_body", t("history.introBody"))}</p>
+          {founded && (
+            <dl className="intro__facts">
+              <div>
+                <dt>{t("history.factSince")}</dt>
+                <dd>{founded}</dd>
+              </div>
+              <div>
+                <dt>{t("history.factYears")}</dt>
+                <dd>{yearsActive}</dd>
+              </div>
+              <div>
+                <dt>{t("history.factAuthorized")}</dt>
+                <dd className="intro__facts-brands">{BRANDS.join(" · ")}</dd>
+              </div>
+            </dl>
+          )}
         </div>
       </section>
 
-      <section className="section">
+      <section className="section history-section">
         <div className="container">
           <SectionLabel title={t("history.timelineTitle")} />
           <BrandLanesTimeline items={timeline} brands={brands} />
         </div>
       </section>
+
+      {orgRoots.length > 0 && (
+        <section className="section history-section history-org">
+          <div className="container">
+            <SectionLabel title={t("history.structureTitle")} />
+            <OrgChart roots={orgRoots} />
+          </div>
+        </section>
+      )}
 
       <WhyTrisak
         title={t("history.whyTitle")}
@@ -232,6 +303,21 @@ export default function History() {
         <SectionLabel eyebrow={t("history.partnersEyebrow")} title={t("history.partnersTitle")} />
         <PartnerBrands brands={brands} />
       </ExperienceBanner>
+
+      <section className="cta-band history-cta">
+        <div className="container cta-band__wrap">
+          <h2>{t("history.ctaTitle")}</h2>
+          <p className="history-cta__sub">{t("history.ctaSub")}</p>
+          <div className="history-cta__actions">
+            <Link to="/contacts" className="btn btn-primary">
+              {t("common.contactUs")} <span className="btn-arrow">→</span>
+            </Link>
+            <Link to="/products" className="btn">
+              {t("common.viewProducts")}
+            </Link>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

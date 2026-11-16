@@ -1,7 +1,16 @@
+import fs from "fs";
+import path from "path";
 import pool from "../config/db.js";
+import { contactAttachmentsDir } from "../middleware/uploadContactAttachment.js";
 import { CONTACT_STATUSES, INTEREST_LABELS, interestLabel } from "../utils/contactRequests.js";
 
-const COLUMNS = `id, name, company, email, phone, interested_in, message, status, created_at, updated_at`;
+// Never expose attachment_file (the stored server filename) to clients.
+const COLUMNS = `id, name, company, email, phone, interested_in, message, status, created_at, updated_at,
+  (attachment_file IS NOT NULL) AS has_attachment, attachment_name, attachment_size`;
+
+const removeFile = (file) => {
+  if (file) fs.unlink(path.join(contactAttachmentsDir, path.basename(file)), () => {});
+};
 
 const withLabel = (r) => ({ ...r, interestLabel: interestLabel(r.interested_in) });
 
@@ -122,16 +131,41 @@ export async function updateContactRequestStatus(req, res) {
   }
 }
 
-// DELETE /api/admin/contact-requests/:id
+// DELETE /api/admin/contact-requests/:id   (also deletes the attachment file)
 export async function deleteContactRequest(req, res) {
   const id = parseId(req.params.id);
   if (id === null) return res.status(404).json({ error: "Contact request not found" });
   try {
-    const result = await pool.query("DELETE FROM contact_requests WHERE id = $1", [id]);
-    if (result.rowCount === 0) return res.status(404).json({ error: "Contact request not found" });
+    const { rows } = await pool.query(
+      "DELETE FROM contact_requests WHERE id = $1 RETURNING attachment_file",
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Contact request not found" });
+    removeFile(rows[0].attachment_file);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to delete contact request" });
+  }
+}
+
+// GET /api/admin/contact-requests/:id/attachment   download the attachment
+export async function downloadContactAttachment(req, res) {
+  const id = parseId(req.params.id);
+  if (id === null) return res.status(404).json({ error: "Attachment not found" });
+  try {
+    const { rows } = await pool.query(
+      "SELECT attachment_file, attachment_name FROM contact_requests WHERE id = $1",
+      [id]
+    );
+    const file = rows[0]?.attachment_file;
+    if (!file) return res.status(404).json({ error: "Attachment not found" });
+    const full = path.join(contactAttachmentsDir, path.basename(file));
+    if (!fs.existsSync(full)) return res.status(404).json({ error: "Attachment file is missing on the server" });
+    res.set("X-Content-Type-Options", "nosniff");
+    res.download(full, rows[0].attachment_name || path.basename(file));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to download attachment" });
   }
 }

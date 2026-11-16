@@ -136,6 +136,14 @@ const CONTACTS_PAGE_FIELDS = [
   "map_title_en", "map_title_th",
   "head_office_map", "head_office_map_link",
   "warehouse_map", "warehouse_map_link",
+  "line_id", "line_url",
+  "office_hours_en", "office_hours_th",
+  "line_qr_image",
+  "support_phone", "support_email",
+  "accounting_phone", "accounting_email",
+  "company_name_en", "company_name_th", "tax_id",
+  "vendor_docs", "faq", // JSON text, see migration 047
+  "head_office_photo", "warehouse_photo",
 ];
 
 export async function getContactsPageContent(req, res) {

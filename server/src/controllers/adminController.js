@@ -993,6 +993,43 @@ function clampPosition(value) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+// Optional "related products" link + PDF brochure (migration 049).
+// Trim, empty -> NULL, enforce column lengths, and only allow site paths
+// ("/products/omron") or http(s) URLs so no javascript:/data: link can
+// ever be rendered on the public page. Accepts camelCase (like the other
+// fields) or the snake_case column names.
+const SOLUTION_LINK_FIELDS = [
+  { column: "related_url", key: "relatedUrl", max: 500, url: true },
+  { column: "related_label", key: "relatedLabel", max: 150 },
+  { column: "related_label_th", key: "relatedLabelTh", max: 150 },
+  { column: "brochure_url", key: "brochureUrl", max: 500, url: true },
+];
+
+function isSafeLinkUrl(value) {
+  if (value.startsWith("/")) return !value.startsWith("//") && !value.startsWith("/\\");
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function parseSolutionLinks(body) {
+  const values = {};
+  for (const { column, key, max, url } of SOLUTION_LINK_FIELDS) {
+    const raw = body[key] !== undefined ? body[key] : body[column];
+    if (raw === undefined || raw === null) { values[column] = null; continue; }
+    if (typeof raw !== "string") return { error: `${column} must be a string` };
+    const trimmed = raw.trim();
+    if (!trimmed) { values[column] = null; continue; }
+    if (trimmed.length > max) return { error: `${column} must be at most ${max} characters` };
+    if (url && !isSafeLinkUrl(trimmed)) return { error: `${column} must be a path starting with "/" or an http(s) URL` };
+    values[column] = trimmed;
+  }
+  return { values };
+}
+
 export async function createSolution(req, res) {
   const {
     name,
@@ -1008,12 +1045,15 @@ export async function createSolution(req, res) {
     imagePositionY = 50,
   } = req.body || {};
   if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
+  const links = parseSolutionLinks(req.body || {});
+  if (links.error) return res.status(400).json({ error: links.error });
   try {
     const slug = await uniqueSolutionSlug(name);
     const { rows: maxRows } = await pool.query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM solutions");
     const { rows } = await pool.query(
-      `INSERT INTO solutions (name, slug, summary, services, benefits, name_th, summary_th, services_th, benefits_th, image_url, image_position_x, image_position_y, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      `INSERT INTO solutions (name, slug, summary, services, benefits, name_th, summary_th, services_th, benefits_th, image_url, image_position_x, image_position_y, sort_order,
+         related_url, related_label, related_label_th, brochure_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
       [
         name.trim(),
         slug,
@@ -1028,6 +1068,10 @@ export async function createSolution(req, res) {
         clampPosition(imagePositionX),
         clampPosition(imagePositionY),
         maxRows[0].n,
+        links.values.related_url,
+        links.values.related_label,
+        links.values.related_label_th,
+        links.values.brochure_url,
       ]
     );
     logActivity("solution_added", `เพิ่ม Solution Block "${name.trim()}"`);
@@ -1054,11 +1098,14 @@ export async function updateSolution(req, res) {
     imagePositionY = 50,
   } = req.body || {};
   if (!name || !name.trim()) return res.status(400).json({ error: "name is required" });
+  const links = parseSolutionLinks(req.body || {});
+  if (links.error) return res.status(400).json({ error: links.error });
   try {
     const { rows } = await pool.query(
       `UPDATE solutions SET name = $1, summary = $2, services = $3, benefits = $4, name_th = $5, summary_th = $6,
-         services_th = $7, benefits_th = $8, image_url = $9, image_position_x = $10, image_position_y = $11
-       WHERE id = $12 RETURNING *`,
+         services_th = $7, benefits_th = $8, image_url = $9, image_position_x = $10, image_position_y = $11,
+         related_url = $12, related_label = $13, related_label_th = $14, brochure_url = $15
+       WHERE id = $16 RETURNING *`,
       [
         name.trim(),
         summary,
@@ -1071,6 +1118,10 @@ export async function updateSolution(req, res) {
         imageUrl,
         clampPosition(imagePositionX),
         clampPosition(imagePositionY),
+        links.values.related_url,
+        links.values.related_label,
+        links.values.related_label_th,
+        links.values.brochure_url,
         id,
       ]
     );

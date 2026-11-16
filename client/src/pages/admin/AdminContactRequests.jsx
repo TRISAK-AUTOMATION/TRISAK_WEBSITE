@@ -17,6 +17,28 @@ const formatDate = (value) =>
 
 const truncate = (text, max) => (text.length > max ? `${text.slice(0, max)}…` : text);
 
+const formatSize = (bytes) =>
+  !bytes ? "" : bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+// Same look as the résumé button on Admin > Career Applications.
+function AttachmentButton({ request, onDownload, busy, compact = false }) {
+  if (!request.has_attachment) return <span className="admin-list-table__muted">—</span>;
+  return (
+    <button
+      type="button"
+      className={`btn app-resume-btn${compact ? " app-resume-btn--compact" : ""}`}
+      disabled={busy}
+      onClick={(e) => {
+        e.stopPropagation();
+        onDownload(request);
+      }}
+      title={request.attachment_name || "Attachment"}
+    >
+      📎 {busy ? "Downloading…" : compact ? "Download" : `Download${request.attachment_size ? ` (${formatSize(request.attachment_size)})` : ""}`}
+    </button>
+  );
+}
+
 function StatusSelect({ value, onChange, disabled }) {
   return (
     <select
@@ -45,7 +67,7 @@ function DetailRow({ label, children }) {
   );
 }
 
-function RequestModal({ request, onClose, onStatusChange, onDelete }) {
+function RequestModal({ request, onClose, onStatusChange, onDelete, onDownload, downloading }) {
   return (
     <AdminModal
       title={`Contact Request #${request.id}`}
@@ -82,6 +104,10 @@ function RequestModal({ request, onClose, onStatusChange, onDelete }) {
         <DetailRow label="Message">
           {request.message ? <div className="cr-detail__message">{request.message}</div> : "—"}
         </DetailRow>
+        <DetailRow label="Attachment">
+          <AttachmentButton request={request} onDownload={onDownload} busy={downloading === request.id} />
+          {request.attachment_name && <div className="app-resume-name">{request.attachment_name}</div>}
+        </DetailRow>
       </dl>
     </AdminModal>
   );
@@ -106,6 +132,7 @@ export default function AdminContactRequests() {
   const [page, setPage] = useState(1);
 
   const [selected, setSelected] = useState(null);
+  const [downloading, setDownloading] = useState(null);
 
   // delete confirmation popup + success toast
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -193,6 +220,25 @@ export default function AdminContactRequests() {
     }
   };
 
+  const handleDownload = async (request) => {
+    setDownloading(request.id);
+    try {
+      const blob = await api.adminDownloadContactAttachment(request.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = request.attachment_name || `attachment-${request.id}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   // Clicking a Delete button only opens the confirmation popup.
   const handleDelete = (request) => {
     setDeleteError("");
@@ -252,7 +298,7 @@ export default function AdminContactRequests() {
       {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
 
       <div className="admin-list-table-wrap">
-        <table className="admin-list-table" style={{ minWidth: 1100 }}>
+        <table className="admin-list-table" style={{ minWidth: 1200 }}>
           <thead>
             <tr>
               <th>Name</th>
@@ -261,6 +307,7 @@ export default function AdminContactRequests() {
               <th>Phone</th>
               <th>Interested In</th>
               <th>Message</th>
+              <th>Attachment</th>
               <th aria-sort={sort === "desc" ? "descending" : "ascending"}>
                 <button
                   type="button"
@@ -278,14 +325,14 @@ export default function AdminContactRequests() {
           <tbody>
             {loading && items.length === 0 && (
               <tr>
-                <td colSpan={9} className="empty-state">
+                <td colSpan={10} className="empty-state">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={9} className="empty-state">
+                <td colSpan={10} className="empty-state">
                   {hasFilters ? "No requests match your search." : "No contact requests yet."}
                 </td>
               </tr>
@@ -298,6 +345,9 @@ export default function AdminContactRequests() {
                 <td className="admin-list-table__muted">{r.phone || "—"}</td>
                 <td className="admin-list-table__muted">{r.interestLabel}</td>
                 <td className="cr-message-cell">{r.message ? truncate(r.message, 80) : "—"}</td>
+                <td>
+                  <AttachmentButton request={r} onDownload={handleDownload} busy={downloading === r.id} compact />
+                </td>
                 <td className="admin-list-table__date">{formatDate(r.created_at)}</td>
                 <td>
                   <StatusSelect
@@ -360,13 +410,15 @@ export default function AdminContactRequests() {
           onClose={() => setSelected(null)}
           onStatusChange={handleStatusChange}
           onDelete={handleDelete}
+          onDownload={handleDownload}
+          downloading={downloading}
         />
       )}
 
       {deleteTarget && (
         <ConfirmModal
           title="Delete Contact Request?"
-          message="Are you sure you want to delete this contact request? This action cannot be undone."
+          message={`Are you sure you want to delete this contact request?${deleteTarget.has_attachment ? " Its attachment will also be deleted." : ""} This action cannot be undone.`}
           detail={`${deleteTarget.name}${deleteTarget.company ? ` · ${deleteTarget.company}` : ""}`}
           busy={deleting}
           error={deleteError}

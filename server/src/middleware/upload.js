@@ -13,7 +13,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "video/mp4"]; // mp4: hero background videos
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "video/mp4", "application/pdf"]; // mp4: hero background videos; pdf: public documents (Contact Us vendor documents)
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
@@ -28,7 +28,7 @@ function fileFilter(req, file, cb) {
   if (ALLOWED_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files (jpg, png, webp, gif, svg) or MP4 video are allowed"));
+    cb(new Error("Only image files (jpg, png, webp, gif, svg), MP4 video or PDF are allowed"));
   }
 }
 

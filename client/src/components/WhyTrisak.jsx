@@ -72,7 +72,8 @@ const ICONS = {
   ),
 };
 
-function Icon({ name }) {
+// Also used by the Automation Solution page's process steps.
+export function Icon({ name }) {
   return (
     <svg
       className="why__icon"
