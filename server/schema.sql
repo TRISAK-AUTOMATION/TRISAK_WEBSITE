@@ -367,6 +367,19 @@ CREATE TABLE about_content (
   intro_lede_th       TEXT,
   intro_body_en       TEXT,
   intro_body_th       TEXT,
+  hero_bg_image       VARCHAR(255), -- migration 044
+  intro_image         VARCHAR(255), -- migration 045
+  -- "Why TRISAK Group" section (migration 051); reasons/steps = JSON
+  -- [{icon,title_en,title_th,body_en,body_th}]
+  why_title_en         VARCHAR(255),
+  why_title_th         VARCHAR(255),
+  why_lede_en          TEXT,
+  why_lede_th          TEXT,
+  why_process_title_en VARCHAR(255),
+  why_process_title_th VARCHAR(255),
+  why_reasons          TEXT,
+  why_steps            TEXT,
+  why_bg_image         VARCHAR(255),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -4,7 +4,7 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 import BrandLogoGrid from "../components/BrandLogoGrid.jsx";
-import WhyTrisak from "../components/WhyTrisak.jsx";
+import WhyTrisak, { localizeIconList } from "../components/WhyTrisak.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -287,11 +287,12 @@ export default function History() {
       )}
 
       <WhyTrisak
-        title={t("history.whyTitle")}
-        lede={t("history.whyLede")}
-        reasons={t("history.whyReasons")}
-        processTitle={t("history.whyProcessTitle")}
-        steps={t("history.whySteps")}
+        title={ac("why_title", t("history.whyTitle"))}
+        lede={ac("why_lede", t("history.whyLede"))}
+        reasons={localizeIconList(aboutContent?.why_reasons, lang, t("history.whyReasons"))}
+        processTitle={ac("why_process_title", t("history.whyProcessTitle"))}
+        steps={localizeIconList(aboutContent?.why_steps, lang, t("history.whySteps"))}
+        bgImage={aboutContent?.why_bg_image}
       />
 
       <ExperienceBanner

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
@@ -10,7 +10,8 @@ import HeroBgMedia from "../../components/HeroBgMedia.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import ContactIcon from "../../components/contactIcons.jsx";
 import IndustriesSlider from "../../components/IndustriesSlider.jsx";
-import { Icon as StepIcon, ICON_NAMES, isIconUrl } from "../../components/WhyTrisak.jsx";
+import { Icon as StepIcon } from "../../components/WhyTrisak.jsx";
+import IconPicker from "../../components/IconPicker.jsx";
 import { translations } from "../../i18n/translations.js";
 import { STEP_ICONS, parseProcessSteps } from "../AutomationSolution.jsx";
 
@@ -23,100 +24,6 @@ import { STEP_ICONS, parseProcessSteps } from "../AutomationSolution.jsx";
  */
 
 const HERO_SUFFIXES = ["hero_meta", "hero_title", "hero_sub", "process_title", "process_lede"];
-// Thai names for the built-in icons (tooltip in the icon picker).
-const ICON_LABELS = {
-  consult: "ให้คำปรึกษา", design: "ออกแบบ", box: "จัดหาสินค้า", wrench: "ติดตั้ง", check: "ตรวจสอบ/เสร็จสิ้น",
-  headset: "ซัพพอร์ต", gear: "ระบบ/เฟือง", team: "ทีมงาน", handshake: "ความร่วมมือ", globe: "ทั่วโลก",
-  search: "สำรวจ/ค้นหา", clipboard: "เช็กลิสต์", document: "เอกสาร/สเปก", chip: "PLC/ชิป", robot: "หุ่นยนต์",
-  factory: "โรงงาน", chart: "ผลลัพธ์/กราฟ", shield: "ความปลอดภัย", truck: "ขนส่ง/ส่งมอบ", bolt: "ไฟฟ้า/พลังงาน",
-  bulb: "ไอเดีย", target: "เป้าหมาย", rocket: "เริ่มใช้งาน", calendar: "วางแผน", clock: "เวลา/ตรงเวลา",
-  award: "รับรองคุณภาพ", leaf: "ประหยัดพลังงาน", graduation: "ฝึกอบรม",
-};
-const MAX_ICON_MB = 1;
-
-/**
- * Popover under a step's ring: every built-in icon as a clickable tile, plus
- * uploading an own icon (SVG/PNG with a transparent background — it is tinted
- * to the theme colour on the public page).
- */
-function IconPicker({ value, align, onChange, onClose }) {
-  const ref = useRef(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const onDown = (e) => {
-      // clicks on the ring itself are handled by the ring's own toggle
-      if (ref.current && !ref.current.contains(e.target) && !e.target.closest?.(".sol-admin__ring")) onClose();
-    };
-    const onKey = (e) => e.key === "Escape" && onClose();
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
-
-  const upload = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    if (!["image/svg+xml", "image/png", "image/webp"].includes(file.type)) return setError("ใช้ไฟล์ SVG, PNG หรือ WebP");
-    if (file.size > MAX_ICON_MB * 1024 * 1024) return setError(`ไฟล์ต้องไม่เกิน ${MAX_ICON_MB} MB`);
-    setBusy(true);
-    setError("");
-    try {
-      const { url } = await api.adminUploadImage(file);
-      onChange(url);
-      onClose();
-    } catch (err) {
-      setError(err.message || "อัปโหลดไม่สำเร็จ");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div ref={ref} className={`sol-admin__picker sol-admin__picker--${align}`} role="dialog" aria-label="เลือกไอคอน">
-      <div className="sol-admin__picker-title">เลือกไอคอน</div>
-      <div className="sol-admin__picker-grid">
-        {ICON_NAMES.map((key) => (
-          <button
-            key={key}
-            type="button"
-            className={`sol-admin__picker-tile${value === key ? " is-selected" : ""}`}
-            title={ICON_LABELS[key] || key}
-            aria-label={ICON_LABELS[key] || key}
-            aria-pressed={value === key}
-            onClick={() => {
-              onChange(key);
-              onClose();
-            }}
-          >
-            <StepIcon name={key} />
-          </button>
-        ))}
-      </div>
-      <div className="sol-admin__picker-upload">
-        {isIconUrl(value) && (
-          <span className="sol-admin__picker-tile is-selected" title="ไอคอนที่อัปโหลดไว้">
-            <StepIcon name={value} />
-          </span>
-        )}
-        <label className="btn contact-admin__small-btn" style={{ cursor: busy ? "wait" : "pointer" }}>
-          {busy ? "กำลังอัปโหลด…" : isIconUrl(value) ? "⬆ เปลี่ยนไอคอนที่อัปโหลด" : "⬆ อัปโหลดไอคอนเอง"}
-          <input type="file" accept="image/svg+xml,image/png,image/webp" hidden onChange={upload} disabled={busy} />
-        </label>
-      </div>
-      <p className="contact-admin__hint">
-        SVG หรือ PNG พื้นหลังใส ไม่เกิน {MAX_ICON_MB} MB — ระบบลงสีให้เข้ากับธีมเอง
-      </p>
-      {error && <p className="contact-form__status contact-form__status--error">{error}</p>}
-    </div>
-  );
-}
-
 const MAX_STEPS = 8;
 const MIN_STEPS = 2;
 
@@ -771,6 +678,7 @@ export default function AdminAutomationSolution() {
                   <button
                     type="button"
                     className="sol-step__ring sol-admin__ring"
+                    data-icon-trigger=""
                     title="คลิกเพื่อเปลี่ยนไอคอน"
                     aria-label={`เปลี่ยนไอคอนขั้นตอนที่ ${i + 1}`}
                     aria-expanded={pickerFor === i}
