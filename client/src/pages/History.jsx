@@ -26,6 +26,24 @@ const brandRows = (brands) =>
       }
   );
 
+// The authorized brands as a compact row of logos (intro facts); a brand
+// without a logo in Admin > Brands shows as its name.
+function BrandLogoRow({ brands }) {
+  return (
+    <span className="brand-logo-row">
+      {brandRows(brands).map((b) => (
+        <Link key={b.slug} to={`/products/${b.slug}`} className="brand-logo-row__item" title={b.name}>
+          {b.logo_url ? (
+            <img src={b.logo_url} alt={b.name} loading="lazy" />
+          ) : (
+            <span className="brand-logo-row__name">{b.name}</span>
+          )}
+        </Link>
+      ))}
+    </span>
+  );
+}
+
 // Three equal cells, logos normalised to one optical height (see .partner-logos).
 export function PartnerBrands({ brands }) {
   return (
@@ -318,7 +336,9 @@ export default function History() {
               </div>
               <div>
                 <dt>{t("history.factAuthorized")}</dt>
-                <dd className="intro__facts-brands">{BRANDS.join(" · ")}</dd>
+                <dd className="intro__facts-brands">
+                  <BrandLogoRow brands={brands} />
+                </dd>
               </div>
             </dl>
           )}
