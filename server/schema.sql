@@ -147,6 +147,12 @@ CREATE TABLE solutions (
   -- frame + object-fit: cover so admin and site always match.
   image_position_x   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_x BETWEEN 0 AND 100),
   image_position_y   SMALLINT NOT NULL DEFAULT 50 CHECK (image_position_y BETWEEN 0 AND 100),
+  -- Optional "related products" link + PDF brochure (migration 049).
+  -- URLs are a site path ("/products/omron") or an http(s) URL.
+  related_url        VARCHAR(500),
+  related_label      VARCHAR(150),
+  related_label_th   VARCHAR(150),
+  brochure_url       VARCHAR(500),
   sort_order         INTEGER NOT NULL DEFAULT 0
 );
 
@@ -416,6 +422,22 @@ CREATE TABLE contacts_page_content (
   head_office_map_link    VARCHAR(500),
   warehouse_map           TEXT,
   warehouse_map_link      VARCHAR(500),
+  line_id                 VARCHAR(100),
+  line_url                VARCHAR(500),
+  office_hours_en         TEXT,
+  office_hours_th         TEXT,
+  line_qr_image           VARCHAR(255),
+  support_phone           VARCHAR(50),
+  support_email           VARCHAR(150),
+  accounting_phone        VARCHAR(50),
+  accounting_email        VARCHAR(150),
+  company_name_en         VARCHAR(255),
+  company_name_th         VARCHAR(255),
+  tax_id                  VARCHAR(30),
+  vendor_docs             TEXT,
+  faq                     TEXT,
+  head_office_photo       VARCHAR(255),
+  warehouse_photo         VARCHAR(255),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -631,6 +653,10 @@ CREATE TABLE contact_requests (
   phone          VARCHAR(50),
   interested_in  VARCHAR(50),
   message        TEXT,
+  -- optional attachment (private file; see migration 048)
+  attachment_file  VARCHAR(255),
+  attachment_name  VARCHAR(255),
+  attachment_size  INTEGER,
   status         VARCHAR(20) NOT NULL DEFAULT 'new'
                    CHECK (status IN ('new', 'in_progress', 'completed')),
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),

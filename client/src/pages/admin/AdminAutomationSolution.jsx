@@ -20,7 +20,7 @@ function emptyHeroForm() {
 }
 
 function emptyBlockForm() {
-  return { name: "", nameTh: "", summary: "", summaryTh: "", services: "", servicesTh: "", benefits: "", benefitsTh: "", imageUrl: "", imagePositionX: 50, imagePositionY: 50 };
+  return { name: "", nameTh: "", summary: "", summaryTh: "", services: "", servicesTh: "", benefits: "", benefitsTh: "", imageUrl: "", imagePositionX: 50, imagePositionY: 50, relatedUrl: "", relatedLabel: "", relatedLabelTh: "", brochureUrl: "" };
 }
 
 function rowToBlockForm(block) {
@@ -29,7 +29,32 @@ function rowToBlockForm(block) {
     services: (block.services || []).join("\n"), servicesTh: (block.services_th || []).join("\n"),
     benefits: (block.benefits || []).join("\n"), benefitsTh: (block.benefits_th || []).join("\n"), imageUrl: block.image_url || "",
     imagePositionX: block.image_position_x ?? 50, imagePositionY: block.image_position_y ?? 50,
+    relatedUrl: block.related_url || "", relatedLabel: block.related_label || "", relatedLabelTh: block.related_label_th || "", brochureUrl: block.brochure_url || "",
   };
+}
+
+/** Uploads one PDF brochure through the admin upload endpoint (returns { url }). */
+function BrochureUploadField({ value, onChange }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const pick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") return setError("ต้องเป็นไฟล์ PDF");
+    if (file.size > 10 * 1024 * 1024) return setError("ไฟล์ต้องไม่เกิน 10 MB");
+    setBusy(true); setError("");
+    try {
+      const { url } = await api.adminUploadImage(file);
+      onChange(url);
+    } catch (err) { setError(err.message || "อัปโหลดไม่สำเร็จ"); } finally { setBusy(false); }
+  };
+  return <span style={{ display: "inline-flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+    {value && <a href={value} target="_blank" rel="noopener noreferrer">ดูไฟล์ปัจจุบัน</a>}
+    <label className="btn" style={{ cursor: busy ? "wait" : "pointer" }}>{busy ? "กำลังอัปโหลด…" : value ? "เปลี่ยนไฟล์ PDF" : "อัปโหลด PDF"}<input type="file" accept="application/pdf" hidden onChange={pick} disabled={busy} /></label>
+    {value && !busy && <button type="button" className="btn" onClick={() => { setError(""); onChange(""); }}>ลบไฟล์</button>}
+    {error && <span className="contact-form__status contact-form__status--error">{error}</span>}
+  </span>;
 }
 
 export default function AdminAutomationSolution() {
@@ -101,6 +126,7 @@ export default function AdminAutomationSolution() {
       name: blockForm.name, nameTh: blockForm.nameTh || null, summary: blockForm.summary || null, summaryTh: blockForm.summaryTh || null,
       services: toLines(blockForm.services), servicesTh: toLines(blockForm.servicesTh), benefits: toLines(blockForm.benefits), benefitsTh: toLines(blockForm.benefitsTh),
       imageUrl: blockForm.imageUrl || null, imagePositionX: blockForm.imageUrl ? blockForm.imagePositionX : 50, imagePositionY: blockForm.imageUrl ? blockForm.imagePositionY : 50,
+      relatedUrl: blockForm.relatedUrl.trim() || null, relatedLabel: blockForm.relatedLabel.trim() || null, relatedLabelTh: blockForm.relatedLabelTh.trim() || null, brochureUrl: blockForm.brochureUrl || null,
     };
     try {
       if (editingId === "new") await api.adminCreateSolution(payload); else await api.adminUpdateSolution(editingId, payload);
@@ -127,6 +153,15 @@ export default function AdminAutomationSolution() {
         <label className="contact-form__field" style={{ marginTop: 20 }}><span>Summary ({fields.suffix})</span><textarea rows={3} value={blockForm[fields.summary]} onChange={(e) => updateBlock(fields.summary, e.target.value)} /></label>
         <div className="admin-form__row" style={{ marginTop: 20 }}><label className="contact-form__field"><span>Services ({fields.suffix}) — one per line</span><textarea rows={4} value={blockForm[fields.services]} onChange={(e) => updateBlock(fields.services, e.target.value)} /></label><label className="contact-form__field"><span>Benefits ({fields.suffix}) — one per line</span><textarea rows={4} value={blockForm[fields.benefits]} onChange={(e) => updateBlock(fields.benefits, e.target.value)} /></label></div>
         <div style={{ marginTop: 20 }}><span className="admin-edit-sidebar__label" style={{ display: "block", marginBottom: 10 }}>Image</span>{blockForm.imageUrl && <ImagePositionField imageUrl={blockForm.imageUrl} positionX={blockForm.imagePositionX} positionY={blockForm.imagePositionY} onChange={({ x, y }) => setBlockForm((form) => ({ ...form, imagePositionX: x, imagePositionY: y }))} />}<div style={{ marginTop: blockForm.imageUrl ? 12 : 0 }}><ImageUploadField value={blockForm.imageUrl} hidePreview onChange={(url) => setBlockForm((form) => ({ ...form, imageUrl: url, imagePositionX: 50, imagePositionY: 50 }))} /></div></div>
+        <div style={{ marginTop: 28 }}>
+          <span className="admin-edit-sidebar__label" style={{ display: "block", marginBottom: 10 }}>ลิงก์สินค้าที่เกี่ยวข้อง / โบรชัวร์ (ไม่บังคับ)</span>
+          <p className="admin-form__hint">ใช้ร่วมกันทั้งภาษาไทยและอังกฤษ — แสดงบนหน้าเว็บเฉพาะเมื่อกรอกข้อมูลไว้</p>
+          <label className="contact-form__field"><span>ลิงก์สินค้าที่เกี่ยวข้อง (URL)</span><input value={blockForm.relatedUrl} maxLength={500} placeholder="/products/omron" onChange={(e) => updateBlock("relatedUrl", e.target.value)} /></label>
+          <p className="admin-form__hint">พาธในเว็บที่ขึ้นต้นด้วย "/" (เช่น /products/omron) หรือ URL ที่ขึ้นต้นด้วย https://</p>
+          <div className="admin-form__row" style={{ marginTop: 12 }}><label className="contact-form__field"><span>ข้อความลิงก์ (EN)</span><input value={blockForm.relatedLabel} maxLength={150} placeholder="View related products" onChange={(e) => updateBlock("relatedLabel", e.target.value)} /></label><label className="contact-form__field"><span>ข้อความลิงก์ (TH)</span><input value={blockForm.relatedLabelTh} maxLength={150} placeholder="ดูสินค้าที่เกี่ยวข้อง" onChange={(e) => updateBlock("relatedLabelTh", e.target.value)} /></label></div>
+          <div className="contact-form__field" style={{ marginTop: 20 }}><span>โบรชัวร์ (PDF)</span><BrochureUploadField value={blockForm.brochureUrl} onChange={(url) => updateBlock("brochureUrl", url)} /></div>
+          <p className="admin-form__hint">ไฟล์ PDF ไม่เกิน 10 MB — ไฟล์จะถูกบันทึกเมื่อกด Save</p>
+        </div>
         <div className="admin-form__submit-row"><button type="button" className="btn admin-btn-cancel" onClick={closeBlock}>Cancel</button><button type="submit" className="btn btn-primary" disabled={blockSaving}>{blockSaving ? "Saving…" : "Save"}</button></div>
       </div>
     </AdminEditLayout>

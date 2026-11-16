@@ -166,8 +166,25 @@ export const api = {
   getFooterContent: () => request("/footer-content"),
   getAutomationSolutionContent: () => request("/automation-solution-content"),
 
-  submitContact: (payload) =>
-    request("/contact", { method: "POST", body: JSON.stringify(payload) }),
+  // Contact Us / Request a quote. With `file` (one optional attachment) the
+  // form is sent as multipart/form-data — every payload field as a string plus
+  // "attachment"; without it, plain JSON. Throws Error(server's `error` text).
+  submitContact: async (payload, file) => {
+    if (!file) return request("/contact", { method: "POST", body: JSON.stringify(payload) });
+    const formData = new FormData();
+    Object.entries(payload || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) formData.append(key, String(value));
+    });
+    formData.append("attachment", file);
+    const res = await fetch(`${API_URL}/contact`, { method: "POST", body: formData, cache: "no-store" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(body.error || `Request failed: ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    return body;
+  },
 
   // ---- admin ----
   adminLogin: async (password) => {
@@ -353,6 +370,23 @@ export const api = {
     }),
   adminDeleteContactRequest: (id) =>
     authRequest(`/admin/contact-requests/${id}`, { method: "DELETE" }),
+  // Attachments are private: fetched with the admin token, returned as a Blob.
+  adminDownloadContactAttachment: async (id) => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    const res = await fetch(`${API_URL}/admin/contact-requests/${id}/attachment`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    });
+    if (res.status === 401) {
+      handleUnauthorized();
+      throw new Error("Session expired — signing you out.");
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Request failed: ${res.status}`);
+    }
+    return res.blob();
+  },
 
   adminUpdateHomeContent: (payload) =>
     authRequest("/admin/home-content", { method: "PUT", body: JSON.stringify(payload) }),
