@@ -5,6 +5,8 @@ import Chevron from "./Chevron.jsx";
 // Colors cycled for the fallback slides (when the DB has no data yet, or
 // for the Thai UI, since the database currently only stores English
 // names — matches the limitation already documented on the old grid).
+const AUTOPLAY_MS = 3000; // same as LatestProductsCarousel
+
 const FALLBACK_COLORS = ["#0f2f5f", "#7a1f1f", "#2f6b3a", "#5a3d0f", "#1c3f6f", "#0f5f5a", "#5f4a0f", "#3f2f5f"];
 
 /** Shortest circular distance from `activeIndex` to `i`, e.g. for n=8 and
@@ -191,6 +193,15 @@ export default function IndustriesSlider({ industries, exploreLabel = "Explore M
     else prev();
   };
 
+  // Autoplay like LatestProductsCarousel: one step every 3s, timer restarts
+  // after any move, paused on hover/drag and under reduced motion.
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    if (n < 2 || hovered || dragging || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const id = setTimeout(next, AUTOPLAY_MS);
+    return () => clearTimeout(id);
+  }, [activeIndex, n, hovered, dragging, next]);
+
   const slides = useMemo(
     () => industries.map((ind, i) => ({ ind, index: i, offset: n ? relativeOffset(i, activeIndex, n) : 0 })),
     [industries, activeIndex, n]
@@ -199,7 +210,7 @@ export default function IndustriesSlider({ industries, exploreLabel = "Explore M
   if (n === 0) return null;
 
   return (
-    <div className="industries-slider">
+    <div className="industries-slider" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <div
         ref={viewportRef}
         className={`industries-slider__viewport${dragging ? " is-dragging" : ""}`}

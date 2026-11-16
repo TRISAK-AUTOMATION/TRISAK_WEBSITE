@@ -933,7 +933,7 @@
   --ind-gap: 20px;
   /* single source of truth for timing, so every animated part of the
      slider (position, size, overlay, title crossfade) stays in sync */
-  --ind-duration: 0.55s;
+  --ind-duration: 0.6s; /* matches LatestProductsCarousel SLIDE_MS */
   --ind-easing: cubic-bezier(0.65, 0, 0.35, 1);
   --ind-title-duration: 0.4s;
 }
