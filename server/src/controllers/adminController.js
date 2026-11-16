@@ -1030,6 +1030,42 @@ function parseSolutionLinks(body) {
   return { values };
 }
 
+export async function reorderSolution(req, res) {
+  const direction = parseDirection(req, res);
+  if (!direction) return;
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: "Invalid id" });
+  // Own swap rather than reorderRow(): the solutions table has no updated_at.
+  // Ordered by (sort_order, id) like the lists, so ties still move.
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query("SELECT id, sort_order FROM solutions ORDER BY sort_order, id FOR UPDATE");
+    const index = rows.findIndex((r) => String(r.id) === req.params.id);
+    if (index === -1) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Solution not found" });
+    }
+    const other = index + (direction === "up" ? -1 : 1);
+    if (other < 0 || other >= rows.length) {
+      await client.query("ROLLBACK");
+      return res.json({ success: true, moved: false });
+    }
+    [rows[index], rows[other]] = [rows[other], rows[index]];
+    // renumber 1..n so equal sort_order values can never block a move
+    for (let i = 0; i < rows.length; i++) {
+      await client.query("UPDATE solutions SET sort_order = $1 WHERE id = $2", [i + 1, rows[i].id]);
+    }
+    await client.query("COMMIT");
+    res.json({ success: true, moved: true });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Failed to reorder" });
+  } finally {
+    client.release();
+  }
+}
+
 export async function createSolution(req, res) {
   const {
     name,

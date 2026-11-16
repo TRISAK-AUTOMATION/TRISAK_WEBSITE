@@ -194,14 +194,53 @@ export async function updateFooterContent(req, res) {
   }
 }
 
-// ---------------- Automation Solution (hero only) ----------------
+// ---------------- Automation Solution (hero + engineering process) ----------------
 
 const AUTOMATION_SOLUTION_FIELDS = [
   "hero_meta_en", "hero_meta_th",
   "hero_title_en", "hero_title_th",
   "hero_sub_en", "hero_sub_th",
   "hero_bg_image",
+  "process_title_en", "process_title_th",
+  "process_lede_en", "process_lede_th",
+  "process_steps",
 ];
+
+// A step icon is a built-in icon key (components/WhyTrisak.jsx; unknown keys
+// draw as "check") or an uploaded image: a same-site path or http(s) URL.
+function cleanStepIcon(value) {
+  const v = typeof value === "string" ? value.trim() : "";
+  if (/^[a-z][a-z0-9-]{0,29}$/.test(v)) return v;
+  if (v.length <= 255 && (/^\/(?![/\\])\S*$/.test(v) || /^https?:\/\/[^\s<>"'()]+$/i.test(v))) return v;
+  return "check";
+}
+const MAX_PROCESS_STEPS = 8;
+
+// process_steps arrives as JSON text: keep at most 8 steps, known icons,
+// trimmed strings with sane lengths, and drop steps that have no text.
+// Empty -> NULL so the public page falls back to the built-in steps.
+function cleanProcessSteps(raw) {
+  if (raw === undefined || raw === null || raw === "") return null;
+  let list;
+  try {
+    list = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    throw new Error("process_steps must be valid JSON");
+  }
+  if (!Array.isArray(list)) throw new Error("process_steps must be a list");
+  const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const steps = list
+    .slice(0, MAX_PROCESS_STEPS)
+    .map((step) => ({
+      icon: cleanStepIcon(step?.icon),
+      label_en: str(step?.label_en, 120),
+      label_th: str(step?.label_th, 120),
+      desc_en: str(step?.desc_en, 400),
+      desc_th: str(step?.desc_th, 400),
+    }))
+    .filter((step) => step.label_en || step.label_th || step.desc_en || step.desc_th);
+  return steps.length ? JSON.stringify(steps) : null;
+}
 
 export async function getAutomationSolutionContent(req, res) {
   try {
@@ -214,11 +253,9 @@ export async function getAutomationSolutionContent(req, res) {
 
 export async function updateAutomationSolutionContent(req, res) {
   try {
-    const row = await upsertSingleton(
-      "automation_solution_page_content",
-      AUTOMATION_SOLUTION_FIELDS,
-      req.body || {}
-    );
+    const body = { ...(req.body || {}) };
+    body.process_steps = cleanProcessSteps(body.process_steps);
+    const row = await upsertSingleton("automation_solution_page_content", AUTOMATION_SOLUTION_FIELDS, body);
     logActivity("automation_solution_updated", "อัปเดตเนื้อหาหน้าโซลูชันระบบอัตโนมัติ");
     res.json(row);
   } catch (err) {

@@ -70,10 +70,137 @@ const ICONS = {
       <path d="m8 12.5 2.7 2.7L16.5 9.5" />
     </>
   ),
+  // ── extra set for the editable Automation Solution process steps ──
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.5 15.5 5 5" />
+    </>
+  ),
+  clipboard: (
+    <>
+      <rect x="5" y="4.5" width="14" height="16.5" rx="1.5" />
+      <path d="M9 4.5V3.5h6v1M8.5 10h7M8.5 13.5h7M8.5 17h4.5" />
+    </>
+  ),
+  document: (
+    <>
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v4h4M9 12h6M9 15.5h6M9 19h3.5" />
+    </>
+  ),
+  chip: (
+    <>
+      <rect x="6.5" y="6.5" width="11" height="11" rx="1.5" />
+      <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
+      <path d="M9.5 3v3.5M14.5 3v3.5M9.5 17.5V21M14.5 17.5V21M3 9.5h3.5M3 14.5h3.5M17.5 9.5H21M17.5 14.5H21" />
+    </>
+  ),
+  robot: (
+    <>
+      <rect x="4.5" y="8" width="15" height="11" rx="2" />
+      <path d="M12 8V4.5M9.5 21v-2M14.5 21v-2M2.5 12.5v3M21.5 12.5v3" />
+      <circle cx="12" cy="3.8" r="1" />
+      <circle cx="9" cy="12.5" r="1.2" />
+      <circle cx="15" cy="12.5" r="1.2" />
+      <path d="M9.5 16h5" />
+    </>
+  ),
+  factory: (
+    <>
+      <path d="M3 21V10l5 3V10l5 3V10l5 3V4h3v17z" />
+      <path d="M7 17h2M12 17h2M17 17h1.5" />
+    </>
+  ),
+  chart: (
+    <>
+      <path d="M3.5 3.5v17h17" />
+      <path d="m7 15 4-4.5 3 3 5.5-6.5" />
+      <path d="M16 7h3.5v3.5" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z" />
+      <path d="m8.8 12.2 2.3 2.3 4.2-4.6" />
+    </>
+  ),
+  truck: (
+    <>
+      <path d="M2.5 6h11v10h-11zM13.5 9.5h4l3 3.5v3h-7" />
+      <circle cx="6.5" cy="17.5" r="1.8" />
+      <circle cx="17" cy="17.5" r="1.8" />
+    </>
+  ),
+  bolt: <path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z" />,
+  bulb: (
+    <>
+      <path d="M9 17.5h6M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V17.5h5.2v-1.7c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" />
+    </>
+  ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.2" />
+    </>
+  ),
+  rocket: (
+    <>
+      <path d="M14.5 4.5c2.6-1.3 5.2-1.6 6-1 .6.8.3 3.4-1 6L13 16l-5-5z" />
+      <path d="M8 11 4.5 10.5 7.5 7.5h4M13 16l.5 3.5 3-3v-4" />
+      <path d="M6.5 16c-1.5.5-2.5 2-3 4.5 2.5-.5 4-1.5 4.5-3" />
+      <circle cx="16" cy="8" r="1.5" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="1.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17h2M11 17h2" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </>
+  ),
+  award: (
+    <>
+      <circle cx="12" cy="9" r="5.5" />
+      <path d="m8.5 13.3-1.5 7.7 5-2.5 5 2.5-1.5-7.7" />
+      <path d="m10 9 1.5 1.5L14.5 7.5" />
+    </>
+  ),
+  leaf: (
+    <>
+      <path d="M20.5 3.5C11 3.5 4.5 8 4.5 15c0 1.7.5 3.4 1.3 5 8.2-.3 14.7-5 14.7-16.5z" />
+      <path d="M4 21c3-5 7-8.5 12-11" />
+    </>
+  ),
+  graduation: (
+    <>
+      <path d="M2.5 9 12 4.5 21.5 9 12 13.5z" />
+      <path d="M6.5 11v5c1.5 1.5 3.4 2.3 5.5 2.3s4-.8 5.5-2.3v-5M21.5 9v5.5" />
+    </>
+  ),
 };
+
+/** Keys of every built-in icon, in the order the admin icon picker lists them. */
+export const ICON_NAMES = Object.keys(ICONS);
+
+// A step icon may also be an uploaded image (site path or http(s) URL).
+export const isIconUrl = (name) => typeof name === "string" && (/^\/(?![/\\])/.test(name) || /^https?:\/\//i.test(name));
 
 // Also used by the Automation Solution page's process steps.
 export function Icon({ name }) {
+  if (isIconUrl(name)) {
+    // Uploaded icons are drawn as a mask in currentColor, so they take the
+    // same navy / white-on-hover colour as the built-in line icons.
+    const url = `url("${name.replace(/["\\]/g, "")}")`;
+    return <span className="why__icon why__icon--custom" style={{ WebkitMaskImage: url, maskImage: url }} aria-hidden="true" />;
+  }
   return (
     <svg
       className="why__icon"

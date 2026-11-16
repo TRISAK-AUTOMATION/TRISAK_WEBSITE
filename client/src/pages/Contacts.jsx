@@ -5,13 +5,14 @@ import ContactIcon from "../components/contactIcons.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 import HeroBgMedia from "../components/HeroBgMedia.jsx";
+export { default as defaultLineQr } from "../assets/contact/line-qr-trisak.png";
 import defaultLineQr from "../assets/contact/line-qr-trisak.png";
 
 // Company LINE Official Account — used unless the admin sets other values.
-const DEFAULT_LINE_ID = "@trisak";
+export const DEFAULT_LINE_ID = "@trisak";
 
 // Share links for "Open in Google Maps" when the admin hasn't set one.
-const DEFAULT_MAP_LINKS = {
+export const DEFAULT_MAP_LINKS = {
   head_office: "https://maps.app.goo.gl/oyn9GMxXdquFfps27",
   warehouse: "https://maps.app.goo.gl/LT1BuDaHmF1mNaMV8",
 };
@@ -23,7 +24,7 @@ const AUTHORIZED_BRANDS = ["omron", "yaskawa", "nitto"];
 // Turns what the admin typed into an embeddable Google Maps src. Accepts the
 // "Embed a map" <iframe> code or its src, a google.com/maps URL (its @lat,lng
 // is used), "lat,lng", or any address/place name.
-function toMapEmbedSrc(input, lang) {
+export function toMapEmbedSrc(input, lang) {
   let v = (input || "").trim();
   if (!v) return "";
   const iframeSrc = v.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
@@ -320,7 +321,7 @@ export default function Contacts() {
               </a>
             )}
             {lineId ? (
-              <a className="btn contact-hero__ghost" href={lineUrl} target="_blank" rel="noopener noreferrer">
+              <a className="btn contact-hero__line" href={lineUrl} target="_blank" rel="noopener noreferrer">
                 <ContactIcon name="chat" size={16} />
                 LINE {lineId}
               </a>
