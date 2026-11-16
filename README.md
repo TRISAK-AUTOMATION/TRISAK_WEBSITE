@@ -78,6 +78,8 @@ npm run dev                 # http://localhost:5173
 
 The client calls the API at `VITE_API_URL` (defaults to `http://localhost:4000/api`) — set this in `client/.env` if different.
 
+In dev, Vite proxies `/api` and `/uploads` to `API_TARGET` (default `http://localhost:4000`). To work against a teammate's machine — sharing its database **and** its uploaded images, which live on disk in that machine's `server/uploads/` — set `API_TARGET=http://<their-LAN-IP>:4000` in `client/.env` and run only the client; that machine needs port 4000 open in its firewall. Restart `npm run dev` after changing it.
+
 ## Product catalog structure
 
 The catalog follows a 5-level drill-down: **Products Overview → Brand → Category → Series → Product Detail**, matching the flow OMRON / PLC & HMI / NX Series / NX1P2. A product that doesn't belong to a series is still reachable — it just skips the series level in the URL.
