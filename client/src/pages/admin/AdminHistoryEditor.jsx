@@ -9,7 +9,8 @@ import {
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
-import WhyTrisak from "../../components/WhyTrisak.jsx";
+import { parseIconList } from "../../components/WhyTrisak.jsx";
+import HistoryWhyEditor, { builtInWhyList } from "./HistoryWhyEditor.jsx";
 import { PartnerBrands, ExperienceBanner, BrandLanesTimeline, INTRO_IMAGE_DEFAULT } from "../History.jsx";
 import { translations } from "../../i18n/translations.js";
 
@@ -30,10 +31,13 @@ const FIELD_SUFFIXES = [
   "intro_title",
   "intro_lede",
   "intro_body",
+  "why_title",
+  "why_lede",
+  "why_process_title",
 ];
 
 function emptyForm() {
-  const form = { hero_bg_image: "", intro_image: "" };
+  const form = { hero_bg_image: "", intro_image: "", why_bg_image: "", why_reasons: "", why_steps: "" };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -84,6 +88,10 @@ export default function AdminHistoryEditor() {
       .adminGetAboutContent()
       .then((d) => {
         const next = { ...emptyForm(), ...(d || {}) };
+        // start from the built-in reasons/steps so they can be edited in place;
+        // counted as saved, so this alone does not enable the Save button
+        if (!parseIconList(next.why_reasons).length) next.why_reasons = JSON.stringify(builtInWhyList("whyReasons"));
+        if (!parseIconList(next.why_steps).length) next.why_steps = JSON.stringify(builtInWhyList("whySteps"));
         setForm(next);
         setSavedForm(next);
       })
@@ -234,19 +242,15 @@ export default function AdminHistoryEditor() {
           </div>
         </section>
 
-        {/* WHY TRISAK GROUP (static text, preview only) */}
-        <div className="history-admin__managed">
-          <div className="container">
-            <ManagedBar note="ส่วน “Why TRISAK Group” เป็นข้อความคงที่ (แก้ไขในโค้ด)" />
-          </div>
-          <WhyTrisak
-            title={t.whyTitle}
-            lede={t.whyLede}
-            reasons={t.whyReasons}
-            processTitle={t.whyProcessTitle}
-            steps={t.whySteps}
-          />
-        </div>
+        {/* WHY TRISAK GROUP — edited in place */}
+        <HistoryWhyEditor
+          form={form}
+          lang={lang}
+          onChange={(field, val) => {
+            setSuccess(false);
+            setForm((f) => ({ ...f, [field]: val }));
+          }}
+        />
 
         {/* EXPERIENCE + STATISTICS + PARTNERS (heading text is static; numbers from the Statistics tab) */}
         <section className="section history-admin__managed">

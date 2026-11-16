@@ -3472,3 +3472,91 @@ a.admin-edit-tab {
 .sol-admin__picker .contact-admin__hint {
   margin: 8px 0 0;
 }
+/* ---- Admin > History: "Why TRISAK Group" edited in place ---- */
+.why-admin {
+  overflow: visible; /* let the icon picker hang below the last item */
+}
+.why-admin .why__bg {
+  overflow: hidden;
+}
+.why-admin .why__reason,
+.why-admin .why__step {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  /* the public scroll-in animation would hide items in the admin pane */
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+.why-admin .why__intro h2 .home-admin__input,
+.why-admin .why-admin__text h3 .home-admin__input,
+.why-admin .why-admin__text h4 .home-admin__input {
+  resize: none;
+}
+.why-admin__text .home-admin__input {
+  margin-left: 0;
+  padding: 2px 6px;
+}
+.why-admin__text p {
+  margin: 0;
+}
+.why-admin .why__process-title .home-admin__input {
+  margin-left: 0;
+  padding: 2px 6px;
+}
+.why-admin__icon-wrap {
+  position: relative;
+  align-self: center;
+}
+.why-admin__icon-btn {
+  position: relative;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+.why-admin__icon-btn:hover {
+  box-shadow: 0 0 0 4px rgba(13, 41, 151, 0.16);
+}
+.why-admin__icon-btn:focus-visible {
+  outline: 2px solid var(--accent-signal);
+  outline-offset: 4px;
+}
+.why-admin__icon-wrap .sol-admin__picker {
+  top: 74px;
+}
+.why-admin__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.why-admin__tools .contact-admin__remove {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+.why-admin__tools .contact-admin__remove:disabled {
+  opacity: 0.3;
+  cursor: default;
+  background: transparent;
+  color: var(--text-muted);
+}
+.why-admin__actions {
+  margin-top: 16px;
+}
+.why-admin__bg {
+  max-width: 720px;
+}
+.why-admin__bg .contact-admin__hint {
+  margin: 0;
+}
+/* grow text boxes to their content so long titles/texts are never cut */
+.why-admin textarea.home-admin__input {
+  field-sizing: content;
+  min-height: 1lh;
+}
+/* the picker sits inside .why__reason, whose p rule would enlarge its hint */
+.sol-admin__picker .contact-admin__hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}

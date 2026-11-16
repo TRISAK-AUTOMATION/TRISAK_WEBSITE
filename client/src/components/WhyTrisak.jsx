@@ -219,17 +219,44 @@ export function Icon({ name }) {
 
 export const WHY_BG_IMAGE = "/images/solutions/smart-factory.webp";
 
-export default function WhyTrisak({ title, lede, reasons, processTitle, steps }) {
+/** Parses a JSON list column (why_reasons / why_steps); bad or empty -> []. */
+export function parseIconList(text) {
+  try {
+    const list = JSON.parse(text || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The admin-edited reasons/steps ([{icon,title_en,title_th,body_en,body_th}])
+ * as {icon,title,body} for one language — each text falls back to the other
+ * language. With nothing saved, the built-in list is used.
+ */
+export function localizeIconList(text, lang, fallback) {
+  const list = parseIconList(text);
+  if (!list.length) return fallback;
+  const other = lang === "th" ? "en" : "th";
+  return list.map((item) => ({
+    icon: item.icon,
+    title: item[`title_${lang}`] || item[`title_${other}`] || "",
+    body: item[`body_${lang}`] || item[`body_${other}`] || "",
+  }));
+}
+
+export default function WhyTrisak({ title, lede, reasons, processTitle, steps, bgImage }) {
+  const bg = (bgImage || WHY_BG_IMAGE).replace(/["\\]/g, "");
   return (
     <section className="section why">
-      <div className="why__bg" aria-hidden="true" style={{ backgroundImage: `url("${WHY_BG_IMAGE}")` }} />
+      <div className="why__bg" aria-hidden="true" style={{ backgroundImage: `url("${bg}")` }} />
       <div className="container why__grid">
         <div className="why__intro">
           <h2>{title}</h2>
           <p className="why__lede">{lede}</p>
           <ul className="why__reasons">
-            {reasons.map((r) => (
-              <li className="why__reason" key={r.title}>
+            {reasons.map((r, i) => (
+              <li className="why__reason" key={i}>
                 <span className="why__disc">
                   <Icon name={r.icon} />
                 </span>
@@ -245,8 +272,8 @@ export default function WhyTrisak({ title, lede, reasons, processTitle, steps })
         <div className="why__process">
           <h3 className="why__process-title">{processTitle}</h3>
           <ol className="why__steps">
-            {steps.map((s) => (
-              <li className="why__step" key={s.title}>
+            {steps.map((s, i) => (
+              <li className="why__step" key={i}>
                 <span className="why__ring">
                   <Icon name={s.icon} />
                 </span>

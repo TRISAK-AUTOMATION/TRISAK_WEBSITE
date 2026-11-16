@@ -49,6 +49,13 @@ const ABOUT_FIELDS = [
   "intro_body_en", "intro_body_th",
   "hero_bg_image",
   "intro_image",
+  // "Why TRISAK Group" section (migration 051)
+  "why_title_en", "why_title_th",
+  "why_lede_en", "why_lede_th",
+  "why_process_title_en", "why_process_title_th",
+  "why_reasons",
+  "why_steps",
+  "why_bg_image",
 ];
 
 export async function getAboutContent(req, res) {
@@ -65,6 +72,9 @@ export async function updateAboutContent(req, res) {
     const body = { ...(req.body || {}) };
     body.hero_bg_image = cleanHeroBg(body.hero_bg_image);
     body.intro_image = cleanHeroBg(body.intro_image);
+    body.why_bg_image = cleanHeroBg(body.why_bg_image);
+    body.why_reasons = cleanIconList(body.why_reasons, "why_reasons", ["title", "body"]);
+    body.why_steps = cleanIconList(body.why_steps, "why_steps", ["title", "body"]);
     const row = await upsertSingleton("about_content", ABOUT_FIELDS, body);
     logActivity("about_updated", "อัปเดตเนื้อหาหน้าประวัติบริษัท (History)");
     res.json(row);
@@ -214,33 +224,36 @@ function cleanStepIcon(value) {
   if (v.length <= 255 && (/^\/(?![/\\])\S*$/.test(v) || /^https?:\/\/[^\s<>"'()]+$/i.test(v))) return v;
   return "check";
 }
-const MAX_PROCESS_STEPS = 8;
-
-// process_steps arrives as JSON text: keep at most 8 steps, known icons,
-// trimmed strings with sane lengths, and drop steps that have no text.
-// Empty -> NULL so the public page falls back to the built-in steps.
-function cleanProcessSteps(raw) {
+/**
+ * A list of icon items stored as JSON text (process steps, "why" reasons):
+ * keep at most `max` items, a valid icon, the given text fields as trimmed
+ * strings (heading max 120, body max 400 chars), and drop items without text.
+ * Empty -> NULL so the public page falls back to its built-in list.
+ */
+function cleanIconList(raw, name, [headKey, bodyKey], max = 8) {
   if (raw === undefined || raw === null || raw === "") return null;
   let list;
   try {
     list = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
-    throw new Error("process_steps must be valid JSON");
+    throw new Error(`${name} must be valid JSON`);
   }
-  if (!Array.isArray(list)) throw new Error("process_steps must be a list");
-  const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-  const steps = list
-    .slice(0, MAX_PROCESS_STEPS)
-    .map((step) => ({
-      icon: cleanStepIcon(step?.icon),
-      label_en: str(step?.label_en, 120),
-      label_th: str(step?.label_th, 120),
-      desc_en: str(step?.desc_en, 400),
-      desc_th: str(step?.desc_th, 400),
+  if (!Array.isArray(list)) throw new Error(`${name} must be a list`);
+  const str = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
+  const items = list
+    .slice(0, max)
+    .map((item) => ({
+      icon: cleanStepIcon(item?.icon),
+      [`${headKey}_en`]: str(item?.[`${headKey}_en`], 120),
+      [`${headKey}_th`]: str(item?.[`${headKey}_th`], 120),
+      [`${bodyKey}_en`]: str(item?.[`${bodyKey}_en`], 400),
+      [`${bodyKey}_th`]: str(item?.[`${bodyKey}_th`], 400),
     }))
-    .filter((step) => step.label_en || step.label_th || step.desc_en || step.desc_th);
-  return steps.length ? JSON.stringify(steps) : null;
+    .filter((item) => Object.entries(item).some(([k, v]) => k !== "icon" && v));
+  return items.length ? JSON.stringify(items) : null;
 }
+
+const cleanProcessSteps = (raw) => cleanIconList(raw, "process_steps", ["label", "desc"]);
 
 export async function getAutomationSolutionContent(req, res) {
   try {
