@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
+import BackToTop from "./components/BackToTop.jsx";
 import { useSiteSettings } from "./contexts/SiteSettingsContext.jsx";
 import AdminGuard from "./components/AdminGuard.jsx";
 import AdminLayout from "./components/AdminLayout.jsx";
@@ -192,6 +193,7 @@ export default function App() {
         </Route>
       </Routes>
       {!isAdmin && <Footer />}
+      {!isAdmin && <BackToTop />}
     </div>
   );
 }

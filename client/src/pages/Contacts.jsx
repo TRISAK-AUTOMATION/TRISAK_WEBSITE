@@ -8,14 +8,9 @@ import HeroBgMedia from "../components/HeroBgMedia.jsx";
 export { default as defaultLineQr } from "../assets/contact/line-qr-trisak.png";
 import defaultLineQr from "../assets/contact/line-qr-trisak.png";
 
-// Company LINE Official Account — used unless the admin sets other values.
-export const DEFAULT_LINE_ID = "@trisak";
-
-// Share links for "Open in Google Maps" when the admin hasn't set one.
-export const DEFAULT_MAP_LINKS = {
-  head_office: "https://maps.app.goo.gl/oyn9GMxXdquFfps27",
-  warehouse: "https://maps.app.goo.gl/LT1BuDaHmF1mNaMV8",
-};
+// LINE / map defaults live in utils/contactDefaults.js (shared with the footer).
+import { DEFAULT_LINE_ID, DEFAULT_MAP_LINKS, lineHref } from "../utils/contactDefaults.js";
+export { DEFAULT_LINE_ID, DEFAULT_MAP_LINKS };
 
 // Brands TRISAK is the authorized distributor for (PRODUCT.md). Only these
 // are shown under "Authorized distributor" — other catalog brands are not.
@@ -41,8 +36,6 @@ export function toMapEmbedSrc(input, lang) {
 // "+66 (0)2 000 0000" → "+6620000000" for tel: links.
 const telHref = (phone) => `tel:${phone.replace(/\(0\)/g, "").replace(/[^\d+]/g, "")}`;
 
-// "@trisak" → https://line.me/R/ti/p/@trisak (used when no LINE URL is set).
-const lineHref = (id) => `https://line.me/R/ti/p/${encodeURIComponent(id.startsWith("@") ? id : `@${id}`)}`;
 
 function parseList(text) {
   try {
