@@ -56,6 +56,13 @@ const ABOUT_FIELDS = [
   "why_reasons",
   "why_steps",
   "why_bg_image",
+  // "Our Experience" banner + "Partners & Brands" heading (migration 052)
+  "exp_eyebrow_en", "exp_eyebrow_th",
+  "exp_title_en", "exp_title_th",
+  "exp_lede_en", "exp_lede_th",
+  "exp_image",
+  "partners_eyebrow_en", "partners_eyebrow_th",
+  "partners_title_en", "partners_title_th",
 ];
 
 export async function getAboutContent(req, res) {
@@ -73,6 +80,7 @@ export async function updateAboutContent(req, res) {
     body.hero_bg_image = cleanHeroBg(body.hero_bg_image);
     body.intro_image = cleanHeroBg(body.intro_image);
     body.why_bg_image = cleanHeroBg(body.why_bg_image);
+    body.exp_image = cleanHeroBg(body.exp_image);
     body.why_reasons = cleanIconList(body.why_reasons, "why_reasons", ["title", "body"]);
     body.why_steps = cleanIconList(body.why_steps, "why_steps", ["title", "body"]);
     const row = await upsertSingleton("about_content", ABOUT_FIELDS, body);

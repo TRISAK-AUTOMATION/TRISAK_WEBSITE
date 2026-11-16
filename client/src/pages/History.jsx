@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
-import BrandLogoGrid from "../components/BrandLogoGrid.jsx";
-import WhyTrisak, { localizeIconList } from "../components/WhyTrisak.jsx";
+import WhyTrisak, { Icon as StatIcon, localizeIconList } from "../components/WhyTrisak.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -27,8 +26,23 @@ const brandRows = (brands) =>
       }
   );
 
+// Three equal cells, logos normalised to one optical height (see .partner-logos).
 export function PartnerBrands({ brands }) {
-  return <BrandLogoGrid brands={brandRows(brands)} getHref={(b) => `/products/${b.slug}`} />;
+  return (
+    <ul className="partner-logos">
+      {brandRows(brands).map((b) => (
+        <li key={b.slug}>
+          <Link to={`/products/${b.slug}`} className="partner-logos__cell" title={b.name}>
+            {b.logo_url ? (
+              <img className="partner-logos__img" src={b.logo_url} alt={b.name} loading="lazy" />
+            ) : (
+              <span className="partner-logos__name">{b.name}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 // shortcut: an entry's brand is guessed from the BRANDS name in its title/description;
@@ -137,35 +151,75 @@ export function OrgChart({ roots }) {
   );
 }
 
-// "Our Experience" full-bleed banner: text + statistics row, then whatever
-// is passed as children (Partners & Brands) inside the same background.
-export function ExperienceBanner({ eyebrow, title, lede, stats, children }) {
+// The photo card: an uploaded photo replaces the built-in one (CSS), with the
+// same navy toning.
+const expPhotoStyle = (photo) =>
+  photo
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(11, 22, 64, 0) 55%, rgba(11, 22, 64, 0.32) 100%), url("${photo.replace(/["\\]/g, "")}")`,
+      }
+    : undefined;
+
+// Default icon per statistic card by position (customers, projects,
+// experience) when the statistic has none set in Admin > History.
+export const STAT_ICONS = ["gear", "handshake", "team"];
+export const statIcon = (s, i) => s.icon || STAT_ICONS[i % STAT_ICONS.length];
+
+/**
+ * "Our Experience": heading + lede on the left with the statistics as
+ * icon cards, the photo as a framed card on the right over blue geometric
+ * shapes. Children (Partners & Brands) get their own white band underneath.
+ * `renderStat` / `renderIcon` let Admin > History swap a card's number +
+ * label and its icon for edit controls (the card and accent bar stay).
+ */
+export function ExperienceBanner({ eyebrow, title, lede, stats, children, photo, renderStat, renderIcon }) {
   return (
     <section className="exp-banner">
-      <div className="exp-banner__dots" aria-hidden="true" />
-      <div className="exp-banner__photo" aria-hidden="true" />
-      <div className="exp-banner__edge" aria-hidden="true" />
+      <div className="exp-banner__shapes" aria-hidden="true" />
       <div className="container exp-banner__inner">
         <div className="exp-banner__text">
           <span className="exp-banner__eyebrow">{eyebrow}</span>
           <h2>{title}</h2>
-          {lede && <p>{lede}</p>}
+          {lede && <p className="exp-banner__lede">{lede}</p>}
           {stats.length > 0 && (
-          <div className="exp-banner__stats">
-            {stats.map((s) => (
-              <div className="exp-banner__stat" key={s.id}>
-                <span className="exp-banner__num">
-                  {s.num}
-                  {s.unit ? unitSep(s.unit) + s.unit : ""}
-                </span>
-                <span className="exp-banner__label">{s.label}</span>
-              </div>
-            ))}
-          </div>
+            <div className="exp-banner__stats" style={{ "--n": stats.length }}>
+              {stats.map((s, i) => (
+                <div className="exp-banner__stat" key={s.id}>
+                  {renderIcon ? (
+                    renderIcon(s, i)
+                  ) : (
+                    <span className="exp-banner__stat-icon" aria-hidden="true">
+                      <StatIcon name={statIcon(s, i)} />
+                    </span>
+                  )}
+                  {renderStat ? (
+                    renderStat(s)
+                  ) : (
+                    <>
+                      <span className="exp-banner__num">
+                        {s.num}
+                        {s.unit ? unitSep(s.unit) + s.unit : ""}
+                      </span>
+                      <span className="exp-banner__label">{s.label}</span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
+        <div className="exp-banner__media" aria-hidden="true">
+          <div className="exp-banner__dots" />
+          <div className="exp-banner__frame">
+            <div className="exp-banner__photo" style={expPhotoStyle(photo)} />
+          </div>
+        </div>
       </div>
-      {children && <div className="container exp-banner__after">{children}</div>}
+      {children && (
+        <div className="exp-banner__after">
+          <div className="container exp-partners">{children}</div>
+        </div>
+      )}
     </section>
   );
 }
@@ -222,6 +276,7 @@ export default function History() {
       num: s.value,
       unit: pick(s, "unit"),
       label: pick(s, "label"),
+      icon: s.icon,
     }));
   } else if (historyFailed) {
     timeline = t("history.milestones").map((m) => ({ id: m.title, ...m, body: m.body, image: null }));
@@ -296,12 +351,16 @@ export default function History() {
       />
 
       <ExperienceBanner
-        eyebrow={t("history.experienceEyebrow")}
-        title={t("history.experienceTitle")}
-        lede={t("history.experienceLede")}
+        eyebrow={ac("exp_eyebrow", t("history.experienceEyebrow"))}
+        title={ac("exp_title", t("history.experienceTitle"))}
+        lede={ac("exp_lede", t("history.experienceLede"))}
         stats={stats}
+        photo={aboutContent?.exp_image}
       >
-        <SectionLabel eyebrow={t("history.partnersEyebrow")} title={t("history.partnersTitle")} />
+        <SectionLabel
+          eyebrow={ac("partners_eyebrow", t("history.partnersEyebrow"))}
+          title={ac("partners_title", t("history.partnersTitle"))}
+        />
         <PartnerBrands brands={brands} />
       </ExperienceBanner>
 
