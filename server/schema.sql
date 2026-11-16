@@ -321,6 +321,7 @@ CREATE TABLE history_stats (
   value       VARCHAR(50) NOT NULL,
   unit_en     VARCHAR(30),
   unit_th     VARCHAR(30),
+  icon        VARCHAR(255), -- migration 053: built-in icon key or uploaded image path
   is_active   BOOLEAN NOT NULL DEFAULT true,
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -380,6 +381,18 @@ CREATE TABLE about_content (
   why_reasons          TEXT,
   why_steps            TEXT,
   why_bg_image         VARCHAR(255),
+  -- "Our Experience" banner + "Partners & Brands" heading (migration 052)
+  exp_eyebrow_en       VARCHAR(255),
+  exp_eyebrow_th       VARCHAR(255),
+  exp_title_en         VARCHAR(255),
+  exp_title_th         VARCHAR(255),
+  exp_lede_en          TEXT,
+  exp_lede_th          TEXT,
+  exp_image            VARCHAR(255),
+  partners_eyebrow_en  VARCHAR(255),
+  partners_eyebrow_th  VARCHAR(255),
+  partners_title_en    VARCHAR(255),
+  partners_title_th    VARCHAR(255),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -11,7 +11,9 @@ import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import { parseIconList } from "../../components/WhyTrisak.jsx";
 import HistoryWhyEditor, { builtInWhyList } from "./HistoryWhyEditor.jsx";
-import { PartnerBrands, ExperienceBanner, BrandLanesTimeline, INTRO_IMAGE_DEFAULT } from "../History.jsx";
+import { PartnerBrands, ExperienceBanner, BrandLanesTimeline, INTRO_IMAGE_DEFAULT, statIcon } from "../History.jsx";
+import IconPicker from "../../components/IconPicker.jsx";
+import { Icon } from "../../components/WhyTrisak.jsx";
 import { translations } from "../../i18n/translations.js";
 
 /**
@@ -34,10 +36,15 @@ const FIELD_SUFFIXES = [
   "why_title",
   "why_lede",
   "why_process_title",
+  "exp_eyebrow",
+  "exp_title",
+  "exp_lede",
+  "partners_eyebrow",
+  "partners_title",
 ];
 
 function emptyForm() {
-  const form = { hero_bg_image: "", intro_image: "", why_bg_image: "", why_reasons: "", why_steps: "" };
+  const form = { hero_bg_image: "", intro_image: "", why_bg_image: "", why_reasons: "", why_steps: "", exp_image: "" };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
@@ -72,6 +79,9 @@ export default function AdminHistoryEditor() {
   const [form, setForm] = useState(emptyForm);
   const [savedForm, setSavedForm] = useState(null);
   const [historyContent, setHistoryContent] = useState(null);
+  const [statRows, setStatRows] = useState([]); // active history_stats rows, edited on the banner
+  const [savedStats, setSavedStats] = useState("[]");
+  const [statPicker, setStatPicker] = useState(null); // id of the statistic whose icon picker is open
   const [lang, setLang] = useState("th"); // which language's fields are shown for editing
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,9 +110,19 @@ export default function AdminHistoryEditor() {
     // Same data the public page shows (active items only) — preview only.
     api
       .getHistoryContent()
-      .then(setHistoryContent)
+      .then((d) => {
+        setHistoryContent(d);
+        // the banner numbers are edited in place and saved back to history_stats
+        setStatRows(d?.stats || []);
+        setSavedStats(JSON.stringify(d?.stats || []));
+      })
       .catch(() => setHistoryContent({ timeline: [], stats: [], org: [] }));
   }, []);
+
+  const updateStat = (id, patch) => {
+    setSuccess(false);
+    setStatRows((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  };
 
   const t = translations[lang]?.history || translations.en.history;
 
@@ -118,18 +138,40 @@ export default function AdminHistoryEditor() {
     onChange: (e) => update(base, e.target.value),
   });
 
-  const hasChanges = savedForm && JSON.stringify(form) !== JSON.stringify(savedForm);
+  const savedStatById = Object.fromEntries(JSON.parse(savedStats || "[]").map((r) => [r.id, JSON.stringify(r)]));
+  const changedStats = statRows.filter((r) => JSON.stringify(r) !== savedStatById[r.id]);
+  const formChanged = savedForm && JSON.stringify(form) !== JSON.stringify(savedForm);
+  const hasChanges = formChanged || changedStats.length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const bad = changedStats.find((r) => !String(r.value).trim() || !String(r.label_en || "").trim());
+    if (bad) {
+      setError("ตัวเลขสถิติต้องมีค่าตัวเลข และคำอธิบายภาษาอังกฤษ (สลับเป็น English เพื่อกรอก)");
+      return;
+    }
     setSaving(true);
     setError("");
     setSuccess(false);
     try {
-      const updated = await api.adminUpdateAboutContent(form);
-      const next = { ...form, ...updated };
-      setForm(next);
-      setSavedForm(next);
+      if (formChanged) {
+        const updated = await api.adminUpdateAboutContent(form);
+        const next = { ...form, ...updated };
+        setForm(next);
+        setSavedForm(next);
+      }
+      for (const r of changedStats) {
+        await api.adminUpdateHistoryItem("statistics", r.id, {
+          value: String(r.value).trim(),
+          unitEn: (r.unit_en || "").trim(),
+          unitTh: (r.unit_th || "").trim(),
+          labelEn: (r.label_en || "").trim(),
+          labelTh: (r.label_th || "").trim(),
+          icon: r.icon || "",
+          isActive: true, // only active statistics are shown here
+        });
+      }
+      setSavedStats(JSON.stringify(statRows));
       setSuccess(true);
     } catch (err) {
       setError(err.message);
@@ -151,12 +193,77 @@ export default function AdminHistoryEditor() {
     body: pick(m, "description"),
     image: m.image_url,
   }));
-  const stats = (historyContent?.stats || []).map((s) => ({
+  const stats = statRows.map((s) => ({
     id: s.id,
     num: s.value,
     unit: pick(s, "unit"),
     label: pick(s, "label"),
+    icon: s.icon,
   }));
+  // a card's icon as a button that opens the shared icon picker
+  const renderStatIcon = (s, i) => {
+    const current = statIcon(s, i);
+    return (
+      <span className="exp-admin__icon-wrap">
+        <button
+          type="button"
+          className="exp-banner__stat-icon exp-admin__icon-btn"
+          data-icon-trigger=""
+          aria-label="เปลี่ยนไอคอน"
+          aria-expanded={statPicker === s.id}
+          title="คลิกเพื่อเปลี่ยนไอคอน"
+          onClick={() => setStatPicker(statPicker === s.id ? null : s.id)}
+        >
+          <Icon name={current} />
+          <span className="sol-admin__ring-edit" aria-hidden="true">✎</span>
+        </button>
+        {statPicker === s.id && (
+          <IconPicker
+            value={current}
+            align={i === 0 ? "start" : i === stats.length - 1 ? "end" : "center"}
+            onChange={(icon) => updateStat(s.id, { icon })}
+            onClose={() => setStatPicker(null)}
+          />
+        )}
+      </span>
+    );
+  };
+  const otherLang = lang === "th" ? "en" : "th";
+  // one banner number as edit boxes: value + unit, and the label under it
+  const renderStat = (s) => {
+    const row = statRows.find((r) => r.id === s.id);
+    // the card + icon come from ExperienceBanner; only number + label are swapped
+    return (
+      <>
+        <span className="exp-banner__num exp-admin__num">
+          <InlineInput
+            value={row.value}
+            size={Math.max(2, String(row.value).length + 1)}
+            aria-label="ตัวเลข"
+            placeholder="0"
+            onChange={(e) => updateStat(s.id, { value: e.target.value })}
+          />
+          <InlineInput
+            value={row[`unit_${lang}`] || ""}
+            size={Math.max(1, (row[`unit_${lang}`] || row[`unit_${otherLang}`] || "").length + 1)}
+            aria-label="หน่วย / เครื่องหมายต่อท้าย"
+            placeholder={row[`unit_${otherLang}`] || "+"}
+            onChange={(e) => updateStat(s.id, { [`unit_${lang}`]: e.target.value })}
+          />
+        </span>
+        <span className="exp-banner__label">
+          <InlineInput
+            multiline
+            rows={2}
+            value={row[`label_${lang}`] || ""}
+            aria-label="คำอธิบายตัวเลข"
+            placeholder={row[`label_${otherLang}`] || "คำอธิบาย"}
+            onChange={(e) => updateStat(s.id, { [`label_${lang}`]: e.target.value })}
+          />
+        </span>
+      </>
+    );
+  };
   const previewLoading = !historyContent;
   const emptyNote = (text) => (
     <p className="empty-state history-admin__empty">{previewLoading ? "กำลังโหลด…" : text}</p>
@@ -252,25 +359,48 @@ export default function AdminHistoryEditor() {
           }}
         />
 
-        {/* EXPERIENCE + STATISTICS + PARTNERS (heading text is static; numbers from the Statistics tab) */}
-        <section className="section history-admin__managed">
+        {/* EXPERIENCE + STATISTICS + PARTNERS — text, photo and numbers edited in place */}
+        <section className="section history-admin__managed exp-admin">
           <div className="container">
             <ManagedBar
-              note="หัวข้อ “ประสบการณ์ของเรา” เป็นข้อความคงที่ — ตัวเลขสถิติแก้ไขได้จากแท็บ “สถิติ (Statistics)” · โลโก้ OMRON / YASKAWA / NITTO ดึงจากเมนู แบรนด์ (Brands)"
+              note="แก้ข้อความ ตัวเลข และรูปได้ในส่วนนี้ — เพิ่ม/ลบ/สลับลำดับ/ซ่อนตัวเลขสถิติ ทำที่แท็บ “สถิติ (Statistics)” · โลโก้ OMRON / YASKAWA / NITTO ดึงจากเมนู แบรนด์ (Brands)"
               to={HISTORY_STATS_PATH}
-              linkLabel="แก้ไขสถิติ"
+              linkLabel="จัดการสถิติ"
             />
             {!stats.length && emptyNote("ยังไม่มีสถิติที่เปิดใช้งาน")}
           </div>
           <ExperienceBanner
-            eyebrow={t.experienceEyebrow}
-            title={t.experienceTitle}
-            lede={t.experienceLede}
+            eyebrow={<InlineInput {...bind("exp_eyebrow", t.experienceEyebrow, "ข้อความเล็กเหนือหัวข้อ")} />}
+            title={<InlineInput multiline rows={1} {...bind("exp_title", t.experienceTitle, "หัวข้อประสบการณ์")} />}
+            lede={<InlineInput multiline rows={2} {...bind("exp_lede", t.experienceLede, "คำอธิบายใต้หัวข้อ")} />}
             stats={stats}
+            renderStat={renderStat}
+            renderIcon={renderStatIcon}
+            photo={form.exp_image}
           >
-            <SectionLabel eyebrow={t.partnersEyebrow} title={t.partnersTitle} />
+            <div className="section-head exp-admin__partners-head">
+              <span className="eyebrow">
+                <InlineInput {...bind("partners_eyebrow", t.partnersEyebrow, "ข้อความเล็กเหนือหัวข้อพันธมิตร")} />
+              </span>
+              <h2>
+                <InlineInput multiline rows={1} {...bind("partners_title", t.partnersTitle, "หัวข้อพันธมิตรและแบรนด์")} />
+              </h2>
+            </div>
             <PartnerBrands brands={brands} />
           </ExperienceBanner>
+          <div className="panel home-admin__hero-bg exp-admin__photo-panel">
+            <span className="admin-edit-sidebar__label">
+              รูปในกรอบเอียงด้านขวา (ใช้ร่วมกันทั้งสองภาษา)
+            </span>
+            <ImageUploadField
+              value={form.exp_image || ""}
+              onChange={(url) => {
+                setSuccess(false);
+                setForm((f) => ({ ...f, exp_image: url }));
+              }}
+            />
+            <p className="contact-admin__hint">ว่าง = ใช้รูปหุ่นยนต์เริ่มต้น · ระบบลงโทนสีน้ำเงินให้เข้ากับธีมเอง · ภาพแนวนอนจะดูดีที่สุด</p>
+          </div>
         </section>
       </div>
 

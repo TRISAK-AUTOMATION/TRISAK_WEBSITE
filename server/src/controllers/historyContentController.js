@@ -241,6 +241,26 @@ export const statsAdmin = makeHandlers({
     { key: "unitEn", col: "unit_en", label: "the unit/suffix (English)", max: 30 },
     { key: "unitTh", col: "unit_th", label: "the unit/suffix (Thai)", max: 30 },
   ],
+  // icon (migration 053): a built-in icon key or an uploaded image path /
+  // http(s) URL. Left out of the body (e.g. the Statistics tab form) = keep
+  // the current one, so that form never wipes it.
+  beforeSave(values, body, existing) {
+    if (body?.icon === undefined) {
+      values.icon = existing?.icon ?? null;
+      return null;
+    }
+    const v = typeof body.icon === "string" ? body.icon.trim() : "";
+    if (!v) {
+      values.icon = null;
+      return null;
+    }
+    const ok =
+      /^[a-z][a-z0-9-]{0,29}$/.test(v) ||
+      (v.length <= MAX_URL && (/^\/(?![/\\])\S*$/.test(v) || /^https?:\/\/[^\s<>"'()]+$/i.test(v)));
+    if (!ok) return { error: "The icon must be a built-in icon name or an image path." };
+    values.icon = v;
+    return null;
+  },
 });
 
 // ---- Organization structure ----
@@ -314,7 +334,7 @@ export async function getHistoryContent(req, res) {
          FROM history_timeline WHERE is_active ORDER BY sort_order, id`
       ),
       pool.query(
-        `SELECT id, label_en, label_th, value, unit_en, unit_th
+        `SELECT id, label_en, label_th, value, unit_en, unit_th, icon
          FROM history_stats WHERE is_active ORDER BY sort_order, id`
       ),
       pool.query(
