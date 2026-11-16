@@ -19,6 +19,11 @@ export const translations = {
       warehouseAddress: "45 Logistics Park, Samut Prakan, Thailand",
       rights: "TRISAK GROUP. All rights reserved.",
       authorizedLine: "Authorized Distributor — OMRON / YASKAWA / NITTO",
+      requestQuote: "Request a Quote",
+      directions: "Directions",
+      backToTop: "Back to top",
+      call: "Call",
+      email: "Email",
     },
     common: {
       viewProducts: "View Products",
@@ -527,6 +532,11 @@ export const translations = {
       warehouseAddress: "45 โลจิสติกส์ปาร์ค สมุทรปราการ ประเทศไทย",
       rights: "TRISAK GROUP สงวนลิขสิทธิ์",
       authorizedLine: "ตัวแทนจำหน่ายที่ได้รับการแต่งตั้ง — OMRON / YASKAWA / NITTO",
+      requestQuote: "ขอใบเสนอราคา",
+      directions: "ดูเส้นทาง",
+      backToTop: "กลับขึ้นด้านบน",
+      call: "โทร",
+      email: "อีเมล",
     },
     common: {
       viewProducts: "ดูสินค้าทั้งหมด",
