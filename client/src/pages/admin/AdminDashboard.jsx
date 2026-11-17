@@ -267,7 +267,10 @@ export default function AdminDashboard() {
                   </span>
                   <div className="dashboard-activity-item__body">
                     <span className="dashboard-activity-item__desc">{a.description}</span>
-                    <span className="dashboard-activity-item__time">{timeAgo(a.created_at)}</span>
+                    <span className="dashboard-activity-item__time">
+                      {a.actor && <span className="dashboard-activity-item__actor">{a.actor} · </span>}
+                      {timeAgo(a.created_at)}
+                    </span>
                   </div>
                 </li>
               ))}

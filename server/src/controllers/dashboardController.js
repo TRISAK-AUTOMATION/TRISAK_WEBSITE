@@ -41,7 +41,7 @@ export async function getDashboard(req, res) {
          FROM contact_requests ORDER BY created_at DESC LIMIT 5`
       ),
       pool.query(
-        `SELECT id, action_type, description, created_at
+        `SELECT id, action_type, description, actor, created_at
          FROM activity_log ORDER BY created_at DESC LIMIT 8`
       ),
       pool.query("SELECT COUNT(*)::int AS n FROM career_applications WHERE status = 'new'"),

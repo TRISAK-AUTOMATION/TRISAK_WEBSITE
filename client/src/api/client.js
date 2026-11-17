@@ -187,14 +187,33 @@ export const api = {
   },
 
   // ---- admin ----
-  adminLogin: async (password) => {
-    const data = await request("/admin/login", {
+  // Sign in with a username (or email) + password. On failure the thrown
+  // Error carries the server's `code` ("invalid" | "locked" | "disabled" …),
+  // `remaining` attempts and `retryAfterMinutes` for the login page.
+  adminLogin: async ({ username, password, remember }) => {
+    const res = await fetch(`${API_URL}/admin/login`, {
       method: "POST",
-      body: JSON.stringify({ password }),
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, remember }),
     });
-    localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-    return data;
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(body.error || `Login failed: ${res.status}`);
+      Object.assign(err, { code: body.code, remaining: body.remaining, retryAfterMinutes: body.retryAfterMinutes });
+      throw err;
+    }
+    localStorage.setItem(ADMIN_TOKEN_KEY, body.token);
+    return body;
   },
+  adminMe: () => authRequest("/admin/me"),
+  adminChangePassword: (currentPassword, newPassword) =>
+    authRequest("/admin/me/password", { method: "PUT", body: JSON.stringify({ currentPassword, newPassword }) }),
+  adminGetUsers: () => authRequest("/admin/users"),
+  adminCreateUser: (payload) => authRequest("/admin/users", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateUser: (id, payload) =>
+    authRequest(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteUser: (id) => authRequest(`/admin/users/${id}`, { method: "DELETE" }),
   adminLogout: async () => {
     try {
       await authRequest("/admin/logout", { method: "POST" });

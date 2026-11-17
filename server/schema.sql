@@ -4,6 +4,7 @@
 -- Product catalog hierarchy: BRAND -> CATEGORY -> SERIES -> PRODUCT
 -- Each PRODUCT can have many images, specs, documents, and related products.
 
+DROP TABLE IF EXISTS admin_users CASCADE;
 DROP TABLE IF EXISTS activity_log CASCADE;
 DROP TABLE IF EXISTS popup_settings CASCADE;
 DROP TABLE IF EXISTS history_org_nodes CASCADE;
@@ -704,8 +705,29 @@ CREATE TABLE activity_log (
   id           SERIAL PRIMARY KEY,
   action_type  VARCHAR(50) NOT NULL,
   description  VARCHAR(255) NOT NULL,
+  actor        VARCHAR(120), -- who made the change (migration 054)
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- admin_users — per-person admin accounts (migration 054).
+-- superadmin = can manage users; admin = everything else. Passwords are
+-- scrypt hashes (src/utils/password.js). While this table is empty, the
+-- first sign-in with ADMIN_PASSWORD creates the first superadmin.
+-- ============================================================
+CREATE TABLE admin_users (
+  id             SERIAL PRIMARY KEY,
+  username       VARCHAR(60)  NOT NULL UNIQUE,
+  display_name   VARCHAR(120),
+  email          VARCHAR(150),
+  password_hash  VARCHAR(255) NOT NULL,
+  role           VARCHAR(20)  NOT NULL DEFAULT 'admin' CHECK (role IN ('superadmin', 'admin')),
+  is_active      BOOLEAN      NOT NULL DEFAULT true,
+  last_login_at  TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX idx_admin_users_email ON admin_users (lower(email)) WHERE email IS NOT NULL;
 
 CREATE INDEX idx_activity_log_created_at ON activity_log (created_at DESC);
 CREATE INDEX idx_contact_requests_status ON contact_requests (status);
