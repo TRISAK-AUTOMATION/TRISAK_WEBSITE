@@ -4,6 +4,7 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 import WhyTrisak, { Icon as StatIcon, localizeIconList } from "../components/WhyTrisak.jsx";
+import ExpGallery, { expPhotos } from "../components/ExpGallery.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -169,31 +170,21 @@ export function OrgChart({ roots }) {
   );
 }
 
-// The photo card: an uploaded photo replaces the built-in one (CSS), with the
-// same navy toning.
-const expPhotoStyle = (photo) =>
-  photo
-    ? {
-        backgroundImage: `linear-gradient(180deg, rgba(11, 22, 64, 0) 55%, rgba(11, 22, 64, 0.32) 100%), url("${photo.replace(/["\\]/g, "")}")`,
-      }
-    : undefined;
-
 // Default icon per statistic card by position (customers, projects,
 // experience) when the statistic has none set in Admin > History.
 export const STAT_ICONS = ["gear", "handshake", "team"];
 export const statIcon = (s, i) => s.icon || STAT_ICONS[i % STAT_ICONS.length];
 
 /**
- * "Our Experience": heading + lede on the left with the statistics as
- * icon cards, the photo as a framed card on the right over blue geometric
- * shapes. Children (Partners & Brands) get their own white band underneath.
- * `renderStat` / `renderIcon` let Admin > History swap a card's number +
- * label and its icon for edit controls (the card and accent bar stay).
+ * "Our Experience": heading + lede on the left with the statistics in one
+ * panel underneath; the work photos as a mosaic on the right (click to view
+ * them all). Children (Partners & Brands) get their own white band below.
+ * `renderStat` / `renderIcon` let Admin > History swap a cell's number +
+ * label and its icon for edit controls.
  */
-export function ExperienceBanner({ eyebrow, title, lede, stats, children, photo, renderStat, renderIcon }) {
+export function ExperienceBanner({ eyebrow, title, lede, stats, children, photos, galleryLabels, renderStat, renderIcon }) {
   return (
     <section className="exp-banner">
-      <div className="exp-banner__shapes" aria-hidden="true" />
       <div className="container exp-banner__inner">
         <div className="exp-banner__text">
           <span className="exp-banner__eyebrow">{eyebrow}</span>
@@ -226,12 +217,7 @@ export function ExperienceBanner({ eyebrow, title, lede, stats, children, photo,
             </div>
           )}
         </div>
-        <div className="exp-banner__media" aria-hidden="true">
-          <div className="exp-banner__dots" />
-          <div className="exp-banner__frame">
-            <div className="exp-banner__photo" style={expPhotoStyle(photo)} />
-          </div>
-        </div>
+        <ExpGallery photos={photos} labels={galleryLabels} />
       </div>
       {children && (
         <div className="exp-banner__after">
@@ -375,7 +361,8 @@ export default function History() {
         title={ac("exp_title", t("history.experienceTitle"))}
         lede={ac("exp_lede", t("history.experienceLede"))}
         stats={stats}
-        photo={aboutContent?.exp_image}
+        photos={expPhotos(aboutContent)}
+        galleryLabels={t("history.expGallery")}
       >
         <SectionLabel
           eyebrow={ac("partners_eyebrow", t("history.partnersEyebrow"))}

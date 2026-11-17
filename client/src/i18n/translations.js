@@ -152,6 +152,15 @@ export const translations = {
       experienceTitle: "Our Experience",
       experienceLede:
         "Engineering work spanning consulting, design, product supply, installation, and commissioning across a wide range of industrial sites.",
+      expGallery: {
+        viewAll: "View all {n} photos",
+        enlarge: "View larger",
+        region: "Photos of our work",
+        alt: "Our work, photo {n}",
+        close: "Close",
+        prev: "Previous photo",
+        next: "Next photo",
+      },
       partnersEyebrow: "Trusted By",
       partnersTitle: "Partners & Brands",
       factSince: "Since",
@@ -667,6 +676,15 @@ export const translations = {
       experienceTitle: "ประสบการณ์ของเรา",
       experienceLede:
         "งานด้านวิศวกรรมที่ครอบคลุมตั้งแต่การให้คำปรึกษา ออกแบบ จัดหาสินค้า ติดตั้ง ไปจนถึงทดสอบระบบ ในหลากหลายหน้างานอุตสาหกรรม",
+      expGallery: {
+        viewAll: "ดูภาพทั้งหมด {n} รูป",
+        enlarge: "ดูภาพขยาย",
+        region: "ภาพผลงานของเรา",
+        alt: "ภาพผลงาน รูปที่ {n}",
+        close: "ปิด",
+        prev: "รูปก่อนหน้า",
+        next: "รูปถัดไป",
+      },
       partnersEyebrow: "ได้รับความไว้วางใจจาก",
       partnersTitle: "พันธมิตรและแบรนด์",
       factSince: "ก่อตั้งเมื่อ",

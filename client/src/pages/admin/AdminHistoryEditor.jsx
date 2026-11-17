@@ -7,6 +7,8 @@ import {
   HISTORY_STATS_PATH,
 } from "../../components/HistoryAdmin.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
+import ImageListField from "../../components/ImageListField.jsx";
+import { expPhotos, EXP_PHOTOS_DEFAULT } from "../../components/ExpGallery.jsx";
 import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import { parseIconList } from "../../components/WhyTrisak.jsx";
@@ -44,12 +46,19 @@ const FIELD_SUFFIXES = [
 ];
 
 function emptyForm() {
-  const form = { hero_bg_image: "", intro_image: "", why_bg_image: "", why_reasons: "", why_steps: "", exp_image: "" };
+  const form = { hero_bg_image: "", intro_image: "", why_bg_image: "", why_reasons: "", why_steps: "", exp_image: "", exp_images: [] };
   for (const base of FIELD_SUFFIXES) {
     form[`${base}_en`] = "";
     form[`${base}_th`] = "";
   }
   return form;
+}
+
+// exp_images is kept as an array while editing (the API stores a JSON string);
+// an older single exp_image becomes the first item of the list.
+function withPhotoList(d) {
+  const photos = expPhotos({ exp_images: d.exp_images, exp_image: d.exp_image });
+  return { ...d, exp_images: photos === EXP_PHOTOS_DEFAULT ? [] : photos };
 }
 
 /** Text box that takes the look of the element it sits in (font, colour, size). */
@@ -97,7 +106,7 @@ export default function AdminHistoryEditor() {
     api
       .adminGetAboutContent()
       .then((d) => {
-        const next = { ...emptyForm(), ...(d || {}) };
+        const next = withPhotoList({ ...emptyForm(), ...(d || {}) });
         // start from the built-in reasons/steps so they can be edited in place;
         // counted as saved, so this alone does not enable the Save button
         if (!parseIconList(next.why_reasons).length) next.why_reasons = JSON.stringify(builtInWhyList("whyReasons"));
@@ -155,8 +164,8 @@ export default function AdminHistoryEditor() {
     setSuccess(false);
     try {
       if (formChanged) {
-        const updated = await api.adminUpdateAboutContent(form);
-        const next = { ...form, ...updated };
+        const updated = await api.adminUpdateAboutContent({ ...form, exp_image: form.exp_images[0] || "" });
+        const next = withPhotoList({ ...form, ...updated });
         setForm(next);
         setSavedForm(next);
       }
@@ -376,7 +385,8 @@ export default function AdminHistoryEditor() {
             stats={stats}
             renderStat={renderStat}
             renderIcon={renderStatIcon}
-            photo={form.exp_image}
+            photos={form.exp_images.length ? form.exp_images : EXP_PHOTOS_DEFAULT}
+            galleryLabels={t.expGallery}
           >
             <div className="section-head exp-admin__partners-head">
               <span className="eyebrow">
@@ -390,16 +400,20 @@ export default function AdminHistoryEditor() {
           </ExperienceBanner>
           <div className="panel home-admin__hero-bg exp-admin__photo-panel">
             <span className="admin-edit-sidebar__label">
-              รูปในกรอบเอียงด้านขวา (ใช้ร่วมกันทั้งสองภาษา)
+              ภาพผลงานด้านขวา (ใช้ร่วมกันทั้งสองภาษา · สูงสุด 12 รูป)
             </span>
-            <ImageUploadField
-              value={form.exp_image || ""}
-              onChange={(url) => {
+            <ImageListField
+              max={12}
+              value={form.exp_images}
+              onChange={(urls) => {
                 setSuccess(false);
-                setForm((f) => ({ ...f, exp_image: url }));
+                setForm((f) => ({ ...f, exp_images: urls }));
               }}
             />
-            <p className="contact-admin__hint">ว่าง = ใช้รูปหุ่นยนต์เริ่มต้น · ระบบลงโทนสีน้ำเงินให้เข้ากับธีมเอง · ภาพแนวนอนจะดูดีที่สุด</p>
+            <p className="contact-admin__hint">
+              หน้าเว็บแสดงเป็นสไลด์ในกรอบเดียว เลื่อนเองทุก ~5 วินาที (หยุดเมื่อเอาเมาส์ชี้) เริ่มจากรูปที่ 1 · ใช้ลูกศรสลับลำดับ ·
+              ว่าง = ใช้รูปเริ่มต้น · ภาพแนวนอนคมชัดจะดูดีที่สุด
+            </p>
           </div>
         </section>
       </div>

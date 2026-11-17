@@ -3599,7 +3599,7 @@ a.admin-edit-tab {
 .exp-admin__num {
   display: inline-flex;
   align-items: baseline;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
 }
 .exp-admin__num .home-admin__input {
@@ -3607,12 +3607,12 @@ a.admin-edit-tab {
   width: auto;
   margin-left: 0;
   padding: 0 4px;
-  text-align: center;
+  text-align: left;
 }
 .exp-admin .exp-banner__stat .exp-banner__label .home-admin__input {
   margin-left: 0;
   padding: 2px 4px;
-  text-align: center;
+  text-align: left;
 }
 .exp-admin__partners-head .eyebrow .home-admin__input {
   display: inline-block;
@@ -3655,15 +3655,11 @@ a.admin-edit-tab {
   outline-offset: 4px;
 }
 .exp-admin__icon-wrap .sol-admin__picker {
-  top: 76px;
+  top: 56px;
 }
 .sol-admin__picker--center {
   left: 50%;
   transform: translateX(-50%);
-}
-/* the card lifts on hover; keep it still while editing */
-.exp-admin .exp-banner__stat:hover {
-  transform: none;
 }
 .exp-admin .exp-banner__stat:has(.sol-admin__picker) {
   z-index: 5;

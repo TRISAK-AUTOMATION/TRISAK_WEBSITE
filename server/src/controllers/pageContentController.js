@@ -37,6 +37,20 @@ function cleanHeroBg(value) {
   return bg && bg.length <= 255 && (/^\/(?![/\\])\S*$/.test(bg) || /^https?:\/\/[^\s<>"']+$/i.test(bg)) ? bg : null;
 }
 
+// List of image URLs (array or JSON string) -> JSON string of the safe ones, or null.
+function cleanImageList(raw, max) {
+  let list = raw;
+  if (typeof list === "string") {
+    try {
+      list = JSON.parse(list);
+    } catch {
+      list = [];
+    }
+  }
+  const urls = (Array.isArray(list) ? list : []).map(cleanHeroBg).filter(Boolean).slice(0, max);
+  return urls.length ? JSON.stringify(urls) : null;
+}
+
 // ---------------- About Us ----------------
 
 const ABOUT_FIELDS = [
@@ -61,6 +75,7 @@ const ABOUT_FIELDS = [
   "exp_title_en", "exp_title_th",
   "exp_lede_en", "exp_lede_th",
   "exp_image",
+  "exp_images",
   "partners_eyebrow_en", "partners_eyebrow_th",
   "partners_title_en", "partners_title_th",
 ];
@@ -80,6 +95,9 @@ export async function updateAboutContent(req, res) {
     body.hero_bg_image = cleanHeroBg(body.hero_bg_image);
     body.intro_image = cleanHeroBg(body.intro_image);
     body.why_bg_image = cleanHeroBg(body.why_bg_image);
+    body.exp_images = cleanImageList(body.exp_images, 12);
+    // the single-photo column follows the list, for anything still reading it
+    if (body.exp_images) body.exp_image = JSON.parse(body.exp_images)[0];
     body.exp_image = cleanHeroBg(body.exp_image);
     body.why_reasons = cleanIconList(body.why_reasons, "why_reasons", ["title", "body"]);
     body.why_steps = cleanIconList(body.why_steps, "why_steps", ["title", "body"]);

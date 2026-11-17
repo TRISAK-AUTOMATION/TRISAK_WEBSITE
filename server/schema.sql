@@ -390,6 +390,7 @@ CREATE TABLE about_content (
   exp_lede_en          TEXT,
   exp_lede_th          TEXT,
   exp_image            VARCHAR(255),
+  exp_images           TEXT,
   partners_eyebrow_en  VARCHAR(255),
   partners_eyebrow_th  VARCHAR(255),
   partners_title_en    VARCHAR(255),
