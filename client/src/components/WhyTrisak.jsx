@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 /**
  * History page: "Why TRISAK Group" — the reasons to choose TRISAK on the
  * left, the six-step way of working (consulting → technical support) as a
@@ -245,8 +247,50 @@ export function localizeIconList(text, lang, fallback) {
   }));
 }
 
+/**
+ * Lights the process steps one by one as they pass the reading line (62% down
+ * the viewport): the connector grows into the step, then its ring fills.
+ * Without JS or with reduced motion every step simply shows lit.
+ */
+function useStepLighting(listRef, count) {
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || !count) return undefined;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    list.classList.add("is-live");
+    let frame = 0;
+    const render = () => {
+      frame = 0;
+      const line = window.innerHeight * 0.62;
+      let current = -1;
+      [...list.children].forEach((li, i) => {
+        const ring = li.querySelector(".why__ring");
+        const r = (ring || li).getBoundingClientRect();
+        const lit = r.top + r.height / 2 < line;
+        li.classList.toggle("is-lit", lit);
+        if (lit) current = i;
+      });
+      [...list.children].forEach((li, i) => li.classList.toggle("is-current", i === current));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
+    render();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+      list.classList.remove("is-live");
+    };
+  }, [listRef, count]);
+}
+
 export default function WhyTrisak({ title, lede, reasons, processTitle, steps, bgImage }) {
   const bg = (bgImage || WHY_BG_IMAGE).replace(/["\\]/g, "");
+  const stepsRef = useRef(null);
+  useStepLighting(stepsRef, steps.length);
   return (
     <section className="section why">
       <div className="why__bg" aria-hidden="true" style={{ backgroundImage: `url("${bg}")` }} />
@@ -271,13 +315,14 @@ export default function WhyTrisak({ title, lede, reasons, processTitle, steps, b
 
         <div className="why__process">
           <h3 className="why__process-title">{processTitle}</h3>
-          <ol className="why__steps">
+          <ol className="why__steps" ref={stepsRef}>
             {steps.map((s, i) => (
               <li className="why__step" key={i}>
                 <span className="why__ring">
                   <Icon name={s.icon} />
                 </span>
                 <div>
+                  <span className="why__step-no">{String(i + 1).padStart(2, "0")}</span>
                   <h4>{s.title}</h4>
                   <p>{s.body}</p>
                 </div>

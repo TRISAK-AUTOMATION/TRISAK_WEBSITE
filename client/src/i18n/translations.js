@@ -116,6 +116,8 @@ export const translations = {
         "Every product TRISAK supplies is backed by engineers who design, install, and support the systems those products go into — the same team from consultation through commissioning.",
       timelineEyebrow: "Timeline",
       timelineTitle: "Company History",
+      story: { scroll: "Scroll", chapters: "Company history by year" },
+      todayEyebrow: "Today",
       milestones: [
         {
           year: "Founding",
@@ -640,6 +642,8 @@ export const translations = {
         "สินค้าทุกชิ้นที่ TRISAK จำหน่าย ได้รับการสนับสนุนจากทีมวิศวกรที่ออกแบบ ติดตั้ง และดูแลระบบที่สินค้านั้นถูกนำไปใช้ โดยเป็นทีมเดียวกันตั้งแต่ขั้นตอนให้คำปรึกษาจนถึงการทดสอบระบบ",
       timelineEyebrow: "ไทม์ไลน์",
       timelineTitle: "ประวัติความเป็นมา",
+      story: { scroll: "เลื่อนลง", chapters: "ประวัติบริษัทตามปี" },
+      todayEyebrow: "วันนี้",
       milestones: [
         {
           year: "ก่อตั้ง",
