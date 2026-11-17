@@ -65,7 +65,21 @@ app.use("/api", (req, res, next) => {
 });
 
 // uploaded product images, served at http://<host>:<port>/uploads/<filename>
-app.use("/uploads", express.static(uploadsDir));
+// Files named by the upload middleware (`<ms timestamp>-<random>.<ext>`)
+// never change — a replaced image gets a new name — so browsers may keep
+// them for a year without revalidating. Anything else (e.g. product
+// documents stored under their own names) keeps the default revalidation.
+const UNIQUE_UPLOAD = /^\d{13}-\d+\.[a-z0-9]+$/i;
+app.use(
+  "/uploads",
+  express.static(uploadsDir, {
+    setHeaders: (res, filePath) => {
+      if (UNIQUE_UPLOAD.test(path.basename(filePath))) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
+  })
+);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

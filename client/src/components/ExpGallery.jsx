@@ -84,7 +84,9 @@ export default function ExpGallery({ photos, labels, plain = false }) {
               aria-hidden={i === index ? undefined : "true"}
               tabIndex={i === index ? 0 : -1}
             >
-              <img src={src} alt="" loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              {/* the gallery always sits below the fold: let the browser
+                  fetch even the first photo only as it scrolls near */}
+              <img src={src} alt="" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

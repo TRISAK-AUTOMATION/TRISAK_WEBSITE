@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-import { api } from "../api/client.js";
+import { cachedHistoryData, loadHistoryData } from "../api/historyData.js";
 import WhyTrisak, { Icon as StatIcon, localizeIconList } from "../components/WhyTrisak.jsx";
 import ExpGallery, { expPhotos } from "../components/ExpGallery.jsx";
 import HistoryStory from "../components/HistoryStory.jsx";
@@ -227,27 +227,28 @@ export function ExperienceBanner({ eyebrow, title, lede, stats, children, photos
 
 export default function History() {
   const { t, lang } = useLanguage();
-  const [aboutContent, setAboutContent] = useState(null);
   // Timeline / statistics / organization chart come from the database
   // (Admin → History). The built-in translations below are only a safety
   // net for when that request fails, so the page never renders empty.
-  const [historyContent, setHistoryContent] = useState(null);
-  const [historyFailed, setHistoryFailed] = useState(false);
-  const [brands, setBrands] = useState(null);
+  // A previous visit (or the header's hover prefetch) may already hold the
+  // data; it is shown at once and refreshed in the background.
+  const [data, setData] = useState(cachedHistoryData);
+  const loaded = data !== null;
+  const aboutContent = data?.about ?? null;
+  const historyContent = data?.history ?? null;
+  const historyFailed = data?.historyFailed ?? false;
+  const brands = data?.brands ?? null;
 
   useEffect(() => {
-    api
-      .getBrands()
-      .then(setBrands)
-      .catch(() => setBrands(null));
-    api
-      .getAboutContent()
-      .then(setAboutContent)
-      .catch(() => setAboutContent(null));
-    api
-      .getHistoryContent()
-      .then(setHistoryContent)
-      .catch(() => setHistoryFailed(true));
+    let alive = true;
+    loadHistoryData().then((fresh) => {
+      if (!alive) return;
+      // a failed refresh never replaces good data already on screen
+      setData((prev) => (prev && fresh.historyFailed ? prev : fresh));
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // `${base}_${lang}` with English as the fallback for a blank translation.
@@ -302,7 +303,7 @@ export default function History() {
   return (
     <>
       <HistoryStory
-        photo={aboutContent?.intro_image || INTRO_IMAGE_DEFAULT}
+        photo={loaded ? aboutContent?.intro_image || INTRO_IMAGE_DEFAULT : null}
         eyebrow={founded ? "TRISAK GROUP · " + t("history.factSince") + " " + founded : "TRISAK GROUP"}
         title={ac("intro_title", t("history.introTitle"))}
         lede={ac("intro_lede", t("history.introLede"))}
@@ -310,49 +311,56 @@ export default function History() {
         labels={t("history.story")}
       />
 
-      <TodaySection
-        eyebrow={t("history.todayEyebrow")}
-        years={yearsActive}
-        yearsLabel={t("history.factYears")}
-        body={ac("intro_body", t("history.introBody"))}
-        stats={stats}
-        unitSep={unitSep}
-      />
+      {/* The rest waits for the data: no built-in placeholder copy or default
+          photos flashing in, and nothing below competes with the opening
+          photo while it loads (the story already fills the screen). */}
+      {loaded && (
+        <>
+          <TodaySection
+            eyebrow={t("history.todayEyebrow")}
+            years={yearsActive}
+            yearsLabel={t("history.factYears")}
+            body={ac("intro_body", t("history.introBody"))}
+            stats={stats}
+            unitSep={unitSep}
+          />
 
-      <WhyTrisak
-        title={ac("why_title", t("history.whyTitle"))}
-        lede={ac("why_lede", t("history.whyLede"))}
-        reasons={localizeIconList(aboutContent?.why_reasons, lang, t("history.whyReasons"))}
-        processTitle={ac("why_process_title", t("history.whyProcessTitle"))}
-        steps={localizeIconList(aboutContent?.why_steps, lang, t("history.whySteps"))}
-        bgImage={aboutContent?.why_bg_image}
-      />
+          <WhyTrisak
+            title={ac("why_title", t("history.whyTitle"))}
+            lede={ac("why_lede", t("history.whyLede"))}
+            reasons={localizeIconList(aboutContent?.why_reasons, lang, t("history.whyReasons"))}
+            processTitle={ac("why_process_title", t("history.whyProcessTitle"))}
+            steps={localizeIconList(aboutContent?.why_steps, lang, t("history.whySteps"))}
+            bgImage={aboutContent?.why_bg_image}
+          />
 
-      {orgRoots.length > 0 && (
-        <section className="section history-section history-org">
-          <div className="container">
-            <SectionLabel title={t("history.structureTitle")} />
-            <OrgChart roots={orgRoots} />
-          </div>
-        </section>
+          {orgRoots.length > 0 && (
+            <section className="section history-section history-org">
+              <div className="container">
+                <SectionLabel title={t("history.structureTitle")} />
+                <OrgChart roots={orgRoots} />
+              </div>
+            </section>
+          )}
+
+          <WorkSection
+            eyebrow={ac("exp_eyebrow", t("history.experienceEyebrow"))}
+            title={ac("exp_title", t("history.experienceTitle"))}
+            lede={ac("exp_lede", t("history.experienceLede"))}
+            photos={expPhotos(aboutContent)}
+            galleryLabels={t("history.expGallery")}
+          />
+
+          <ClosingSection
+            eyebrow={ac("partners_eyebrow", t("history.partnersEyebrow"))}
+            title={t("history.ctaTitle")}
+            sub={t("history.ctaSub")}
+            logos={<PartnerBrands brands={brands} />}
+            contactLabel={t("common.contactUs")}
+            productsLabel={t("common.viewProducts")}
+          />
+        </>
       )}
-
-      <WorkSection
-        eyebrow={ac("exp_eyebrow", t("history.experienceEyebrow"))}
-        title={ac("exp_title", t("history.experienceTitle"))}
-        lede={ac("exp_lede", t("history.experienceLede"))}
-        photos={expPhotos(aboutContent)}
-        galleryLabels={t("history.expGallery")}
-      />
-
-      <ClosingSection
-        eyebrow={ac("partners_eyebrow", t("history.partnersEyebrow"))}
-        title={t("history.ctaTitle")}
-        sub={t("history.ctaSub")}
-        logos={<PartnerBrands brands={brands} />}
-        contactLabel={t("common.contactUs")}
-        productsLabel={t("common.viewProducts")}
-      />
     </>
   );
 }
