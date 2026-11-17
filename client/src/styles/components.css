@@ -5185,6 +5185,234 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
   }
 }
 
+/* =========================================================
+   Products page — motion & interaction
+   ========================================================= */
+
+/* search box: icon, focus glow, rotating "Try: …" hint */
+.catalog-search__field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hero--products .catalog-search__field {
+  flex-basis: 200px;
+}
+.catalog-search .catalog-search__field input {
+  width: 100%;
+  flex: 1 1 auto;
+  padding-left: 42px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.catalog-search .catalog-search__field input:focus {
+  outline: none;
+  border-color: #6f9bff;
+  box-shadow: 0 0 0 4px rgba(111, 155, 255, 0.25), 0 10px 30px -12px rgba(13, 41, 151, 0.55);
+}
+.catalog-search__icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-faint);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+.catalog-search__field:focus-within .catalog-search__icon {
+  color: var(--accent-signal);
+}
+/* the real placeholder hides while the animated hint shows */
+.catalog-search__field.has-hint input::placeholder {
+  color: transparent;
+}
+.catalog-search__hint {
+  position: absolute;
+  left: 42px;
+  right: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.catalog-search__hint-word {
+  display: inline-block;
+  color: var(--text-muted);
+  font-weight: 600;
+  animation: search-hint-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes search-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* brand logos: rise in one by one, lift into a soft card on hover */
+/* room inside the scroll row so the lifted card and its shadow are not clipped */
+.products-brands .brand-logo-grid {
+  padding-block: 12px 32px;
+  margin-block: -12px -32px;
+}
+.products-brands .brand-logo-cell {
+  border-radius: calc(var(--radius) * 2);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, background 0.35s ease;
+}
+.products-brands .brand-logo-cell:hover,
+.products-brands .brand-logo-cell:focus-visible {
+  background: #ffffff;
+  transform: translateY(-6px);
+  box-shadow: 0 24px 44px -26px rgba(11, 27, 63, 0.4), 0 0 0 1px rgba(13, 41, 151, 0.08);
+}
+.products-brands .brand-logo-cell__image {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.products-brands .brand-logo-cell:hover .brand-logo-cell__image {
+  transform: scale(1.05);
+}
+.products-brands .reveal .brand-logo-cell {
+  opacity: 0;
+  translate: 0 24px;
+  transition: opacity 0.6s ease, translate 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, background 0.35s ease;
+}
+.products-brands .reveal.is-visible .brand-logo-cell {
+  opacity: 1;
+  translate: none;
+}
+.products-brands .reveal.is-visible .brand-logo-cell:nth-child(2) { transition-delay: 0.1s, 0.1s, 0s, 0s, 0s; }
+.products-brands .reveal.is-visible .brand-logo-cell:nth-child(3) { transition-delay: 0.2s, 0.2s, 0s, 0s, 0s; }
+.products-brands .reveal.is-visible .brand-logo-cell:nth-child(4) { transition-delay: 0.3s, 0.3s, 0s, 0s, 0s; }
+.products-brands .reveal.is-visible .brand-logo-cell:nth-child(n + 5) { transition-delay: 0.4s, 0.4s, 0s, 0s, 0s; }
+
+/* category tiles: staggered entrance, cursor spotlight, lift + accent on hover */
+.products-categories .category-tile {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.3s ease,
+    color 0.25s ease, background 0.25s ease;
+}
+/* soft light that follows the pointer */
+.products-categories .category-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(37, 99, 235, 0.12), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.products-categories .category-tile:hover,
+.products-categories .category-tile:focus-visible {
+  background: #ffffff;
+  border-color: rgba(13, 41, 151, 0.28);
+  color: var(--accent-signal);
+  transform: translateY(-4px);
+  box-shadow: 0 22px 40px -26px rgba(11, 27, 63, 0.45);
+}
+.products-categories .category-tile:hover::before,
+.products-categories .category-tile:focus-visible::before {
+  opacity: 1;
+}
+.products-categories .category-tile .category-tile__icon,
+.products-categories .category-tile .category-tile__img {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+}
+.products-categories .category-tile:hover .category-tile__icon,
+.products-categories .category-tile:hover .category-tile__img {
+  transform: translateY(-4px) scale(1.08);
+}
+.products-categories .category-tile:hover .category-tile__img {
+  filter: none;
+}
+/* "View products →" slides up under the name */
+.category-tile__cta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-signal);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.category-tile:hover .category-tile__cta,
+.category-tile:focus-visible .category-tile__cta {
+  opacity: 1;
+  transform: none;
+}
+.category-tile--wide .category-tile__cta {
+  position: static;
+  margin-left: auto;
+}
+/* entrance: tiles rise one after another (row by row) */
+.products-categories .reveal .category-tile {
+  opacity: 0;
+  translate: 0 22px;
+}
+.products-categories .reveal.is-visible .category-tile {
+  opacity: 1;
+  translate: none;
+  transition: opacity 0.5s ease calc(var(--i, 0) * 45ms), translate 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i, 0) * 45ms),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.3s ease, color 0.25s ease,
+    background 0.25s ease;
+}
+
+/* closing CTA: a slow light drifting behind the heading */
+.products-cta {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.products-cta__light {
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  z-index: -1;
+  width: 70%;
+  height: 180%;
+  background: radial-gradient(closest-side, rgba(37, 99, 235, 0.14), transparent);
+  animation: products-cta-drift 14s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes products-cta-drift {
+  from {
+    transform: translateX(-90%);
+  }
+  to {
+    transform: translateX(-10%);
+  }
+}
+
+@media (hover: none) {
+  /* touch screens: no hover, so show the cue a little */
+  .category-tile__cta {
+    opacity: 0.85;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-search__hint-word,
+  .products-cta__light {
+    animation: none;
+  }
+  .products-brands .reveal .brand-logo-cell,
+  .products-categories .reveal .category-tile {
+    opacity: 1;
+    translate: none;
+  }
+  .products-categories .category-tile:hover,
+  .products-brands .brand-logo-cell:hover {
+    transform: none;
+  }
+}
+
 /* ---------- Career page ---------- */
 .career-why,
 .career-positions {

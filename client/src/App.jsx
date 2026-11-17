@@ -50,6 +50,8 @@ import AdminCategoryForm from "./pages/admin/AdminCategoryForm.jsx";
 import AdminSeriesList from "./pages/admin/AdminSeriesList.jsx";
 import AdminSeriesForm from "./pages/admin/AdminSeriesForm.jsx";
 import AdminSiteSettings from "./pages/admin/AdminSiteSettings.jsx";
+import AdminUsers from "./pages/admin/AdminUsers.jsx";
+import AdminAccount from "./pages/admin/AdminAccount.jsx";
 import AdminMenu from "./pages/admin/AdminMenu.jsx";
 import AdminContactRequests from "./pages/admin/AdminContactRequests.jsx";
 import AdminPopup from "./pages/admin/AdminPopup.jsx";
@@ -86,6 +88,7 @@ export default function App() {
   const siteSettings = useSiteSettings();
   // Show the Header unless an admin has explicitly turned it off. While
   // settings are loading (or failed to load) we keep the Header visible.
+  // no site header on admin pages (or when hidden in Settings): .page-shell--no-header drops its reserved space
   const showHeader = !isAdmin && siteSettings?.header_visible !== false;
   const glassButtons = !isAdmin && siteSettings?.glass_buttons === true;
 
@@ -95,7 +98,7 @@ export default function App() {
   }, [glassButtons]);
 
   return (
-    <div className={`page-shell${!isAdmin && !showHeader ? " page-shell--no-header" : ""}`}>
+    <div className={`page-shell${!showHeader ? " page-shell--no-header" : ""}`}>
       <ScrollToTop />
       {showHeader && <Header />}
       {!isAdmin && <PopupModal />}
@@ -184,6 +187,8 @@ export default function App() {
           <Route path="products/:id/edit" element={<AdminProductForm />} />
 
           <Route path="settings/website" element={<AdminSiteSettings />} />
+          <Route path="settings/users" element={<AdminUsers />} />
+          <Route path="account" element={<AdminAccount />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="contact-requests" element={<AdminContactRequests />} />
           {/* old URL — keep bookmarks working */}

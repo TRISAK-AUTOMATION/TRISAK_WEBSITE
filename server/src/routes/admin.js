@@ -1,11 +1,19 @@
 import { Router } from "express";
-import { requireAdmin } from "../middleware/adminAuth.js";
+import { requireAdmin, requireSuperadmin } from "../middleware/adminAuth.js";
+import {
+  login,
+  logout,
+  getMe,
+  changeOwnPassword,
+  listUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../controllers/adminUsersController.js";
 import { upload, optimizeUploadedImage } from "../middleware/upload.js";
 import { uploadProductDocument, verifyPdfSignature } from "../middleware/uploadProductDocument.js";
 import { uploadExcel } from "../middleware/uploadExcel.js";
 import {
-  login,
-  logout,
   listBrandsAdmin,
   getBrandAdmin,
   createBrand,
@@ -133,6 +141,14 @@ router.post("/admin/login", login);
 router.use("/admin", requireAdmin);
 
 router.post("/admin/logout", logout);
+router.get("/admin/me", getMe);
+router.put("/admin/me/password", changeOwnPassword);
+
+// admin accounts — superadmins only
+router.get("/admin/users", requireSuperadmin, listUsers);
+router.post("/admin/users", requireSuperadmin, createUser);
+router.put("/admin/users/:id", requireSuperadmin, updateUser);
+router.delete("/admin/users/:id", requireSuperadmin, deleteUser);
 
 router.put("/admin/home-content", updateHomeContent);
 

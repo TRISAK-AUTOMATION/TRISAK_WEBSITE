@@ -1,5 +1,5 @@
-import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { api } from "../api/client.js";
 
 const NAV_SECTIONS = [
@@ -62,14 +62,34 @@ const NAV_SECTIONS = [
     key: "settings",
     label: "การตั้งค่า",
     icon: "⚙️",
-    children: [{ label: "เว็บไซต์", to: "/admin/settings/website" }],
+    children: [
+      { label: "เว็บไซต์", to: "/admin/settings/website" },
+      { label: "ผู้ใช้งาน", to: "/admin/settings/users", superadminOnly: true },
+    ],
   },
 ];
+
+const ROLE_LABELS = { superadmin: "Superadmin", admin: "Admin" };
 
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  // the signed-in account (name in the top bar, superadmin-only menu items)
+  const [me, setMe] = useState(null);
+
+  useEffect(() => {
+    api.adminMe().then(setMe).catch(() => setMe(null));
+  }, []);
+
+  // close the user menu when navigating
+  useEffect(() => setUserMenuOpen(false), [location.pathname]);
+
+  const isSuperadmin = me?.role === "superadmin";
+  const sections = NAV_SECTIONS.map((s) =>
+    s.children ? { ...s, children: s.children.filter((c) => !c.superadminOnly || isSuperadmin) } : s
+  );
+  const displayName = me ? me.display_name || me.username : "…";
 
   const isSectionActive = (section) =>
     section.children?.some((c) => location.pathname.startsWith(c.to));
@@ -100,7 +120,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="admin-sidebar__nav">
-          {NAV_SECTIONS.map((section) =>
+          {sections.map((section) =>
             section.children ? (
               <div
                 className={`admin-nav-group ${openGroups[section.key] ? "is-open" : ""}`}
@@ -156,12 +176,17 @@ export default function AdminLayout() {
               className="admin-user-menu__trigger"
               onClick={() => setUserMenuOpen((v) => !v)}
             >
-              <span className="admin-user-menu__avatar">S</span>
-              Superadmin
+              <span className="admin-user-menu__avatar">{displayName.charAt(0).toUpperCase()}</span>
+              <span className="admin-user-menu__who">
+                <span className="admin-user-menu__name">{displayName}</span>
+                {me && <span className="admin-user-menu__role">{ROLE_LABELS[me.role] || me.role}</span>}
+              </span>
               <span className={`admin-user-menu__chevron ${userMenuOpen ? "is-open" : ""}`}>▾</span>
             </button>
             {userMenuOpen && (
               <div className="admin-user-menu__panel">
+                <Link to="/admin/account">บัญชีของฉัน / เปลี่ยนรหัสผ่าน</Link>
+                {isSuperadmin && <Link to="/admin/settings/users">จัดการผู้ใช้งาน</Link>}
                 <button onClick={handleLogout}>ออกจากระบบ</button>
               </div>
             )}

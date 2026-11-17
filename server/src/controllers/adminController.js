@@ -1,26 +1,11 @@
 import pool from "../config/db.js";
 import { deleteAllProductDocumentFiles } from "./productDocumentsController.js";
-import { createSession, destroySession } from "../middleware/adminAuth.js";
 import { logActivity } from "../utils/activityLog.js";
 import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../utils/productSlug.js";
 
 // ---------------- auth ----------------
 
-export async function login(req, res) {
-  const { password } = req.body || {};
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: "Invalid password" });
-  }
-  const token = createSession();
-  res.json({ token });
-}
-
-export async function logout(req, res) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (token) destroySession(token);
-  res.json({ success: true });
-}
+// Sign-in / sign-out and admin accounts: see adminUsersController.js.
 
 // ---------------- taxonomy (brand / category / series) ----------------
 // Full CRUD + status toggle + reorder, to back the dedicated admin list

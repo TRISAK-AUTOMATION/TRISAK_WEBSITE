@@ -236,8 +236,25 @@
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  min-width: 160px;
+  min-width: 230px;
   z-index: 50;
+}
+
+.admin-user-menu__who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.admin-user-menu__name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.admin-user-menu__role {
+  font-size: 11.5px;
+  color: var(--text-faint);
 }
 
 .admin-user-menu__panel button {
@@ -3657,4 +3674,196 @@ a.admin-edit-tab {
 }
 .exp-admin .exp-banner__inner {
   z-index: 2;
+}
+
+/* ---- Admin > การตั้งค่า > ผู้ใช้งาน / บัญชีของฉัน ---- */
+.users-admin__toolbar {
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.users-admin__title {
+  margin: 0;
+  font-size: 22px;
+  text-transform: none;
+}
+.users-admin__lede {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.users-admin__who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.users-admin__who strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.users-admin__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-signal);
+  color: #fff;
+  font-weight: 600;
+}
+.users-admin__meta {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+.users-admin__you {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-signal-dim);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-signal);
+}
+.users-admin__role {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eef1f8;
+  color: var(--text-muted);
+}
+.users-admin__role--superadmin {
+  background: var(--accent-signal-dim);
+  color: var(--accent-signal);
+}
+.users-admin__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.users-admin__status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c4cad8;
+}
+.users-admin__status.is-active {
+  color: #067647;
+}
+.users-admin__status.is-active::before {
+  background: #12b76a;
+}
+.users-admin__form {
+  display: grid;
+  gap: 18px;
+}
+.users-admin__hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-body);
+}
+.users-admin__roles {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.users-admin__roles legend {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.users-admin__role-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.users-admin__role-opt.is-on {
+  border-color: var(--accent-signal);
+  background: var(--accent-signal-dim);
+}
+.users-admin__role-opt input {
+  margin-top: 3px;
+}
+.users-admin__role-opt strong {
+  display: block;
+  font-size: 14px;
+}
+.users-admin__role-opt small {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.users-admin__roles:disabled .users-admin__role-opt {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.users-admin__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.users-admin__toggle input {
+  margin-top: 3px;
+}
+.account-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: start;
+  max-width: 980px;
+}
+.account-admin__card {
+  display: grid;
+  gap: 16px;
+  padding: 28px;
+}
+.account-admin__card h2 {
+  margin: 0;
+  font-size: 18px;
+  text-transform: none;
+}
+.account-admin__card .btn {
+  justify-self: start;
+}
+.account-admin__facts {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+.account-admin__facts div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+}
+.account-admin__facts dt {
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.account-admin__facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+.dashboard-activity-item__actor {
+  font-weight: 600;
+  color: var(--text-muted);
 }
