@@ -5,6 +5,8 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../api/client.js";
 import WhyTrisak, { Icon as StatIcon, localizeIconList } from "../components/WhyTrisak.jsx";
 import ExpGallery, { expPhotos } from "../components/ExpGallery.jsx";
+import HistoryStory from "../components/HistoryStory.jsx";
+import { TodaySection, WorkSection, ClosingSection } from "../components/HistorySections.jsx";
 
 export const BRANDS = ["OMRON", "YASKAWA", "NITTO"];
 
@@ -26,24 +28,6 @@ const brandRows = (brands) =>
         logo_url: null,
       }
   );
-
-// The authorized brands as a compact row of logos (intro facts); a brand
-// without a logo in Admin > Brands shows as its name.
-function BrandLogoRow({ brands }) {
-  return (
-    <span className="brand-logo-row">
-      {brandRows(brands).map((b) => (
-        <Link key={b.slug} to={`/products/${b.slug}`} className="brand-logo-row__item" title={b.name}>
-          {b.logo_url ? (
-            <img src={b.logo_url} alt={b.name} loading="lazy" />
-          ) : (
-            <span className="brand-logo-row__name">{b.name}</span>
-          )}
-        </Link>
-      ))}
-    </span>
-  );
-}
 
 // Three equal cells, logos normalised to one optical height (see .partner-logos).
 export function PartnerBrands({ brands }) {
@@ -138,6 +122,19 @@ export function BrandLanesTimeline({ items, brands }) {
     </div>
   );
 }
+
+// Timeline entries for the scroll story: oldest first, with the brand guessed
+// from the text and that brand's logo (shown as a white mark).
+const storyEntries = (items, brands) => {
+  const logos = brandRows(brands);
+  return items
+    .map((m) => {
+      const brand = brandOf(m);
+      const row = brand && logos.find((l) => l.name.trim().toUpperCase() === brand);
+      return { ...m, brand, logo: row?.logo_url || null };
+    })
+    .sort((a, b) => yearNum(a.year) - yearNum(b.year));
+};
 
 // Organization chart (Admin > History > Organization): a node, then its
 // children joined by one bracket line, recursively.
@@ -304,48 +301,23 @@ export default function History() {
 
   return (
     <>
-      <section className="intro">
-        <img className="intro__bg" src={aboutContent?.intro_image || INTRO_IMAGE_DEFAULT} alt="" />
-        <div className="container intro__text">
-          <h1>{ac("intro_title", t("history.introTitle"))}</h1>
-          <p className="intro__lede">{ac("intro_lede", t("history.introLede"))}</p>
-          <p className="intro__body">{ac("intro_body", t("history.introBody"))}</p>
-          {founded && (
-            <dl className="intro__facts">
-              <div>
-                <dt>{t("history.factSince")}</dt>
-                <dd>{founded}</dd>
-              </div>
-              <div>
-                <dt>{t("history.factYears")}</dt>
-                <dd>{yearsActive}</dd>
-              </div>
-              <div>
-                <dt>{t("history.factAuthorized")}</dt>
-                <dd className="intro__facts-brands">
-                  <BrandLogoRow brands={brands} />
-                </dd>
-              </div>
-            </dl>
-          )}
-        </div>
-      </section>
+      <HistoryStory
+        photo={aboutContent?.intro_image || INTRO_IMAGE_DEFAULT}
+        eyebrow={founded ? "TRISAK GROUP · " + t("history.factSince") + " " + founded : "TRISAK GROUP"}
+        title={ac("intro_title", t("history.introTitle"))}
+        lede={ac("intro_lede", t("history.introLede"))}
+        entries={storyEntries(timeline, brands)}
+        labels={t("history.story")}
+      />
 
-      <section className="section history-section">
-        <div className="container">
-          <SectionLabel title={t("history.timelineTitle")} />
-          <BrandLanesTimeline items={timeline} brands={brands} />
-        </div>
-      </section>
-
-      {orgRoots.length > 0 && (
-        <section className="section history-section history-org">
-          <div className="container">
-            <SectionLabel title={t("history.structureTitle")} />
-            <OrgChart roots={orgRoots} />
-          </div>
-        </section>
-      )}
+      <TodaySection
+        eyebrow={t("history.todayEyebrow")}
+        years={yearsActive}
+        yearsLabel={t("history.factYears")}
+        body={ac("intro_body", t("history.introBody"))}
+        stats={stats}
+        unitSep={unitSep}
+      />
 
       <WhyTrisak
         title={ac("why_title", t("history.whyTitle"))}
@@ -356,35 +328,31 @@ export default function History() {
         bgImage={aboutContent?.why_bg_image}
       />
 
-      <ExperienceBanner
+      {orgRoots.length > 0 && (
+        <section className="section history-section history-org">
+          <div className="container">
+            <SectionLabel title={t("history.structureTitle")} />
+            <OrgChart roots={orgRoots} />
+          </div>
+        </section>
+      )}
+
+      <WorkSection
         eyebrow={ac("exp_eyebrow", t("history.experienceEyebrow"))}
         title={ac("exp_title", t("history.experienceTitle"))}
         lede={ac("exp_lede", t("history.experienceLede"))}
-        stats={stats}
         photos={expPhotos(aboutContent)}
         galleryLabels={t("history.expGallery")}
-      >
-        <SectionLabel
-          eyebrow={ac("partners_eyebrow", t("history.partnersEyebrow"))}
-          title={ac("partners_title", t("history.partnersTitle"))}
-        />
-        <PartnerBrands brands={brands} />
-      </ExperienceBanner>
+      />
 
-      <section className="cta-band history-cta">
-        <div className="container cta-band__wrap">
-          <h2>{t("history.ctaTitle")}</h2>
-          <p className="history-cta__sub">{t("history.ctaSub")}</p>
-          <div className="history-cta__actions">
-            <Link to="/contacts" className="btn btn-primary">
-              {t("common.contactUs")} <span className="btn-arrow">→</span>
-            </Link>
-            <Link to="/products" className="btn">
-              {t("common.viewProducts")}
-            </Link>
-          </div>
-        </div>
-      </section>
+      <ClosingSection
+        eyebrow={ac("partners_eyebrow", t("history.partnersEyebrow"))}
+        title={t("history.ctaTitle")}
+        sub={t("history.ctaSub")}
+        logos={<PartnerBrands brands={brands} />}
+        contactLabel={t("common.contactUs")}
+        productsLabel={t("common.viewProducts")}
+      />
     </>
   );
 }

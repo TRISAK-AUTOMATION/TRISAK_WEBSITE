@@ -34,7 +34,7 @@ export function expPhotos(about) {
  * layer (corner brackets, grid, a scan line on every change) gives it the
  * technical feel. Clicking the photo opens it full screen.
  */
-export default function ExpGallery({ photos, labels }) {
+export default function ExpGallery({ photos, labels, plain = false }) {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(null); // index shown in the lightbox, or null
   const [paused, setPaused] = useState(false);
@@ -52,7 +52,7 @@ export default function ExpGallery({ photos, labels }) {
 
   return (
     <div
-      className={`exp-gallery${paused || open !== null ? " is-paused" : ""}`}
+      className={`exp-gallery${plain ? " exp-gallery--plain" : ""}${paused || open !== null ? " is-paused" : ""}`}
       role="region"
       aria-roledescription="carousel"
       aria-label={labels.region}
@@ -90,6 +90,7 @@ export default function ExpGallery({ photos, labels }) {
         </div>
 
         {/* HUD: grid, corner brackets, a scan line replayed on every change */}
+        {!plain && (
         <div className="exp-gallery__hud" aria-hidden="true">
           <span className="exp-gallery__grid" />
           <span className="exp-gallery__scan" key={`scan-${index}`} />
@@ -102,6 +103,7 @@ export default function ExpGallery({ photos, labels }) {
             {multi ? `${pad(index + 1)} / ${pad(count)}` : "TRISAK"}
           </span>
         </div>
+        )}
 
         {multi && (
           <div className="exp-gallery__controls">
