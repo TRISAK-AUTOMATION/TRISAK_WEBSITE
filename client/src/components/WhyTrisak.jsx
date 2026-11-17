@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * History page: "Why TRISAK Group" — the reasons to choose TRISAK on the
@@ -287,13 +287,41 @@ function useStepLighting(listRef, count) {
   }, [listRef, count]);
 }
 
+/**
+ * True once the element is within ~one screen of the viewport. A CSS
+ * background is otherwise fetched as soon as it renders, even far down the
+ * page, competing with the images at the top.
+ */
+function useNearViewport(ref) {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (near || !el) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setNear(true);
+      },
+      { rootMargin: "100% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, near]);
+  return near;
+}
+
 export default function WhyTrisak({ title, lede, reasons, processTitle, steps, bgImage }) {
   const bg = (bgImage || WHY_BG_IMAGE).replace(/["\\]/g, "");
+  const sectionRef = useRef(null);
   const stepsRef = useRef(null);
+  const near = useNearViewport(sectionRef);
   useStepLighting(stepsRef, steps.length);
   return (
-    <section className="section why">
-      <div className="why__bg" aria-hidden="true" style={{ backgroundImage: `url("${bg}")` }} />
+    <section className="section why" ref={sectionRef}>
+      <div className="why__bg" aria-hidden="true" style={near ? { backgroundImage: `url("${bg}")` } : undefined} />
       <div className="container why__grid">
         <div className="why__intro">
           <h2>{title}</h2>

@@ -23,9 +23,13 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
   const outerRef = useRef(null);
   const stickyRef = useRef(null);
   const geo = useRef({ h: 0 });
-  const [mode, setMode] = useState("flow");
+  // decided on the first render, so the entrance plays once, in the right layout
+  const [mode, setMode] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia?.(PIN_QUERY).matches ? "pinned" : "flow"
+  );
   const [chapter, setChapter] = useState(0);
   const count = entries.length;
+  const ready = usePhotoReady(photo);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return undefined;
@@ -84,14 +88,19 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
   const numeric = count > 0 && entries.every((m) => /^\d{4}$/.test(String(m.year).trim()));
   const current = entries[Math.min(chapter, count - 1)];
 
-  // flow until the timeline has loaded, too
-  if (mode === "flow" || !count) {
+  // Until the data and the opening photo are in, the layout is already in
+  // place but the entrance is held (paused at its first frame), so the page
+  // never animates a placeholder or an empty image.
+  const waiting = ready ? "" : " is-waiting";
+
+  // flow on small screens, and when the loaded timeline turns out empty
+  if (mode === "flow" || (ready && !count)) {
     return (
-      <section className="story story--flow" aria-label={title}>
-        <div className="story__flow-hero">
-          <img className="story__flow-photo" src={photo} alt="" />
+      <section className="story story--flow" aria-label={title} aria-busy={!ready}>
+        <div className={`story__flow-hero${waiting}`}>
+          {photo && <img className="story__flow-photo" src={photo} alt="" fetchpriority="high" />}
         </div>
-        <div className="container story__flow-intro">
+        <div className={`container story__flow-intro${waiting}`}>
           {eyebrow && <span className="story__eyebrow">{eyebrow}</span>}
           <h1>{title}</h1>
           {lede && <p>{lede}</p>}
@@ -110,11 +119,11 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
   }
 
   return (
-    <section className="story story--pinned" ref={outerRef} aria-label={title}>
-      <div className="story__sticky" ref={stickyRef}>
+    <section className="story story--pinned" ref={outerRef} aria-label={title} aria-busy={!ready}>
+      <div className={`story__sticky${waiting}`} ref={stickyRef}>
         {/* 1. the company photo, zoomed by scroll, brightening to white */}
         <div className="story__photo" aria-hidden="true">
-          <img src={photo} alt="" />
+          {photo && <img src={photo} alt="" fetchpriority="high" />}
         </div>
         <div className="story__veil" aria-hidden="true" />
 
@@ -167,7 +176,9 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
             {entries.map((m, i) => (
               <figure key={m.id} className={`story__shot${i === chapter ? " is-active" : ""}`}>
                 {m.image ? (
-                  <img src={m.image} alt="" loading="lazy" />
+                  // the chapter photos (often large) wait for the opening
+                  // photo, so they don't compete with it for bandwidth
+                  ready && <img src={m.image} alt="" decoding="async" />
                 ) : (
                   <span className="story__shot-plate">
                     {m.logo ? <img src={m.logo} alt="" /> : <b>TRISAK</b>}
@@ -180,6 +191,37 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
       </div>
     </section>
   );
+}
+
+/**
+ * True once `photo` (null while the page data loads) has downloaded and
+ * decoded — or after 1.5 s, so a slow network never holds the page back.
+ * Stays true afterwards: a later photo swap (fresh data replacing the
+ * cached copy) just changes the image without replaying the entrance.
+ */
+function usePhotoReady(photo) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (ready || !photo) return undefined;
+    let done = false;
+    const show = () => {
+      if (!done) {
+        done = true;
+        setReady(true);
+      }
+    };
+    const img = new Image();
+    img.fetchPriority = "high";
+    img.src = photo;
+    if (typeof img.decode === "function") img.decode().then(show, show);
+    else img.onload = img.onerror = show;
+    const timer = setTimeout(show, 1500);
+    return () => {
+      done = true;
+      clearTimeout(timer);
+    };
+  }, [photo, ready]);
+  return ready;
 }
 
 function ChapterText({ m }) {

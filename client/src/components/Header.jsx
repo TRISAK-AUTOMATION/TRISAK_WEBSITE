@@ -4,6 +4,20 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { useSiteSettings } from "../contexts/SiteSettingsContext.jsx";
 import { useMenu } from "../contexts/MenuContext.jsx";
 import MenuLink from "./MenuLink.jsx";
+import { prefetchHistory } from "../api/historyData.js";
+
+// Pointer, keyboard focus or a touch reaching a menu link to /history starts
+// loading that page's data and opening photo before the click lands.
+const PREFETCH = { "/history": prefetchHistory };
+function prefetchFromEvent(e) {
+  const href = e.target.closest?.("a")?.getAttribute("href");
+  PREFETCH[href]?.();
+}
+const prefetchProps = {
+  onPointerOver: prefetchFromEvent,
+  onFocus: prefetchFromEvent,
+  onTouchStart: prefetchFromEvent,
+};
 
 // Used only until the admin-managed menu has loaded (or if it ever
 // fails to load), so the header never renders with no navigation at
@@ -67,7 +81,7 @@ export default function Header() {
           )}
         </NavLink>
 
-        <nav className="site-header__nav site-header__nav--desktop" aria-label="Main">
+        <nav className="site-header__nav site-header__nav--desktop" aria-label="Main" {...prefetchProps}>
           {navItems.map((item) => (
             <MenuLink
               key={item.id}
@@ -113,6 +127,7 @@ export default function Header() {
       <nav
         className={`site-header__nav--mobile ${open ? "is-open" : ""}`}
         aria-label="Mobile"
+        {...prefetchProps}
       >
         {navItems.map((item) => (
           <MenuLink

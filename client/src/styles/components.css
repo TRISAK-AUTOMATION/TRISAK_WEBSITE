@@ -7117,6 +7117,8 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
   position: absolute;
   inset: 0;
   z-index: 0;
+  /* shows only if the photo is still on its way when the entrance starts */
+  background: linear-gradient(160deg, #eef2fc 0%, #dfe7fb 100%);
 }
 
 .story__photo img {
@@ -7496,6 +7498,7 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
   aspect-ratio: 16 / 10;
   max-height: 62svh;
   overflow: hidden;
+  background: linear-gradient(160deg, #eef2fc 0%, #dfe7fb 100%);
 }
 
 .story__flow-photo {
@@ -7507,6 +7510,79 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
 
 .story__flow-intro {
   padding-top: 40px;
+}
+
+/* page entrance: the opening photo slides up into place behind a rising
+   edge, then the title lines and the scroll cue follow. Runs once on load;
+   the scroll-driven zoom (transform) is untouched — the entrance uses the
+   wrapper's own transform and the image's separate `scale` property. */
+@media (prefers-reduced-motion: no-preference) {
+  .story__photo,
+  .story__flow-hero {
+    animation: story-enter-photo 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .story__photo img,
+  .story__flow-photo {
+    animation: story-enter-zoom 1.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .story__hero-text > *,
+  .story__flow-intro > * {
+    animation: story-enter-text 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .story__hero-text > :nth-child(1),
+  .story__flow-intro > :nth-child(1) {
+    animation-delay: 0.45s;
+  }
+  .story__hero-text > :nth-child(2),
+  .story__flow-intro > :nth-child(2) {
+    animation-delay: 0.55s;
+  }
+  .story__hero-text > :nth-child(3),
+  .story__flow-intro > :nth-child(3) {
+    animation-delay: 0.65s;
+  }
+  .story__cue {
+    animation: story-enter-fade 0.8s ease 1s both;
+  }
+  /* held on the first frame (hidden) until the data and photo are ready */
+  .story__sticky.is-waiting :is(.story__photo, .story__photo img, .story__hero-text > *, .story__cue),
+  .story__flow-hero.is-waiting,
+  .story__flow-hero.is-waiting .story__flow-photo,
+  .story__flow-intro.is-waiting > * {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes story-enter-photo {
+  from {
+    opacity: 0;
+    transform: translateY(70px);
+    clip-path: inset(18% 0 0 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes story-enter-zoom {
+  from {
+    scale: 1.12;
+  }
+}
+
+@keyframes story-enter-text {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+
+@keyframes story-enter-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 .story__flow-list {
