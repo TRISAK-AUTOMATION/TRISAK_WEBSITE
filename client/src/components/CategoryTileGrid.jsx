@@ -35,7 +35,14 @@ function CategoryIcon({ category }) {
  * lone last tile that would otherwise leave an orphan in a 4-col row —
  * spans the full grid width with icon and label side by side.
  */
-export default function CategoryTileGrid({ categories, onSelect }) {
+// Cursor spotlight: the tile's CSS reads --mx / --my (px inside the tile).
+const trackPointer = (e) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+};
+
+export default function CategoryTileGrid({ categories, onSelect, cta }) {
   const count = categories.length;
 
   return (
@@ -47,10 +54,17 @@ export default function CategoryTileGrid({ categories, onSelect }) {
             type="button"
             key={c.slug}
             className={`category-tile${wide ? " category-tile--wide" : ""}`}
+            style={{ "--i": i }}
             onClick={() => onSelect(c)}
+            onPointerMove={trackPointer}
           >
             <CategoryIcon category={c} />
             <span className="category-tile__name">{c.name}</span>
+            {cta && (
+              <span className="category-tile__cta" aria-hidden="true">
+                {cta} →
+              </span>
+            )}
           </button>
         );
       })}

@@ -7,6 +7,7 @@ import LatestProductsCarousel from "../../components/LatestProductsCarousel.jsx"
 import BrandLogoGrid from "../../components/BrandLogoGrid.jsx";
 import CategoryTileGrid from "../../components/CategoryTileGrid.jsx";
 import HeroSlideshow from "../../components/HeroSlideshow.jsx";
+import Reveal from "../../components/Reveal.jsx";
 import Pagination, { PRODUCTS_PER_PAGE } from "../../components/Pagination.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import useSyncedQuery from "../../hooks/useSyncedQuery.js";
@@ -19,6 +20,9 @@ export default function ProductsOverview() {
   const [results, setResults] = useState(null); // null = not searching yet
   const [loading, setLoading] = useState(false);
   const [pageContent, setPageContent] = useState(null);
+  // rotating "Try: …" hint inside the empty search box
+  const [hintIndex, setHintIndex] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
   const resultsRef = useRef(null);
   const pageChanged = useRef(false);
   const navigate = useNavigate();
@@ -69,6 +73,14 @@ export default function ProductsOverview() {
     const value = pageContent[`${field}_${lang}`];
     return value || fallback;
   };
+
+  const searchExamples = t("products.searchExamples");
+  const showHint = !queryDraft && !searchFocused && Array.isArray(searchExamples) && searchExamples.length > 0;
+  useEffect(() => {
+    if (!showHint || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const timer = setInterval(() => setHintIndex((i) => i + 1), 2800);
+    return () => clearInterval(timer);
+  }, [showHint]);
 
   // an unknown ?brand= is ignored rather than treated as "no results"
   const brand = !brands.length || brands.some((b) => b.slug === brandParam) ? brandParam : "";
@@ -140,7 +152,7 @@ export default function ProductsOverview() {
 
   return (
     <>
-      <section className={`hero hero--compact hero--products ${hasHeroBg ? "hero--has-bg" : ""}`}>
+      <section className={`hero hero--compact hero--products hero--parallax ${hasHeroBg ? "hero--has-bg" : ""}`}>
         {hasHeroBg && (
           <>
             <HeroSlideshow images={heroBgImages} />
@@ -154,12 +166,29 @@ export default function ProductsOverview() {
           <p className="hero__sub">{pc("hero_sub", t("products.heroSub"))}</p>
 
           <div className="catalog-search">
-            <input
-              type="text"
-              placeholder={t("products.searchPlaceholder")}
-              value={queryDraft}
-              onChange={(e) => setQueryDraft(e.target.value)}
-            />
+            <label className={`catalog-search__field${showHint ? " has-hint" : ""}`}>
+              <svg className="catalog-search__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="m15.5 15.5 5 5" />
+              </svg>
+              <input
+                type="text"
+                placeholder={t("products.searchPlaceholder")}
+                aria-label={t("products.searchPlaceholder")}
+                value={queryDraft}
+                onChange={(e) => setQueryDraft(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+              {showHint && (
+                <span className="catalog-search__hint" aria-hidden="true">
+                  {t("products.searchTry")}{" "}
+                  <span className="catalog-search__hint-word" key={hintIndex}>
+                    {searchExamples[hintIndex % searchExamples.length]}
+                  </span>
+                </span>
+              )}
+            </label>
             <select
               value={filters.brand}
               onChange={(e) => updateParams({ brand: e.target.value, page: "" })}
@@ -222,32 +251,34 @@ export default function ProductsOverview() {
         <>
           <LatestProductsCarousel />
 
-          <section className="section">
-            <div className="container">
+          <section className="section products-brands">
+            <Reveal className="container">
               <SectionLabel eyebrow={pc("brands_eyebrow", t("products.brandsEyebrow"))} title={t("products.browseByBrand")} />
               <BrandLogoGrid brands={brands} getHref={(b) => `/products/${b.slug}`} />
-            </div>
+            </Reveal>
           </section>
 
-          <section className="section">
-            <div className="container">
+          <section className="section products-categories">
+            <Reveal className="container">
               <SectionLabel eyebrow={pc("categories_eyebrow", t("products.categoriesEyebrow"))} title={t("products.browseByCategory")} />
               <CategoryTileGrid
                 categories={categories}
                 onSelect={openCategory}
+                cta={t("products.viewProducts")}
               />
-            </div>
+            </Reveal>
           </section>
         </>
       )}
 
-      <section className="cta-band">
-        <div className="container cta-band__wrap">
+      <section className="cta-band products-cta">
+        <div className="products-cta__light" aria-hidden="true" />
+        <Reveal className="container cta-band__wrap">
           <h2>{pc("cta_title", t("products.ctaTitle"))}</h2>
           <Link to="/contacts" className="btn btn-primary">
             {t("common.contactUs")} <span className="btn-arrow">→</span>
           </Link>
-        </div>
+        </Reveal>
       </section>
     </>
   );
