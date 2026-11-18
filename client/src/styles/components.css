@@ -6918,7 +6918,7 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
 
 .group-slide--left .group-slide__cert,
 .group-slide--right .group-slide__cert {
-  transform: rotate(0deg) translateY(8px);
+  transform: translateY(8px);
 }
 
 .group-slide__text {
@@ -6973,7 +6973,7 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: rotate(1.5deg);
+  transform: none;
 }
 
 .group-slide__cert img,
