@@ -7112,6 +7112,25 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
   isolation: isolate;
 }
 
+/* Like the other pages' heroes, the opening photo runs up under the fixed
+   header (transparent at the top of the page) instead of leaving a white
+   band above it; the text and the chapters keep to the area below it.
+   (Pinned / large screens only: on a phone the dark menu button would sit
+   on the building and be hard to see.) */
+.site-header ~ .story--pinned:first-of-type {
+  margin-top: calc(-1 * var(--header-offset));
+}
+.site-header ~ .story--pinned:first-of-type .story__sticky {
+  top: 0;
+  height: 100vh;
+}
+.site-header ~ .story--pinned:first-of-type .story__hero-text {
+  top: calc(50% + var(--header-offset) / 2);
+}
+.site-header ~ .story--pinned:first-of-type .story__stage {
+  top: var(--header-offset);
+}
+
 /* 1. company photo, pushed in by scroll */
 .story__photo {
   position: absolute;
