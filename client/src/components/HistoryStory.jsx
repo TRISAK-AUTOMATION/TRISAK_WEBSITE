@@ -6,7 +6,15 @@ const PIN_QUERY = "(min-width: 1024px) and (min-height: 600px) and (prefers-redu
 
 // Scroll length of each phase, in sticky-viewport heights.
 const HERO_LEN = 1.6; // photo zooms in, then the first year comes through
-const CHAPTER_LEN = 0.9; // one company / year
+const CHAPTER_LEN = 0.5; // one company / year
+
+// After the wheel / trackpad stops inside the timeline, the page eases to a
+// year's resting point. A push past NUDGE (in chapters) from the current year
+// moves to the next one in that direction, so one wheel step = one year; a
+// smaller one settles back. At the first / last year, the same push outwards
+// lets the page leave the timeline (back to the photo / on down the page).
+const SETTLE_DELAY = 140; // ms of quiet before settling
+const NUDGE = 0.12;
 
 const clamp01 = (n) => Math.min(1, Math.max(0, n));
 
@@ -45,6 +53,44 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
     const outer = outerRef.current;
     const sticky = stickyRef.current;
     let frame = 0;
+    let settleTimer = 0;
+    let rest = null; // the year the timeline last settled on
+
+    // where the timeline is, in chapters: 0 = first year's resting point
+    const position = () => {
+      const { h } = geo.current;
+      const top = parseFloat(getComputedStyle(sticky).top) || 0;
+      const scrolled = Math.max(0, top - outer.getBoundingClientRect().top);
+      return { x: (scrolled - HERO_LEN * h) / (CHAPTER_LEN * h) - 0.5, top };
+    };
+    const settle = () => {
+      const { x, top } = position();
+      // in the opening photo, or past the timeline: leave it alone
+      if (x < -0.5 || x > count - 0.5) {
+        rest = null;
+        return;
+      }
+      if (rest === null) rest = Math.min(count - 1, Math.max(0, Math.round(x)));
+      // a push outwards at either end leaves the timeline
+      if ((rest === 0 && x < -NUDGE) || (rest === count - 1 && x > count - 1 + NUDGE)) {
+        rest = null;
+        return;
+      }
+      let target = rest;
+      if (x > rest + NUDGE) target = Math.ceil(x - NUDGE);
+      else if (x < rest - NUDGE) target = Math.floor(x + NUDGE);
+      target = Math.min(count - 1, Math.max(0, target));
+      rest = target;
+      if (Math.abs(x - target) < 0.02) return;
+      const { h } = geo.current;
+      const outerTop = outer.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: outerTop - top + (HERO_LEN + (target + 0.5) * CHAPTER_LEN) * h, behavior: "smooth" });
+    };
+    const onScroll = () => {
+      schedule();
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(settle, SETTLE_DELAY);
+    };
 
     const render = () => {
       frame = 0;
@@ -68,11 +114,12 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
 
     measure();
     window.addEventListener("resize", measure);
-    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
+      clearTimeout(settleTimer);
       outer.style.height = "";
     };
   }, [mode, count]);
@@ -81,7 +128,7 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
     const sticky = stickyRef.current;
     const top = parseFloat(getComputedStyle(sticky).top) || 0;
     const outerTop = outerRef.current.getBoundingClientRect().top + window.scrollY;
-    const at = (HERO_LEN + (i + 0.05) * CHAPTER_LEN) * geo.current.h;
+    const at = (HERO_LEN + (i + 0.5) * CHAPTER_LEN) * geo.current.h; // the year's resting point
     window.scrollTo({ top: outerTop - top + at, behavior: "smooth" });
   };
 

@@ -35,7 +35,7 @@ export function PartnerBrands({ brands }) {
     <ul className="partner-logos">
       {brandRows(brands).map((b) => (
         <li key={b.slug}>
-          <Link to={`/products?brand=${b.slug}`} className="partner-logos__cell" title={b.name}>
+          <Link to={`/products/${b.slug}`} className="partner-logos__cell" title={b.name}>
             {b.logo_url ? (
               <img className="partner-logos__img" src={b.logo_url} alt={b.name} loading="lazy" />
             ) : (

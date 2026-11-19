@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import BackToTop from "./components/BackToTop.jsx";
@@ -14,9 +14,12 @@ import AutomationSolution from "./pages/AutomationSolution.jsx";
 import Contacts from "./pages/Contacts.jsx";
 import Career from "./pages/Career.jsx";
 
+import ProductsOverview from "./pages/products/ProductsOverview.jsx";
+import ProductListingPage from "./pages/products/ProductListingPage.jsx";
+import BrandCategoryChild from "./pages/products/BrandCategoryChild.jsx";
+import ProductDetail from "./pages/products/ProductDetail.jsx";
 import GuideOverview from "./pages/products/GuideOverview.jsx";
 import SeriesGuide from "./pages/products/SeriesGuide.jsx";
-import LegacyProductRedirect from "./pages/products/LegacyProductRedirect.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -81,6 +84,35 @@ function ScrollToTop() {
   return null;
 }
 
+/**
+ * A short fade-in when the visitor moves to another page, so the new page
+ * arrives instead of snapping in. The page's own elements are faded in place
+ * (no wrapper: the header's styling looks at the shell's direct children);
+ * the fixed header and floating buttons stay put. Not on the first load (the
+ * pages have their own entrance), not for query-only or filter-path changes
+ * (same page), not in admin, and not when reduced motion is asked for.
+ */
+const PAGE_FADE = { duration: 280, easing: "cubic-bezier(0.33, 1, 0.68, 1)" }; // ease-out, still visible
+
+function usePageFade(shellRef) {
+  const { pathname, state } = useLocation();
+  const keepScroll = Boolean(state?.keepScroll);
+  const last = useRef(null);
+  useLayoutEffect(() => {
+    const prev = last.current;
+    last.current = { pathname, keepScroll };
+    if (!prev || prev.pathname === pathname || keepScroll || prev.keepScroll) return;
+    if (pathname.startsWith("/admin") || prev.pathname.startsWith("/admin")) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const shell = shellRef.current;
+    if (!shell || typeof shell.animate !== "function") return;
+    for (const el of shell.children) {
+      if (el.classList.contains("site-header") || getComputedStyle(el).position === "fixed") continue;
+      el.animate([{ opacity: 0 }, { opacity: 1 }], PAGE_FADE);
+    }
+  }, [pathname, keepScroll, shellRef]);
+}
+
 export default function App() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith("/admin");
@@ -90,6 +122,8 @@ export default function App() {
   // no site header on admin pages (or when hidden in Settings): .page-shell--no-header drops its reserved space
   const showHeader = !isAdmin && siteSettings?.header_visible !== false;
   const glassButtons = !isAdmin && siteSettings?.glass_buttons === true;
+  const shellRef = useRef(null);
+  usePageFade(shellRef);
 
   // On <html> so portaled modals (contact / apply forms) pick it up too.
   useEffect(() => {
@@ -97,7 +131,7 @@ export default function App() {
   }, [glassButtons]);
 
   return (
-    <div className={`page-shell${!showHeader ? " page-shell--no-header" : ""}`}>
+    <div ref={shellRef} className={`page-shell${!showHeader ? " page-shell--no-header" : ""}`}>
       <ScrollToTop />
       {showHeader && <Header />}
       {!isAdmin && <PopupModal />}
@@ -108,16 +142,35 @@ export default function App() {
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/career" element={<Career />} />
 
-        {/* Products guide: main series grouped by product type (old per-model
-            catalog URLs are resolved to their place in the guide) */}
-        <Route path="/products" element={<GuideOverview />} />
-        <Route path="/products/latest" element={<Navigate to="/products" replace />} />
-        {/* a product type, e.g. /products/plc-hmi (an old /products/:brand link → ?brand=) */}
-        <Route path="/products/:typeSlug" element={<GuideOverview />} />
-        {/* a series, e.g. /products/plc-hmi/nx-series (an old /products/:brand/:category → its type) */}
-        <Route path="/products/:typeSlug/:seriesSlug" element={<SeriesGuide />} />
-        {/* old series / product / sub-category URLs */}
-        <Route path="/products/:a/:b/*" element={<LegacyProductRedirect />} />
+        {/* Products guide: the main series grouped by product type. The static
+            "series" segment wins over the catalog's :brandSlug routes below. */}
+        <Route path="/products/series" element={<GuideOverview />} />
+        {/* a product type, e.g. /products/series/plc-hmi */}
+        <Route path="/products/series/:typeSlug" element={<GuideOverview />} />
+        {/* a series, e.g. /products/series/plc-hmi/nx-series */}
+        <Route path="/products/series/:typeSlug/:seriesSlug" element={<SeriesGuide />} />
+
+        {/* 01 — products overview */}
+        <Route path="/products" element={<ProductsOverview />} />
+        {/* The product listing. The four routes below are deliberately the SAME
+            element: the filter sidebar moves between these URL shapes as boxes are
+            ticked, and one shared element keeps the page mounted (no reload or
+            refetch) while the URL — the source of truth for the filters — changes. */}
+        {/* all latest products, grouped by category (static path wins over :brandSlug) */}
+        <Route path="/products/latest" element={<ProductListingPage />} />
+        {/* 02 — brand page */}
+        <Route path="/products/:brandSlug" element={<ProductListingPage />} />
+        {/* 03 — category page (scoped to brand) */}
+        <Route path="/products/:brandSlug/:categorySlug" element={<ProductListingPage />} />
+        {/* recursive subcategory drill-down (unlimited depth) */}
+        <Route path="/products/:brandSlug/:categorySlug/cat/*" element={<ProductListingPage />} />
+        {/* 04 — series page, OR a series-less product detail (resolved at runtime) */}
+        <Route path="/products/:brandSlug/:categorySlug/:seriesSlug" element={<BrandCategoryChild />} />
+        {/* 05 — product detail (product that belongs to a series) */}
+        <Route
+          path="/products/:brandSlug/:categorySlug/:seriesSlug/:productSlug"
+          element={<ProductDetail />}
+        />
 
         {/* admin */}
         <Route path="/admin/login" element={<AdminLogin />} />

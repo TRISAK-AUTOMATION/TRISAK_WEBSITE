@@ -131,6 +131,109 @@
   transform: scaleX(1);
 }
 
+/* ---------- Products dropdown (catalog / series guide) ---------- */
+.nav-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-drop__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.nav-drop__chevron {
+  width: 11px;
+  height: 11px;
+  transition: transform 0.2s ease;
+}
+
+/* The panel keeps its own colours: over a dark hero the header's text
+   tokens turn white, but the panel is always a white card. */
+.nav-drop__panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 10;
+  padding-top: 14px; /* hover bridge between the link and the card */
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0.18s;
+}
+
+.nav-drop:hover .nav-drop__panel,
+.nav-drop:focus-within .nav-drop__panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s;
+}
+
+.nav-drop:hover .nav-drop__chevron,
+.nav-drop:focus-within .nav-drop__chevron {
+  transform: rotate(180deg);
+}
+
+/* just picked an item: stay shut until the pointer leaves */
+.nav-drop.is-closed .nav-drop__panel {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 6px);
+}
+.nav-drop.is-closed .nav-drop__chevron {
+  transform: none;
+}
+
+.nav-drop__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  width: 280px;
+  background: #ffffff;
+  border: 1px solid rgba(13, 41, 151, 0.1);
+  border-radius: calc(var(--radius) * 1.5);
+  box-shadow: 0 18px 40px -18px rgba(11, 22, 64, 0.35);
+}
+
+.nav-drop__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  transition: background 0.15s ease;
+}
+
+.nav-drop__item:hover,
+.nav-drop__item:focus-visible {
+  background: rgba(13, 41, 151, 0.06);
+}
+
+.nav-drop__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1640;
+}
+
+.nav-drop__item.is-active .nav-drop__title {
+  color: #0d2997;
+}
+
+.nav-drop__hint {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #5a6180;
+}
+
 .site-header__actions {
   display: flex;
   align-items: center;
@@ -248,6 +351,20 @@
     color: var(--text);
   }
   .site-header__mobile-link.is-active {
+    color: var(--accent-signal);
+  }
+  /* the series guide, listed under Products */
+  .site-header__mobile-sublink {
+    font-size: 16px;
+    padding: 12px 0 12px 18px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-muted);
+  }
+  .site-header__mobile-sublink::before {
+    content: "↳ ";
+    color: var(--text-faint);
+  }
+  .site-header__mobile-sublink.is-active {
     color: var(--accent-signal);
   }
   .site-header__nav--mobile .btn {

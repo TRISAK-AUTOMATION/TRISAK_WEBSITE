@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { useSiteSettings } from "../contexts/SiteSettingsContext.jsx";
 import { useMenu } from "../contexts/MenuContext.jsx";
@@ -34,6 +34,58 @@ const FALLBACK_NAV_ITEMS = [
   },
   { id: "contacts", label_en: "Contacts", label_th: "ติดต่อเรา", url: "/contacts" },
 ];
+
+// The Products menu item opens a small dropdown: the full catalog and the
+// series guide (matched by URL, so it works with the admin-managed menu).
+const PRODUCTS_URL = "/products";
+const SERIES_URL = "/products/series";
+
+function ProductsDropdown({ label, t }) {
+  const { pathname } = useLocation();
+  const [closed, setClosed] = useState(false); // shut right after a pick, until the pointer leaves
+  const inSeries = pathname === SERIES_URL || pathname.startsWith(`${SERIES_URL}/`);
+  const inCatalog = !inSeries && (pathname === PRODUCTS_URL || pathname.startsWith(`${PRODUCTS_URL}/`));
+  const pick = (e) => {
+    setClosed(true);
+    e.currentTarget.blur();
+  };
+  const items = [
+    { to: PRODUCTS_URL, title: t("nav.productsAll"), hint: t("nav.productsAllHint"), active: inCatalog },
+    { to: SERIES_URL, title: t("nav.productSeries"), hint: t("nav.productSeriesHint"), active: inSeries },
+  ];
+  return (
+    <div className={`nav-drop${closed ? " is-closed" : ""}`} onPointerLeave={() => setClosed(false)}>
+      <NavLink
+        to={PRODUCTS_URL}
+        className={({ isActive }) => `site-header__link nav-drop__trigger${isActive ? " is-active" : ""}`}
+        aria-haspopup="true"
+        onClick={pick}
+      >
+        {label}
+        <svg className="nav-drop__chevron" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </NavLink>
+      <div className="nav-drop__panel">
+        <ul className="nav-drop__list">
+          {items.map((it) => (
+            <li key={it.to}>
+              <Link
+                to={it.to}
+                className={`nav-drop__item${it.active ? " is-active" : ""}`}
+                aria-current={it.active ? "page" : undefined}
+                onClick={pick}
+              >
+                <span className="nav-drop__title">{it.title}</span>
+                <span className="nav-drop__hint">{it.hint}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -82,17 +134,21 @@ export default function Header() {
         </NavLink>
 
         <nav className="site-header__nav site-header__nav--desktop" aria-label="Main" {...prefetchProps}>
-          {navItems.map((item) => (
-            <MenuLink
-              key={item.id}
-              url={item.url}
-              end={item.url === "/"}
-              className="site-header__link"
-              activeClassName="is-active"
-            >
-              {lang === "en" ? item.label_en : item.label_th}
-            </MenuLink>
-          ))}
+          {navItems.map((item) =>
+            item.url === PRODUCTS_URL ? (
+              <ProductsDropdown key={item.id} label={lang === "en" ? item.label_en : item.label_th} t={t} />
+            ) : (
+              <MenuLink
+                key={item.id}
+                url={item.url}
+                end={item.url === "/"}
+                className="site-header__link"
+                activeClassName="is-active"
+              >
+                {lang === "en" ? item.label_en : item.label_th}
+              </MenuLink>
+            )
+          )}
         </nav>
 
         <div className="site-header__actions">
@@ -140,7 +196,21 @@ export default function Header() {
           >
             {lang === "en" ? item.label_en : item.label_th}
           </MenuLink>
-        ))}
+        )).flatMap((link, i) =>
+          navItems[i].url === PRODUCTS_URL
+            ? [
+                link,
+                <NavLink
+                  key="products-series"
+                  to={SERIES_URL}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) => `site-header__mobile-sublink${isActive ? " is-active" : ""}`}
+                >
+                  {t("nav.productSeries")}
+                </NavLink>,
+              ]
+            : [link]
+        )}
 
         <button
           type="button"

@@ -396,10 +396,32 @@ const GUIDE_FIELDS = {
   applicationsEn: ["applications_en", (v) => str(v, 4000) || null],
   applicationsTh: ["applications_th", (v) => str(v, 4000) || null],
   catalogUrl: ["catalog_url", (v) => str(v, 255) || null],
+  // where the content comes from, e.g. the maker's product page / datasheet;
+  // only http(s) links are kept
+  sources: [
+    "sources",
+    (v) =>
+      JSON.stringify(
+        list(v, 10)
+          .map((s) => ({ label: str(s?.label, 160), url: str(s?.url, 500) }))
+          .filter((s) => /^https?:\/\/[^\s]+$/i.test(s.url))
+          .map((s) => ({ ...s, label: s.label || new URL(s.url).hostname }))
+      ),
+  ],
+  // model codes this series' products start with, e.g. "3G3MX2-" (products auto-link by them)
+  modelPrefixes: [
+    "model_prefixes",
+    (v) =>
+      str(v, 1000)
+        .split(/[\n,]+/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .join("\n") || null,
+  ],
   isLegacy: ["is_legacy", (v) => Boolean(v)],
   replacedById: ["replaced_by_id", (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null)],
 };
-const JSON_COLUMNS = new Set(["key_specs", "highlights", "spec_groups"]);
+const JSON_COLUMNS = new Set(["key_specs", "highlights", "spec_groups", "sources"]);
 
 /** [[column, value, sqlCast]] for the guide fields present in `body`. */
 function guideValues(body) {

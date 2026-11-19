@@ -82,6 +82,8 @@ CREATE TABLE series (
   catalog_url     VARCHAR(255),
   is_legacy       BOOLEAN NOT NULL DEFAULT false,
   replaced_by_id  INTEGER REFERENCES series(id) ON DELETE SET NULL,
+  model_prefixes  TEXT,                  -- products auto-link by these model codes (migration 057)
+  sources         JSONB NOT NULL DEFAULT '[]'::jsonb, -- [{ label, url }] where the content comes from (057)
   UNIQUE (brand_id, category_id, slug)
 );
 
