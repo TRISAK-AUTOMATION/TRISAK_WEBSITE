@@ -40,7 +40,10 @@ export const tk = (item, base, lang) =>
 
 export const typeName = (type, lang) => (lang === "th" ? type?.name_th || type?.name : type?.name) || "";
 
-export const seriesHref = (s) => `/products/${s.type_slug}/${s.slug}`;
+// the guide lives under /products/series (the full catalog keeps /products)
+export const GUIDE_BASE = "/products/series";
+export const typeHref = (slug) => `${GUIDE_BASE}/${slug}`;
+export const seriesHref = (s) => `${GUIDE_BASE}/${s.type_slug}/${s.slug}`;
 
 /** "{n} series" style templates. */
 export const fill = (template, values) =>

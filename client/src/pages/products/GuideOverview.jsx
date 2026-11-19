@@ -6,13 +6,13 @@ import HeroSlideshow from "../../components/HeroSlideshow.jsx";
 import Reveal from "../../components/Reveal.jsx";
 import SeriesCard from "../../components/SeriesCard.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
-import { cachedGuide, fill, loadGuide, tx, typeName } from "../../utils/guide.js";
+import { GUIDE_BASE, cachedGuide, fill, loadGuide, tx, typeHref, typeName } from "../../utils/guide.js";
 
 /**
  * Products guide: the main series, grouped by product type.
- *   /products              every type, each with its series
- *   /products/:typeSlug    one type
- *   ?brand=omron           only that brand's series (old /products/:brand links land here)
+ *   /products/series              every type, each with its series
+ *   /products/series/:typeSlug    one type
+ *   ?brand=omron                  only that brand's series
  */
 export default function GuideOverview() {
   const { typeSlug } = useParams();
@@ -47,9 +47,9 @@ export default function GuideOverview() {
       return next;
     }, { replace: true });
 
-  // an old brand page (/products/omron) → the guide filtered by that brand
+  // /products/series/omron (a brand, not a type) → the guide filtered by that brand
   if (guide && typeSlug && brands.some((b) => b.slug === typeSlug)) {
-    return <Navigate to={`/products?brand=${encodeURIComponent(typeSlug)}`} replace />;
+    return <Navigate to={`${GUIDE_BASE}?brand=${encodeURIComponent(typeSlug)}`} replace />;
   }
 
   const allTypes = guide?.types || [];
@@ -99,7 +99,7 @@ export default function GuideOverview() {
           <div className="guide-bar__types">
             {allTypes.map((tp) =>
               focus ? (
-                <Link key={tp.slug} to={`/products/${tp.slug}${brand ? `?brand=${brand}` : ""}`} className={`guide-chip${tp.slug === focus.slug ? " is-active" : ""}`}>
+                <Link key={tp.slug} to={`${typeHref(tp.slug)}${brand ? `?brand=${brand}` : ""}`} className={`guide-chip${tp.slug === focus.slug ? " is-active" : ""}`}>
                   {typeName(tp, lang)}
                 </Link>
               ) : (
@@ -137,6 +137,7 @@ export default function GuideOverview() {
               items={[
                 { label: t("nav.home"), to: "/" },
                 { label: t("nav.products"), to: "/products" },
+                { label: t("nav.productSeries"), to: GUIDE_BASE },
                 { label: typeName(focus, lang) },
               ]}
             />
@@ -153,7 +154,7 @@ export default function GuideOverview() {
           )}
           {notFound && (
             <p className="empty-state">
-              {t("guide.notFound")} <Link to="/products">{t("guide.backToGuide")} →</Link>
+              {t("guide.notFound")} <Link to={GUIDE_BASE}>{t("guide.backToGuide")} →</Link>
             </p>
           )}
           {guide && !notFound && types.every((tp) => !tp.series.length) && <p className="empty-state">{t("guide.empty")}</p>}
@@ -168,7 +169,7 @@ export default function GuideOverview() {
                       {focus ? (
                         typeName(tp, lang)
                       ) : (
-                        <Link to={`/products/${tp.slug}${brand ? `?brand=${brand}` : ""}`}>{typeName(tp, lang)}</Link>
+                        <Link to={`${typeHref(tp.slug)}${brand ? `?brand=${brand}` : ""}`}>{typeName(tp, lang)}</Link>
                       )}
                     </h2>
                     {tx(tp, "summary", lang, "summary_en") && <p>{tx(tp, "summary", lang, "summary_en")}</p>}

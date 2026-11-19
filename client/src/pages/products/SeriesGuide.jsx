@@ -1,32 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api } from "../../api/client.js";
 import Breadcrumb from "../../components/Breadcrumb.jsx";
 import Reveal from "../../components/Reveal.jsx";
 import SeriesCard, { SeriesVisual } from "../../components/SeriesCard.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
-import { fill, lines, seriesHref, tk, tx } from "../../utils/guide.js";
+import { GUIDE_BASE, fill, lines, seriesHref, tk, tx, typeHref } from "../../utils/guide.js";
 
 /**
  * One series in the products guide: overview, key figures, highlights with
  * pictures, specifications, applications, catalog and related series.
- *
- * The same two-segment URL was the old brand/category listing
- * (/products/omron/plc-hmi), so when no series matches, the old URL is
- * resolved and redirected instead of showing "not found".
+ *   /products/series/:typeSlug/:seriesSlug
  */
 export default function SeriesGuide() {
   const { typeSlug, seriesSlug } = useParams();
-  const location = useLocation();
   const { t, lang } = useLanguage();
   const [series, setSeries] = useState(null);
   const [status, setStatus] = useState("loading"); // loading | ready | missing
-  const [redirect, setRedirect] = useState(null);
 
   useEffect(() => {
     let alive = true;
     setStatus("loading");
-    setRedirect(null);
     api
       .getGuideSeries(typeSlug, seriesSlug)
       .then((s) => {
@@ -34,22 +28,11 @@ export default function SeriesGuide() {
         setSeries(s);
         setStatus("ready");
       })
-      .catch(() =>
-        api
-          .resolveGuidePath(location.pathname)
-          .then((r) => {
-            if (!alive) return;
-            if (r?.to && r.to !== location.pathname) setRedirect(r.to);
-            else setStatus("missing");
-          })
-          .catch(() => alive && setStatus("missing"))
-      );
+      .catch(() => alive && setStatus("missing"));
     return () => {
       alive = false;
     };
   }, [typeSlug, seriesSlug]);
-
-  if (redirect) return <Navigate to={redirect} replace />;
 
   if (status !== "ready") {
     return (
@@ -60,7 +43,7 @@ export default function SeriesGuide() {
               t("guide.loading")
             ) : (
               <>
-                {t("guide.notFound")} <Link to="/products">{t("guide.backToGuide")} →</Link>
+                {t("guide.notFound")} <Link to={GUIDE_BASE}>{t("guide.backToGuide")} →</Link>
               </>
             )}
           </p>
@@ -89,7 +72,8 @@ export default function SeriesGuide() {
             items={[
               { label: t("nav.home"), to: "/" },
               { label: t("nav.products"), to: "/products" },
-              { label: type, to: `/products/${s.type_slug}` },
+              { label: t("nav.productSeries"), to: GUIDE_BASE },
+              { label: type, to: typeHref(s.type_slug) },
               { label: s.name },
             ]}
           />
@@ -224,6 +208,27 @@ export default function SeriesGuide() {
               ))}
             </div>
             <p className="guide-specs__note">{t("guide.modelsNote")}</p>
+          </div>
+        </section>
+      )}
+
+      {s.sources?.length > 0 && (
+        <section className="guide-sources" aria-labelledby="guide-sources-title">
+          <div className="container">
+            <h2 className="guide-sources__title" id="guide-sources-title">
+              {t("guide.sources")}
+            </h2>
+            <ul className="guide-sources__list">
+              {s.sources.map((src, i) => (
+                <li key={i}>
+                  <a href={src.url} target="_blank" rel="noopener noreferrer">
+                    {src.label || src.url}
+                    <span aria-hidden="true"> ↗</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="guide-sources__note">{t("guide.sourcesNote")}</p>
           </div>
         </section>
       )}
