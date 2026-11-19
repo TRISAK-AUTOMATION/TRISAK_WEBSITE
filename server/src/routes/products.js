@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getGuide, getGuideSeries, resolveGuidePath } from "../controllers/guideController.js";
 import { listProductDocuments } from "../controllers/productDocumentsController.js";
 import {
   listBrands,
@@ -50,6 +51,11 @@ router.get("/career-page-content", getCareerPageContent);
 router.get("/career-jobs", listCareerJobsPublic);
 router.get("/footer-content", getFooterContent);
 router.get("/automation-solution-content", getAutomationSolutionContent);
+
+// Products guide: main series grouped by product type
+router.get("/guide", getGuide);
+router.get("/guide/resolve", resolveGuidePath);
+router.get("/guide/series/:typeSlug/:seriesSlug", getGuideSeries);
 
 router.get("/brands", listBrands);
 router.get("/brands/:brandSlug", getBrand);

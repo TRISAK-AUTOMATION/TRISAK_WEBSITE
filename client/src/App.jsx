@@ -14,10 +14,9 @@ import AutomationSolution from "./pages/AutomationSolution.jsx";
 import Contacts from "./pages/Contacts.jsx";
 import Career from "./pages/Career.jsx";
 
-import ProductsOverview from "./pages/products/ProductsOverview.jsx";
-import ProductListingPage from "./pages/products/ProductListingPage.jsx";
-import BrandCategoryChild from "./pages/products/BrandCategoryChild.jsx";
-import ProductDetail from "./pages/products/ProductDetail.jsx";
+import GuideOverview from "./pages/products/GuideOverview.jsx";
+import SeriesGuide from "./pages/products/SeriesGuide.jsx";
+import LegacyProductRedirect from "./pages/products/LegacyProductRedirect.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -109,27 +108,16 @@ export default function App() {
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/career" element={<Career />} />
 
-        {/* 01 — products overview */}
-        <Route path="/products" element={<ProductsOverview />} />
-        {/* The product listing. The four routes below are deliberately the SAME
-            element: the filter sidebar moves between these URL shapes as boxes are
-            ticked, and one shared element keeps the page mounted (no reload or
-            refetch) while the URL — the source of truth for the filters — changes. */}
-        {/* all latest products, grouped by category (static path wins over :brandSlug) */}
-        <Route path="/products/latest" element={<ProductListingPage />} />
-        {/* 02 — brand page */}
-        <Route path="/products/:brandSlug" element={<ProductListingPage />} />
-        {/* 03 — category page (scoped to brand) */}
-        <Route path="/products/:brandSlug/:categorySlug" element={<ProductListingPage />} />
-        {/* recursive subcategory drill-down (unlimited depth) */}
-        <Route path="/products/:brandSlug/:categorySlug/cat/*" element={<ProductListingPage />} />
-        {/* 04 — series page, OR a series-less product detail (resolved at runtime) */}
-        <Route path="/products/:brandSlug/:categorySlug/:seriesSlug" element={<BrandCategoryChild />} />
-        {/* 05 — product detail (product that belongs to a series) */}
-        <Route
-          path="/products/:brandSlug/:categorySlug/:seriesSlug/:productSlug"
-          element={<ProductDetail />}
-        />
+        {/* Products guide: main series grouped by product type (old per-model
+            catalog URLs are resolved to their place in the guide) */}
+        <Route path="/products" element={<GuideOverview />} />
+        <Route path="/products/latest" element={<Navigate to="/products" replace />} />
+        {/* a product type, e.g. /products/plc-hmi (an old /products/:brand link → ?brand=) */}
+        <Route path="/products/:typeSlug" element={<GuideOverview />} />
+        {/* a series, e.g. /products/plc-hmi/nx-series (an old /products/:brand/:category → its type) */}
+        <Route path="/products/:typeSlug/:seriesSlug" element={<SeriesGuide />} />
+        {/* old series / product / sub-category URLs */}
+        <Route path="/products/:a/:b/*" element={<LegacyProductRedirect />} />
 
         {/* admin */}
         <Route path="/admin/login" element={<AdminLogin />} />

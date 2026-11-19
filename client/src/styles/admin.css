@@ -3863,3 +3863,149 @@ a.admin-edit-tab {
   font-weight: 600;
   color: var(--text-muted);
 }
+
+/* =========================================================
+   Admin — Series form: products-guide content
+   (pages/admin/AdminSeriesForm.jsx, AdminCategoryForm.jsx)
+   ========================================================= */
+.guide-edit__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.guide-edit__pair--tight {
+  margin-top: 12px;
+}
+
+.guide-edit__triple {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.guide-edit__item {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+
+.guide-edit__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.guide-edit__tools {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.guide-edit__tools .btn {
+  min-width: 34px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.guide-edit__tools .btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.guide-edit__remove {
+  color: #b42318;
+}
+
+.guide-edit__add {
+  margin-top: 4px;
+}
+
+.guide-edit__add--small {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.guide-edit__empty {
+  margin: 0 0 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.guide-edit__highlight {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.guide-edit__highlight-image .image-upload__preview,
+.guide-edit__highlight-image img {
+  max-width: 100%;
+  height: auto;
+}
+
+.guide-edit__rows {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+}
+
+.guide-edit__rows th {
+  padding: 0 6px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.guide-edit__rows td {
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+
+.guide-edit__rows td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.guide-edit__rows input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.guide-edit__catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.guide-edit__hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.guide-edit__type {
+  margin-top: 28px;
+}
+
+@media (max-width: 900px) {
+  .guide-edit__pair,
+  .guide-edit__triple,
+  .guide-edit__highlight {
+    grid-template-columns: 1fr;
+  }
+}

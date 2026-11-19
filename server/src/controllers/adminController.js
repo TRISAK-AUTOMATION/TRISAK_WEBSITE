@@ -266,6 +266,19 @@ export async function updateCategory(req, res) {
        iconKey !== undefined, iconKey || null]
     );
     if (!rows.length) return res.status(404).json({ error: "Category not found" });
+    // products-guide texts for a product type (migration 056); only when sent
+    const guide = [
+      ["name_th", req.body.nameTh, 100],
+      ["summary_en", req.body.summaryEn, 255],
+      ["summary_th", req.body.summaryTh, 255],
+    ].filter(([, v]) => v !== undefined);
+    if (guide.length) {
+      const r = await pool.query(
+        `UPDATE categories SET ${guide.map(([c], i) => `${c} = $${i + 2}`).join(", ")} WHERE id = $1 RETURNING *`,
+        [id, ...guide.map(([, v, max]) => (typeof v === "string" ? v.trim().slice(0, max) : "") || null)]
+      );
+      rows[0] = r.rows[0];
+    }
     logActivity("category_edited", `แก้ไขหมวดหมู่ "${name}"`);
     res.json(rows[0]);
   } catch (err) {
@@ -333,6 +346,68 @@ export async function deleteCategory(req, res) {
 
 // ---- series ----
 
+// Products-guide content of a series (migration 056). Only the fields present
+// in the request are written, so an older admin form that doesn't send them
+// never wipes them.
+const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const list = (v, max = 40) => (Array.isArray(v) ? v.slice(0, max) : []);
+const GUIDE_FIELDS = {
+  taglineTh: ["tagline_th", (v) => str(v, 255) || null],
+  descriptionTh: ["description_th", (v) => str(v, 20000) || null],
+  keySpecs: [
+    "key_specs",
+    (v) =>
+      JSON.stringify(
+        list(v, 8)
+          .map((k) => ({ value: str(k?.value, 60), label_en: str(k?.label_en, 120), label_th: str(k?.label_th, 120) }))
+          .filter((k) => k.value)
+      ),
+  ],
+  highlights: [
+    "highlights",
+    (v) =>
+      JSON.stringify(
+        list(v, 12)
+          .map((h) => ({
+            image: str(h?.image, 255),
+            title_en: str(h?.title_en, 160),
+            title_th: str(h?.title_th, 160),
+            body_en: str(h?.body_en, 2000),
+            body_th: str(h?.body_th, 2000),
+          }))
+          .filter((h) => h.title_en || h.title_th)
+      ),
+  ],
+  specGroups: [
+    "spec_groups",
+    (v) =>
+      JSON.stringify(
+        list(v, 12)
+          .map((g) => ({
+            title_en: str(g?.title_en, 120),
+            title_th: str(g?.title_th, 120),
+            rows: list(g?.rows, 60)
+              .map((r) => ({ label_en: str(r?.label_en, 160), label_th: str(r?.label_th, 160), value: str(r?.value, 400) }))
+              .filter((r) => (r.label_en || r.label_th) && r.value),
+          }))
+          .filter((g) => g.rows.length)
+      ),
+  ],
+  applicationsEn: ["applications_en", (v) => str(v, 4000) || null],
+  applicationsTh: ["applications_th", (v) => str(v, 4000) || null],
+  catalogUrl: ["catalog_url", (v) => str(v, 255) || null],
+  isLegacy: ["is_legacy", (v) => Boolean(v)],
+  replacedById: ["replaced_by_id", (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null)],
+};
+const JSON_COLUMNS = new Set(["key_specs", "highlights", "spec_groups"]);
+
+/** [[column, value, sqlCast]] for the guide fields present in `body`. */
+function guideValues(body) {
+  return Object.entries(GUIDE_FIELDS)
+    .filter(([key]) => body[key] !== undefined)
+    .map(([key, [column, clean]]) => [column, clean(body[key]), JSON_COLUMNS.has(column) ? "::jsonb" : ""]);
+}
+
 export async function listSeriesAdmin(req, res) {
   try {
     const { rows } = await pool.query(
@@ -384,22 +459,26 @@ export async function createSeries(req, res) {
     return res.status(400).json({ error: "name, slug, brandId, categoryId are required" });
   }
   try {
+    const extra = guideValues(req.body);
+    const base = [
+      name,
+      slug,
+      brandId,
+      categoryId,
+      tagline || null,
+      description || null,
+      imageUrl || null,
+      isNew,
+      isActive,
+      sortOrder,
+    ];
     const { rows } = await pool.query(
       `INSERT INTO series
-        (name, slug, brand_id, category_id, tagline, description, image_url, is_new, is_active, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [
-        name,
-        slug,
-        brandId,
-        categoryId,
-        tagline || null,
-        description || null,
-        imageUrl || null,
-        isNew,
-        isActive,
-        sortOrder,
-      ]
+        (name, slug, brand_id, category_id, tagline, description, image_url, is_new, is_active, sort_order
+         ${extra.map(([c]) => `, ${c}`).join("")})
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+         ${extra.map(([, , cast], i) => `, $${11 + i}${cast}`).join("")}) RETURNING *`,
+      [...base, ...extra.map(([, v]) => v)]
     );
     logActivity("series_added", `เพิ่มซีรีย์ "${name}"`);
     res.status(201).json(rows[0]);
@@ -426,10 +505,13 @@ export async function updateSeries(req, res) {
     return res.status(400).json({ error: "name, slug, brandId, categoryId are required" });
   }
   try {
+    // a series can't replace itself
+    const extra = guideValues(req.body).map((e) => (e[0] === "replaced_by_id" && String(e[1]) === String(id) ? [e[0], null, ""] : e));
     const { rows } = await pool.query(
       `UPDATE series SET
         name = $1, slug = $2, brand_id = $3, category_id = $4,
         tagline = $5, description = $6, image_url = $7, is_new = $8, is_active = $9, sort_order = $10,
+        ${extra.map(([c, , cast], i) => `${c} = $${12 + i}${cast},`).join(" ")}
         updated_at = now()
        WHERE id = $11 RETURNING *`,
       [
@@ -444,6 +526,7 @@ export async function updateSeries(req, res) {
         isActive,
         sortOrder,
         id,
+        ...extra.map(([, v]) => v),
       ]
     );
     if (!rows.length) return res.status(404).json({ error: "Series not found" });

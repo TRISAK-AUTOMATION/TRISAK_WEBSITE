@@ -68,6 +68,11 @@ export default function AdminCategoryForm() {
   const [parentId, setParentId] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [sortOrder, setSortOrder] = useState(0);
+  // products guide (migration 056): a top-level category is a product type
+  // on the public Products page, with a Thai name and a one-line summary
+  const [nameTh, setNameTh] = useState("");
+  const [summaryEn, setSummaryEn] = useState("");
+  const [summaryTh, setSummaryTh] = useState("");
   const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -92,6 +97,9 @@ export default function AdminCategoryForm() {
         // — otherwise saving an unrelated edit would silently reset it
         // and undo any reordering done from the category list.
         setSortOrder(c.sort_order ?? 0);
+        setNameTh(c.name_th || "");
+        setSummaryEn(c.summary_en || "");
+        setSummaryTh(c.summary_th || "");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -120,10 +128,16 @@ export default function AdminCategoryForm() {
         isActive,
         sortOrder: nextSortOrder,
       };
+      // guide texts only belong to product types (top level)
+      const guide = newParentId === null ? { nameTh, summaryEn, summaryTh } : {};
       if (isEdit) {
-        await api.adminUpdateCategory(id, payload);
+        await api.adminUpdateCategory(id, { ...payload, ...guide });
       } else {
-        await api.adminCreateCategory(payload);
+        const created = await api.adminCreateCategory(payload);
+        // creating doesn't take the guide texts; write them right after
+        if (created?.id && (nameTh || summaryEn || summaryTh) && newParentId === null) {
+          await api.adminUpdateCategory(created.id, { ...payload, ...guide });
+        }
       }
       // Success popup first; closing it returns to the category list.
       setShowSuccess(true);
@@ -225,6 +239,25 @@ export default function AdminCategoryForm() {
                   }}
                 />
               </label>
+              {!parentId && (
+                <div className="guide-edit__type">
+                  <div className="admin-edit-notice">
+                    หมวดหมู่ชั้นบนสุดคือ “ประเภทสินค้า” ในหน้า Products (เช่น PLC, Inverter, Sensor) — ชื่อภาษาไทยและคำอธิบายสั้นด้านล่างแสดงเป็นหัวข้อของแต่ละประเภท
+                  </div>
+                  <label className="contact-form__field">
+                    <span>ชื่อภาษาไทย</span>
+                    <input value={nameTh} onChange={(e) => setNameTh(e.target.value)} placeholder="เว้นว่าง = ใช้ชื่อภาษาอังกฤษ" />
+                  </label>
+                  <label className="contact-form__field" style={{ marginTop: 20 }}>
+                    <span>คำอธิบายสั้น — EN</span>
+                    <input value={summaryEn} maxLength={255} onChange={(e) => setSummaryEn(e.target.value)} />
+                  </label>
+                  <label className="contact-form__field" style={{ marginTop: 20 }}>
+                    <span>คำอธิบายสั้น — TH</span>
+                    <input value={summaryTh} maxLength={255} onChange={(e) => setSummaryTh(e.target.value)} />
+                  </label>
+                </div>
+              )}
             </>
           )}
 
