@@ -49,6 +49,9 @@ CREATE TABLE categories (
   image_url    VARCHAR(255),
   icon_key     VARCHAR(50),
   parent_id    INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+  name_th      VARCHAR(100),           -- products guide: Thai name / summary of a product type
+  summary_en   VARCHAR(255),
+  summary_th   VARCHAR(255),
   is_active    BOOLEAN NOT NULL DEFAULT true,
   sort_order   INTEGER NOT NULL DEFAULT 0,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -68,6 +71,17 @@ CREATE TABLE series (
   is_active    BOOLEAN NOT NULL DEFAULT true,
   sort_order   INTEGER NOT NULL DEFAULT 0,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- products guide (migration 056): tagline/description above are English
+  tagline_th      VARCHAR(255),
+  description_th  TEXT,
+  key_specs       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  highlights      JSONB NOT NULL DEFAULT '[]'::jsonb,
+  spec_groups     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  applications_en TEXT,
+  applications_th TEXT,
+  catalog_url     VARCHAR(255),
+  is_legacy       BOOLEAN NOT NULL DEFAULT false,
+  replaced_by_id  INTEGER REFERENCES series(id) ON DELETE SET NULL,
   UNIQUE (brand_id, category_id, slug)
 );
 

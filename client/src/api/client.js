@@ -137,6 +137,11 @@ export const api = {
   getProducts: (params = {}) => request(`/products${qs(params)}`),
   getFeaturedProducts: () => request("/products/featured"),
   getProductBySlug: (slug) => request(`/products/detail/${slug}`),
+  // Products guide: main series grouped by product type (server/src/controllers/guideController.js)
+  getGuide: () => request("/guide"),
+  getGuideSeries: (typeSlug, seriesSlug) =>
+    request(`/guide/series/${encodeURIComponent(typeSlug)}/${encodeURIComponent(seriesSlug)}`),
+  resolveGuidePath: (path) => request(`/guide/resolve?path=${encodeURIComponent(path)}`),
 
   getSolutions: () => request("/solutions"),
   getCustomers: () => request("/customers"),

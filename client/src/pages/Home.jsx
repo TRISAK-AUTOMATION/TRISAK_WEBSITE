@@ -201,7 +201,7 @@ export default function Home() {
           <SectionLabel eyebrow={t("home.productsEyebrow")} title={t("home.productsTitle")} />
           <BrandLogoGrid
             brands={brands || BRANDS.map((name) => ({ slug: name.toLowerCase(), name, logo_url: null }))}
-            getHref={(b) => `/products/${b.slug}`}
+            getHref={(b) => `/products?brand=${b.slug}`}
           />
           <div className="products-cta-row">
             <div className="tag-list">
