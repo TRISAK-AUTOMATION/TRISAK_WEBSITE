@@ -8,6 +8,7 @@ import productsRoutes from "./routes/products.js";
 import contactRoutes from "./routes/contact.js";
 import adminRoutes from "./routes/admin.js";
 import { uploadsDir } from "./middleware/upload.js";
+import { autoLinkProducts, autoLinkAfterAdminWrites } from "./utils/seriesAutoLink.js";
 
 dotenv.config();
 
@@ -85,6 +86,8 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api", productsRoutes);
 app.use("/api", contactRoutes);
+// products ↔ series by model code: re-link after admin product / series writes
+app.use("/api", autoLinkAfterAdminWrites);
 app.use("/api", adminRoutes);
 
 // the built React site (client/dist), so the whole site lives on one origin;
@@ -113,4 +116,8 @@ app.use((err, req, res, next) => {
 // can reach this API using this machine's local IP, not just "localhost"
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`TRISAK API listening on http://0.0.0.0:${PORT}`);
+  // catch up on products added while the server was down (or before 057)
+  autoLinkProducts()
+    .then((n) => n && console.log(`Linked ${n} product(s) to their series by model code`))
+    .catch((err) => console.error("Series auto-link skipped:", err.message));
 });

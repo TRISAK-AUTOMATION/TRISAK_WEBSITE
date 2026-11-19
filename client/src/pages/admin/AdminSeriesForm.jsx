@@ -139,6 +139,8 @@ export default function AdminSeriesForm() {
   const [highlights, setHighlights] = useState([]);
   const [specGroups, setSpecGroups] = useState([]);
   const [catalogUrl, setCatalogUrl] = useState("");
+  const [modelPrefixes, setModelPrefixes] = useState("");
+  const [sources, setSources] = useState([]); // [{ label, url }] where the content comes from
   const [isLegacy, setIsLegacy] = useState(false);
   const [replacedById, setReplacedById] = useState("");
 
@@ -178,6 +180,8 @@ export default function AdminSeriesForm() {
         setDescriptionTh(s.description_th || "");
         setApplicationsEn(s.applications_en || "");
         setApplicationsTh(s.applications_th || "");
+        setModelPrefixes(s.model_prefixes || "");
+        setSources(asList(s.sources).map((x) => ({ label: x.label || "", url: x.url || "" })));
         setKeySpecs(asList(s.key_specs).map((k) => ({ ...emptyKeySpec(), ...k })));
         setHighlights(asList(s.highlights).map((h) => ({ ...emptyHighlight(), ...h })));
         setSpecGroups(
@@ -196,6 +200,7 @@ export default function AdminSeriesForm() {
   }, [id, isEdit]);
 
   // ---- list editing helpers ----
+  const setSource = (i, key, value) => setSources((list) => list.map((x, j) => (j === i ? { ...x, [key]: value } : x)));
   const setKeySpec = (i, key, value) => setKeySpecs((list) => list.map((k, j) => (j === i ? { ...k, [key]: value } : k)));
   const setHighlight = (i, key, value) =>
     setHighlights((list) => list.map((h, j) => (j === i ? { ...h, [key]: value } : h)));
@@ -240,6 +245,8 @@ export default function AdminSeriesForm() {
         highlights,
         specGroups,
         catalogUrl,
+        modelPrefixes,
+        sources: sources.filter((x) => x.url.trim()),
         isLegacy,
         replacedById: isLegacy && replacedById ? Number(replacedById) : null,
       };
@@ -362,6 +369,19 @@ export default function AdminSeriesForm() {
                   <textarea rows={4} value={applicationsTh} onChange={(e) => setApplicationsTh(e.target.value)} />
                 </label>
               </div>
+              <label className="contact-form__field" style={{ marginTop: 20 }}>
+                <span>รหัสรุ่นที่ขึ้นต้นด้วย (บรรทัดละ 1 รหัส)</span>
+                <textarea
+                  rows={2}
+                  value={modelPrefixes}
+                  onChange={(e) => setModelPrefixes(e.target.value)}
+                  placeholder={"เช่น 3G3MX2-"}
+                />
+                <small className="guide-edit__hint">
+                  สินค้าแบรนด์เดียวกันที่รหัสรุ่นขึ้นต้นด้วยรหัสเหล่านี้ และยังไม่ได้อยู่ในซีรีส์ใด จะถูกผูกกับซีรีส์นี้อัตโนมัติ
+                  (ลิงก์หน้าสินค้ารายรุ่นเดิมจะพามาที่หน้าซีรีส์นี้)
+                </small>
+              </label>
               <label className="admin-form__checkbox" style={{ marginTop: 20 }}>
                 <input type="checkbox" checked={isNew} onChange={(e) => setIsNew(e.target.checked)} />
                 <span>เป็นสินค้าใหม่ (NEW)</span>
@@ -564,6 +584,43 @@ export default function AdminSeriesForm() {
                 แคตตาล็อกสำหรับปุ่ม "ดาวน์โหลดแคตตาล็อก"
               </div>
               <CatalogField value={catalogUrl} onChange={setCatalogUrl} />
+
+              <div className="admin-edit-notice" style={{ marginTop: 28 }}>
+                แหล่งข้อมูลอ้างอิง เช่น หน้าสินค้าหรือ datasheet บนเว็บผู้ผลิต (แสดงท้ายหน้า Series, สูงสุด 10 รายการ, ลิงก์ต้องขึ้นต้นด้วย http/https)
+              </div>
+              {sources.length === 0 && <p className="guide-edit__empty">ยังไม่มีแหล่งข้อมูล</p>}
+              {sources.map((x, i) => (
+                <div className="guide-edit__item" key={i}>
+                  <div className="guide-edit__item-head">
+                    <strong>#{i + 1}</strong>
+                    <RowTools
+                      index={i}
+                      count={sources.length}
+                      label="แหล่งข้อมูล"
+                      onMove={(a, step) => setSources((l) => move(l, a, step))}
+                      onRemove={(a) => setSources((l) => l.filter((_, j) => j !== a))}
+                    />
+                  </div>
+                  <div className="guide-edit__pair">
+                    <label className="contact-form__field">
+                      <span>ชื่อที่แสดง</span>
+                      <input value={x.label} onChange={(e) => setSource(i, "label", e.target.value)} placeholder="เช่น OMRON — NX1P Datasheet (PDF)" />
+                    </label>
+                    <label className="contact-form__field">
+                      <span>ลิงก์ (URL)</span>
+                      <input type="url" value={x.url} onChange={(e) => setSource(i, "url", e.target.value)} placeholder="https://" />
+                    </label>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="btn guide-edit__add"
+                disabled={sources.length >= 10}
+                onClick={() => setSources((l) => [...l, { label: "", url: "" }])}
+              >
+                + เพิ่มแหล่งข้อมูล
+              </button>
             </>
           )}
         </div>
