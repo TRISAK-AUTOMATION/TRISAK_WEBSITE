@@ -83,6 +83,10 @@ export default function AdminLogin() {
       let detail = "";
       if (err.code === "invalid" && err.remaining > 0 && err.remaining <= 3) {
         detail = `เหลือโอกาสอีก ${err.remaining} ครั้ง ก่อนระบบล็อก ${LOCK_MINUTES} นาที`;
+      } else if (err.code === "server") {
+        detail = `เซิร์ฟเวอร์ขัดข้อง (รหัส ${err.status}) หากยังเป็นอยู่ แจ้งผู้ดูแลระบบให้ตรวจสอบ log ของเซิร์ฟเวอร์`;
+      } else if (!err.code && err.status) {
+        detail = `ไม่ได้รับคำตอบจากเซิร์ฟเวอร์ (รหัส ${err.status})`;
       }
       setError({
         message: err.code ? err.message : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่",
