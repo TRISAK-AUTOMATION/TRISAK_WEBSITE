@@ -200,7 +200,15 @@ export const api = {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       const err = new Error(body.error || `Login failed: ${res.status}`);
-      Object.assign(err, { code: body.code, remaining: body.remaining, retryAfterMinutes: body.retryAfterMinutes });
+      Object.assign(err, {
+        // the server answered with its own message but no code (e.g. a 500):
+        // still show that message — "cannot reach the server" is only for
+        // when no answer came back at all (network / proxy failure)
+        code: body.code || (body.error ? "server" : undefined),
+        status: res.status,
+        remaining: body.remaining,
+        retryAfterMinutes: body.retryAfterMinutes,
+      });
       throw err;
     }
     localStorage.setItem(ADMIN_TOKEN_KEY, body.token);
