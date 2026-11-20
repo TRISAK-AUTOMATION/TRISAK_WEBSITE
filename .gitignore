@@ -6,3 +6,4 @@ server/uploads/*
 !server/uploads/.gitkeep
 server/.sessions.json
 server/private/
+.claude/skills/
