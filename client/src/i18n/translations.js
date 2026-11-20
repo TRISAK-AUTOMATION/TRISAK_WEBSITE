@@ -319,6 +319,219 @@ export const translations = {
       benefitsLabel: "Benefits",
       navLabel: "Jump to a solution",
       discuss: "Discuss this solution",
+      more: "More",
+      detailServices: "Our services",
+      detailBenefits: "Benefits",
+      // Each solution's own page (/automation-solution/:slug), by slug.
+      details: {
+        "hmi-plc-solutions": {
+          image: "/images/solutions/hmi-plc.webp",
+          tagline: "Highly stable control, processing and overview visualisation systems.",
+          services: [
+            {
+              icon: "clipboard",
+              title: "PLC system assessment",
+              items: [
+                "Overall system evaluation and analysis",
+                "Software backup and integrity verification",
+                "Hardware and equipment condition assessment",
+              ],
+            },
+            {
+              icon: "chip",
+              title: "PLC system migration and data transfer",
+              items: [
+                "Replacement of legacy control systems",
+                "Conversion and refinement of program code",
+                "Upgrading control systems to current technology",
+              ],
+            },
+            {
+              icon: "design",
+              title: "HMI design and installation",
+              items: [
+                "HMI display upgrades and replacements",
+                "New screen layout and graphic design",
+                "Production recipe and alarm management",
+                "Production statistics logging and storage",
+              ],
+            },
+            {
+              icon: "wrench",
+              title: "PLC & HMI system maintenance",
+              items: [
+                "Scheduled preventive maintenance",
+                "Fault analysis and troubleshooting support",
+                "Data backup and disaster recovery",
+                "On-site emergency response",
+              ],
+            },
+            {
+              icon: "chart",
+              title: "PLC performance optimisation and upgrades",
+              items: [
+                "Expanding CPU capacity",
+                "Industrial network and communication development",
+                "System tuning for peak performance",
+              ],
+            },
+          ],
+          benefits: [
+            { icon: "shield", text: "Stronger, more stable control systems" },
+            { icon: "clock", text: "Minimal production downtime" },
+            { icon: "search", text: "Faster, more accurate fault finding and fixing" },
+            { icon: "target", text: "Higher output and operating performance" },
+            { icon: "gear", text: "Longer life for systems and machinery" },
+          ],
+        },
+        "drive-motion-control": {
+          image: "/images/solutions/drive-motion.webp",
+          tagline: "High-performance motion control and drive systems.",
+          services: [
+            {
+              icon: "bolt",
+              title: "Inverter system management and design",
+              items: [
+                "Inverter upgrades",
+                "Energy savings",
+                "Process improvement for peak efficiency",
+                "Drive system modernisation",
+              ],
+            },
+            {
+              icon: "target",
+              title: "Servo motor motion control",
+              items: [
+                "Precise positioning",
+                "Synchronised motion control",
+                "High-speed operation control",
+                "Multi-axis applications",
+              ],
+            },
+            {
+              icon: "chip",
+              title: "Motion control system upgrades",
+              items: [
+                "Servo motor replacement",
+                "Motion controller upgrades",
+                "Machine performance improvements",
+              ],
+            },
+            {
+              icon: "wrench",
+              title: "Drive maintenance",
+              items: [
+                "Preventive maintenance (PM)",
+                "Drive health inspections",
+                "Parameter backup",
+                "Performance analysis",
+              ],
+            },
+          ],
+          benefits: [
+            { icon: "target", text: "More precise machine operation" },
+            { icon: "bolt", text: "Lower energy use" },
+            { icon: "clock", text: "Shorter production cycle times" },
+            { icon: "chart", text: "Higher capacity and output" },
+            { icon: "shield", text: "Lower maintenance costs" },
+          ],
+        },
+        "robotic-solutions": {
+          image: "/images/solutions/robotics.webp",
+          tagline: "Intelligent robotic automation for modern manufacturing.",
+          services: [
+            {
+              icon: "robot",
+              title: "Industrial robot system design and integration",
+              items: [
+                "System architecture and engineering design",
+                "Sorting, conveying and part placement applications",
+                "Robot control for industrial welding and assembly",
+                "Robotic material handling and distribution",
+                "End-of-line packaging and warehouse automation",
+              ],
+            },
+            {
+              icon: "chip",
+              title: "Robot programming and development",
+              items: [
+                "Control program development",
+                "Robot path calculation and optimisation",
+                "Speed tuning to cut cycle time",
+                "Pre-handover testing and live production trials",
+              ],
+            },
+            {
+              icon: "gear",
+              title: "Robot structure and function improvements",
+              items: [
+                "Capacity expansion and upgrades for existing robots",
+                "Controller replacement and upgrades",
+                "System performance improvements",
+                "Refurbishment to extend machine life",
+              ],
+            },
+            {
+              icon: "factory",
+              title: "Robotic cell layout and integration",
+              items: [
+                "Safety system integration",
+                "Vision system integration",
+                "PLC communication",
+                "Production line integration",
+              ],
+            },
+            {
+              icon: "wrench",
+              title: "Scheduled robot maintenance and inspection",
+              items: [
+                "Preventive maintenance to reduce breakdown risk",
+                "Robot system condition analysis and assessment",
+                "Positional accuracy calibration and safety data backup",
+                "On-site technical troubleshooting",
+              ],
+            },
+          ],
+          benefits: [
+            { icon: "chart", text: "Higher efficiency and total output" },
+            { icon: "gear", text: "More flexibility to switch product types" },
+            { icon: "team", text: "Less reliance on manual labour" },
+            { icon: "target", text: "Consistent, standardised part quality" },
+            { icon: "shield", text: "A safer workplace with fewer accidents" },
+          ],
+        },
+        "smart-factory": {
+          image: "/images/solutions/smart-factory.webp",
+          tagline: "Digital transformation for modern industry.",
+          services: [
+            {
+              icon: "chart",
+              title: "Central control and data monitoring",
+              items: ["Real-time data monitoring", "Alarm management", "Historical data storage and retrieval"],
+            },
+            {
+              icon: "globe",
+              title: "Remote monitoring and inspection",
+              items: ["Access data from anywhere", "Dashboards for mobile devices", "Remote support and service"],
+            },
+            {
+              icon: "chip",
+              title: "Industrial IoT (IIoT) systems",
+              items: ["Machine and equipment connectivity", "Production data collection", "Cloud data integration"],
+            },
+            {
+              icon: "bolt",
+              title: "Energy management systems",
+              items: ["Energy usage monitoring", "Energy usage analysis", "Lower energy costs"],
+            },
+          ],
+          benefits: [
+            { icon: "bulb", text: "Data-driven decisions", desc: "Decide with confidence using real-time data." },
+            { icon: "search", text: "Real-time operations monitoring", desc: "See the full picture and check every part of your operation." },
+            { icon: "rocket", text: "Digital transformation", desc: "Upgrade operations to support future growth." },
+          ],
+        },
+      },
       relatedProducts: "Related products",
       brochure: "Download brochure (PDF)",
       industriesTitle: "Industries we serve",
@@ -881,6 +1094,218 @@ export const translations = {
       benefitsLabel: "ประโยชน์",
       navLabel: "ไปยังโซลูชัน",
       discuss: "ปรึกษาโซลูชันนี้",
+      more: "ดูเพิ่มเติม",
+      detailServices: "บริการของเรา",
+      detailBenefits: "ประโยชน์ที่ได้รับ",
+      details: {
+        "hmi-plc-solutions": {
+          image: "/images/solutions/hmi-plc.webp",
+          tagline: "ระบบควบคุมและประมวลผลแสดงภาพรวมที่มีความเสถียรสูง",
+          services: [
+            {
+              icon: "clipboard",
+              title: "บริการตรวจประเมินระบบ PLC",
+              items: [
+                "การประเมินและวิเคราะห์ภาพรวมของระบบ",
+                "การสำรองข้อมูลและตรวจสอบความถูกต้องของซอฟต์แวร์",
+                "การตรวจประเมินสภาพโครงสร้างอุปกรณ์ฮาร์ดแวร์",
+              ],
+            },
+            {
+              icon: "chip",
+              title: "บริการปรับเปลี่ยนและโอนย้ายฐานข้อมูลระบบ PLC",
+              items: [
+                "การปรับเปลี่ยนทดแทนระบบควบคุมรุ่นเดิม",
+                "การแปลงและปรับปรุงชุดคำสั่งโปรแกรมระบบ",
+                "การยกระดับระบบควบคุมให้สอดคล้องกับเทคโนโลยีปัจจุบัน",
+              ],
+            },
+            {
+              icon: "design",
+              title: "การออกแบบและติดตั้งระบบอินเตอร์เฟสผู้ใช้งาน (HMI)",
+              items: [
+                "การยกระดับและเปลี่ยนทดแทนชุดแสดงผล HMI",
+                "การจัดวางโครงสร้างและออกแบบกราฟิกหน้าจอแสดงผลใหม่",
+                "การบริหารจัดการสูตรการผลิตและระบบสัญญาณเตือนเหตุขัดข้อง",
+                "การบันทึกและจัดเก็บข้อมูลสถิติกำลังการผลิต",
+              ],
+            },
+            {
+              icon: "wrench",
+              title: "งานบำรุงรักษาเชิงระบบสำหรับ PLC และ HMI",
+              items: [
+                "การบำรุงรักษาเชิงป้องกันตามระยะเวลา",
+                "บริการวิเคราะห์และสนับสนุนการแก้ไขข้อผิดพลาดของระบบ",
+                "การจัดเก็บสำรองข้อมูลและการกู้คืนระบบในภาวะวิกฤต",
+                "บริการเข้าปฏิบัติงานหน้างานกรณีฉุกเฉินเร่งด่วน",
+              ],
+            },
+            {
+              icon: "chart",
+              title: "การเพิ่มประสิทธิภาพและอัปเกรดระบบควบคุม PLC",
+              items: [
+                "การเพิ่มขีดความสามารถของหน่วยประมวลผลกลาง",
+                "การพัฒนาระบบเครือข่ายเชื่อมต่อและการสื่อสารอุตสาหกรรม",
+                "การปรับแต่งระบบเพื่อผลลัพธ์การทำงานขั้นสูงสุด",
+              ],
+            },
+          ],
+          benefits: [
+            { icon: "shield", text: "เสริมสร้างความมั่นคงและความเสถียรให้แก่ระบบควบคุม" },
+            { icon: "clock", text: "ลดระยะเวลาการหยุดชะงักของกระบวนการผลิตให้น้อยที่สุด" },
+            { icon: "search", text: "เพิ่มความรวดเร็วแม่นยำในการค้นหาและแก้ไขจุดบกพร่อง" },
+            { icon: "target", text: "ยกระดับอัตราการผลิตและสมรรถนะการดำเนินงาน" },
+            { icon: "gear", text: "ยืดอายุการใช้งานของระบบและเครื่องจักรให้ยาวนานยิ่งขึ้น" },
+          ],
+        },
+        "drive-motion-control": {
+          image: "/images/solutions/drive-motion.webp",
+          tagline: "ระบบควบคุมการเคลื่อนที่และชุดขับเคลื่อนประสิทธิภาพสูง",
+          services: [
+            {
+              icon: "bolt",
+              title: "การจัดการและวางระบบอินเวอร์เตอร์",
+              items: [
+                "บริการอัปเกรดอินเวอร์เตอร์",
+                "การประหยัดพลังงาน",
+                "ปรับปรุงกระบวนการทำงานให้มีประสิทธิภาพสูงสุด",
+                "ปรับเปลี่ยนชุดขับเคลื่อนให้ทันสมัย",
+              ],
+            },
+            {
+              icon: "target",
+              title: "ระบบควบคุมการเคลื่อนที่ด้วยเซอร์โวมอเตอร์",
+              items: [
+                "การกำหนดตำแหน่งอย่างแม่นยำ",
+                "การควบคุมการเคลื่อนที่ให้สัมพันธ์กัน",
+                "การควบคุมการทำงานความเร็วสูง",
+                "การประยุกต์ใช้งานแบบหลายแกนพร้อมกัน",
+              ],
+            },
+            {
+              icon: "chip",
+              title: "บริการอัปเกรดระบบควบคุมการเคลื่อนที่",
+              items: [
+                "บริการเปลี่ยนทดแทนเซอร์โวมอเตอร์",
+                "อัปเกรดชุดควบคุมการเคลื่อนที่",
+                "การปรับปรุงและเพิ่มสมรรถนะของเครื่องจักร",
+              ],
+            },
+            {
+              icon: "wrench",
+              title: "บริการบำรุงรักษาชุดขับเคลื่อน",
+              items: [
+                "บริการบำรุงรักษาเชิงป้องกัน (PM)",
+                "บริการตรวจเช็กสภาพความสมบูรณ์ของชุดขับเคลื่อน",
+                "บริการสำรองข้อมูลค่าพารามิเตอร์",
+                "บริการวิเคราะห์ประสิทธิภาพการทำงาน",
+              ],
+            },
+          ],
+          benefits: [
+            { icon: "target", text: "เพิ่มความแม่นยำในการทำงานของเครื่องจักร" },
+            { icon: "bolt", text: "ช่วยประหยัดพลังงาน" },
+            { icon: "clock", text: "ลดเวลาต่อรอบการผลิตให้สั้นลง" },
+            { icon: "chart", text: "เพิ่มขีดความสามารถและผลผลิต" },
+            { icon: "shield", text: "ลดต้นทุนการบำรุงรักษา" },
+          ],
+        },
+        "robotic-solutions": {
+          image: "/images/solutions/robotics.webp",
+          tagline: "นวัตกรรมระบบอัตโนมัติด้วยหุ่นยนต์อัจฉริยะเพื่อการผลิตสมัยใหม่",
+          services: [
+            {
+              icon: "robot",
+              title: "การออกแบบและเชื่อมต่อระบบหุ่นยนต์อุตสาหกรรม",
+              items: [
+                "การวางโครงสร้างและออกแบบระบบเชิงวิศวกรรม",
+                "การประยุกต์ใช้ในกระบวนการคัดแยก ลำเลียง และจัดวางชิ้นงาน",
+                "ระบบควบคุมหุ่นยนต์สำหรับงานเชื่อมประกอบอุตสาหกรรม",
+                "ระบบจัดการหุ่นยนต์เพื่อการขนย้ายและกระจายสินค้า",
+                "การจัดการระบบอัตโนมัติในขั้นตอนการแพ็กเกจจิ้งและคลังสินค้าปลายสาย",
+              ],
+            },
+            {
+              icon: "chip",
+              title: "การพัฒนาและเขียนโปรแกรมควบคุมหุ่นยนต์",
+              items: [
+                "การพัฒนาชุดคำสั่งและเขียนโปรแกรมควบคุมระบบ",
+                "การคำนวณและปรับทิศทางการเคลื่อนที่ของหุ่นยนต์เพื่อประสิทธิภาพสูงสุด",
+                "การพัฒนาความเร็วเพื่อลดเวลาในการทำงานต่อรอบ",
+                "การตรวจสอบระบบก่อนส่งมอบและทดสอบเดินเครื่องปฏิบัติงานจริง",
+              ],
+            },
+            {
+              icon: "gear",
+              title: "การปรับปรุงโครงสร้างและฟังก์ชันการทำงานของหุ่นยนต์",
+              items: [
+                "การเพิ่มขีดความสามารถและอัปเกรดระบบหุ่นยนต์เดิม",
+                "เปลี่ยนและอัปเกรดชุดควบคุม",
+                "เพิ่มประสิทธิภาพการทำงานของระบบ",
+                "การฟื้นฟูสภาพเพื่อยืดอายุการใช้งานของเครื่องจักร",
+              ],
+            },
+            {
+              icon: "factory",
+              title: "การวางระบบและเชื่อมโยงสถานีหุ่นยนต์อุตสาหกรรม (Robotic Cell)",
+              items: [
+                "เชื่อมต่อระบบความปลอดภัย (Safety System)",
+                "เชื่อมต่อระบบวิชั่น (Vision System)",
+                "เชื่อมต่อการสื่อสารกับ PLC",
+                "เชื่อมต่อระบบเข้ากับสายการผลิต",
+              ],
+            },
+            {
+              icon: "wrench",
+              title: "บริการบำรุงรักษาและตรวจสภาพหุ่นยนต์ตามระยะเวลา",
+              items: [
+                "การบำรุงรักษาเชิงป้องกันเพื่อลดความเสี่ยงจากการชำรุด",
+                "การวิเคราะห์และประเมินสภาพความสมบูรณ์ของระบบหุ่นยนต์",
+                "การสอบเทียบความแม่นยำเชิงพิกัดและการสำรองข้อมูลระบบนิรภัย",
+                "บริการฝ่ายเทคนิคในการวิเคราะห์และแก้ไขข้อขัดข้องหน้างาน",
+              ],
+            },
+          ],
+          benefits: [
+            { icon: "chart", text: "ยกระดับประสิทธิภาพและเพิ่มปริมาณผลผลิตรวม" },
+            { icon: "gear", text: "เพิ่มขีดความยืดหยุ่นในการปรับเปลี่ยนรูปแบบผลิตภัณฑ์" },
+            { icon: "team", text: "ลดข้อจำกัดและลดการพึ่งพาอัตรากำลังคน" },
+            { icon: "target", text: "ควบคุมมาตรฐานเพื่อความสม่ำเสมอของสมรรถนะชิ้นงาน" },
+            { icon: "shield", text: "สร้างสภาพแวดล้อมการทำงานที่ปลอดภัยและลดอุบัติเหตุ" },
+          ],
+        },
+        "smart-factory": {
+          image: "/images/solutions/smart-factory.webp",
+          tagline: "การเปลี่ยนผ่านสู่ดิจิทัลเพื่ออุตสาหกรรมยุคใหม่",
+          services: [
+            {
+              icon: "chart",
+              title: "ระบบควบคุมและติดตามข้อมูลจากส่วนกลาง",
+              items: ["การตรวจสอบและติดตามข้อมูลแบบเรียลไทม์", "การบริหารจัดการการแจ้งเตือน", "การจัดเก็บและเรียกดูข้อมูลย้อนหลัง"],
+            },
+            {
+              icon: "globe",
+              title: "ระบบติดตามและตรวจสอบระยะไกล",
+              items: ["เข้าถึงข้อมูลได้จากทุกสถานที่", "แดชบอร์ดสำหรับอุปกรณ์เคลื่อนที่", "การสนับสนุนและให้บริการจากระยะไกล"],
+            },
+            {
+              icon: "chip",
+              title: "ระบบ IIoT สำหรับภาคอุตสาหกรรม",
+              items: ["เชื่อมต่อเครื่องจักรและอุปกรณ์", "รวบรวมข้อมูลการผลิต", "เชื่อมต่อข้อมูลสู่ระบบคลาวด์"],
+            },
+            {
+              icon: "bolt",
+              title: "ระบบบริหารจัดการพลังงาน",
+              items: ["ติดตามการใช้พลังงาน", "วิเคราะห์การใช้พลังงาน", "ลดต้นทุนด้านพลังงาน"],
+            },
+          ],
+          benefits: [
+            { icon: "bulb", text: "การตัดสินใจบนพื้นฐานข้อมูล", desc: "ช่วยให้ตัดสินใจได้อย่างแม่นยำด้วยข้อมูลแบบเรียลไทม์" },
+            { icon: "search", text: "การติดตามการดำเนินงานแบบเรียลไทม์", desc: "มองเห็นภาพรวมและตรวจสอบการดำเนินงานได้อย่างครบถ้วน" },
+            { icon: "rocket", text: "การเปลี่ยนผ่านสู่ดิจิทัล", desc: "ยกระดับการดำเนินงานเพื่อรองรับอนาคตและการเติบโต" },
+          ],
+        },
+      },
       relatedProducts: "สินค้าที่เกี่ยวข้อง",
       brochure: "ดาวน์โหลดโบรชัวร์ (PDF)",
       industriesTitle: "อุตสาหกรรมที่เราให้บริการ",

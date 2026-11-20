@@ -405,9 +405,10 @@
 /* Inner-page hero (every page but Home): short, so the page content starts
    above the fold — originally tuned on Products. */
 .hero--compact {
-  /* same height as the Products hero (whose search row makes it the tallest);
-     content sits at the bottom */
-  min-height: calc(324px + var(--hero-under-header, 0px));
+  /* tall enough for the Products hero's content (title, text and search row,
+     up to 410px when the title or search wraps), so every inner page's hero
+     is the same height; content sits at the bottom */
+  min-height: calc(412px + var(--hero-under-header, 0px));
   --hero-pt: 36px;
   padding-bottom: 32px;
   align-items: flex-end;
@@ -7861,5 +7862,208 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
     padding-top: 18px;
     border-left: 0;
     border-top: 1px solid rgba(13, 41, 151, 0.14);
+  }
+}
+
+/* ---------- Solution page (/automation-solution/:slug) ----------
+   Services are drawn as units mounted in a control-cabinet rack: steel side
+   rails, a navy faceplate per unit, and a status LED that switches on, unit
+   by unit, when the rack scrolls into view. */
+.sol-rack-section {
+  background: #e8ebf2;
+}
+
+.sol-rack-section .section-head h2,
+.sol-gains .section-head h2 {
+  color: #0b1b3f;
+}
+
+.sol-rack {
+  --rail: 16px;
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 0 calc(var(--rail) + 12px);
+}
+
+/* the two rack rails, with a column of mounting holes */
+.sol-rack::before,
+.sol-rack::after {
+  content: "";
+  position: absolute;
+  top: -14px;
+  bottom: -14px;
+  width: var(--rail);
+  border-radius: 3px;
+  background:
+    radial-gradient(circle, #7d869c 0 3px, transparent 3.5px) center 6px / var(--rail) 26px repeat-y,
+    linear-gradient(90deg, #d5dae5, #bcc3d2);
+  box-shadow: inset 0 0 0 1px rgba(11, 27, 63, 0.08);
+}
+.sol-rack::before {
+  left: 0;
+}
+.sol-rack::after {
+  right: 0;
+}
+
+.sol-unit {
+  display: grid;
+  grid-template-columns: minmax(250px, 5fr) 8fr;
+  background: #ffffff;
+  border: 1px solid #c9cfdc;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 #b6bdcd;
+}
+
+.sol-unit__face {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 14px;
+  padding: 24px 40px 24px 24px;
+  background: var(--accent-signal);
+  color: var(--on-accent);
+}
+
+.sol-unit__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.sol-unit__icon .why__icon {
+  width: 24px;
+  height: 24px;
+}
+
+.sol-unit__face h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: inherit;
+  text-transform: none; /* keep names like "Robotic Cell" as written */
+}
+
+/* status LED: off until the rack is in view, then on in turn */
+.sol-unit__led {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #34d27b;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 0 10px #34d27b;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sol-rack.reveal .sol-unit__led {
+    background: #26357a;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+    transition:
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .sol-rack.reveal.is-visible .sol-unit__led {
+    background: #34d27b;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 0 10px #34d27b;
+    transition-delay: calc(0.5s + var(--i, 0) * 0.18s);
+  }
+}
+
+.sol-unit__list {
+  list-style: none;
+  margin: 0;
+  padding: 24px 28px;
+  column-gap: 32px;
+  align-self: center;
+}
+/* short lists (3 or fewer) stay in one column instead of splitting 2 + 1 */
+.sol-unit__list--2col {
+  columns: 2;
+}
+
+.sol-unit__list li {
+  display: flex;
+  gap: 10px;
+  break-inside: avoid;
+  padding: 5px 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #0b1b3f;
+}
+
+/* benefits: deliberately quiet — heading left, a plain list right */
+.sol-gains__inner {
+  display: grid;
+  grid-template-columns: 4fr 7fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.sol-gains__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-strong);
+}
+
+.sol-gains__list li {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line-strong);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #0b1b3f;
+}
+
+.sol-gains__text {
+  display: grid;
+  gap: 2px;
+}
+.sol-gains__text small {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.sol-gains__list .why__icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--accent-signal);
+}
+
+@media (max-width: 860px) {
+  .sol-unit {
+    grid-template-columns: 1fr;
+  }
+  .sol-unit__list,
+  .sol-unit__list--2col {
+    columns: 1;
+    padding: 18px 22px;
+  }
+  .sol-gains__inner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  .sol-rack {
+    --rail: 8px;
+    padding: 0 calc(var(--rail) + 6px);
+  }
+  .sol-rack::before,
+  .sol-rack::after {
+    background: linear-gradient(90deg, #d5dae5, #bcc3d2);
   }
 }

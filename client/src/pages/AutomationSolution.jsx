@@ -29,7 +29,7 @@ export function parseProcessSteps(text) {
 
 // Contact page link that pre-selects "Automation Solution" and names the
 // solution in the message (read by ContactForm), landing on the form.
-const discussHref = (name) =>
+export const discussHref = (name) =>
   `/contacts?interest=automation_solution&topic=${encodeURIComponent(name)}#quote`;
 
 const isInternal = (url) => url.startsWith("/") && !url.startsWith("//");
@@ -238,6 +238,9 @@ export default function AutomationSolution() {
                   <div className="solution-block__actions">
                     <Link to={discussHref(name)} className="btn btn-primary">
                       {t("automationSolution.discuss")} <span className="btn-arrow">→</span>
+                    </Link>
+                    <Link to={`/automation-solution/${s.slug}`} className="btn">
+                      {t("automationSolution.more")}
                     </Link>
                     {s.related_url &&
                       (isInternal(s.related_url) ? (
