@@ -11,6 +11,7 @@ import PopupModal from "./components/PopupModal.jsx";
 import Home from "./pages/Home.jsx";
 import History from "./pages/History.jsx";
 import AutomationSolution from "./pages/AutomationSolution.jsx";
+import SolutionPage from "./pages/SolutionPage.jsx";
 import Contacts from "./pages/Contacts.jsx";
 import Career from "./pages/Career.jsx";
 
@@ -139,6 +140,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/history" element={<History />} />
         <Route path="/automation-solution" element={<AutomationSolution />} />
+        <Route path="/automation-solution/:slug" element={<SolutionPage />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/career" element={<Career />} />
 

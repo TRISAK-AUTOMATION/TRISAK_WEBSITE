@@ -131,7 +131,7 @@
   transform: scaleX(1);
 }
 
-/* ---------- Products dropdown (catalog / series guide) ---------- */
+/* ---------- Header dropdowns (products, automation solutions) ---------- */
 .nav-drop {
   position: relative;
   display: flex;

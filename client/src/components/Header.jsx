@@ -35,28 +35,44 @@ const FALLBACK_NAV_ITEMS = [
   { id: "contacts", label_en: "Contacts", label_th: "ติดต่อเรา", url: "/contacts" },
 ];
 
-// The Products menu item opens a small dropdown: the full catalog and the
-// series guide (matched by URL, so it works with the admin-managed menu).
+// Menu items with a small dropdown (matched by URL, so they work with the
+// admin-managed menu). An item is active when its path is the longest one
+// matching the current page, e.g. /products/series/x → "Product series".
 const PRODUCTS_URL = "/products";
 const SERIES_URL = "/products/series";
+const SOLUTIONS_URL = "/automation-solution";
 
-function ProductsDropdown({ label, t }) {
+function dropdownItems(url, t) {
+  if (url === PRODUCTS_URL)
+    return [
+      { to: PRODUCTS_URL, title: t("nav.productsAll"), hint: t("nav.productsAllHint") },
+      { to: SERIES_URL, title: t("nav.productSeries"), hint: t("nav.productSeriesHint") },
+    ];
+  if (url === SOLUTIONS_URL)
+    return [
+      { to: SOLUTIONS_URL, title: t("automationSolution.heroTitle") },
+      ...t("automationSolution.solutions").map((s) => ({ to: `${SOLUTIONS_URL}/${s.slug}`, title: s.name })),
+    ];
+  return null;
+}
+
+const matches = (pathname, to) => pathname === to || pathname.startsWith(`${to}/`);
+
+function NavDropdown({ label, to, items }) {
   const { pathname } = useLocation();
   const [closed, setClosed] = useState(false); // shut right after a pick, until the pointer leaves
-  const inSeries = pathname === SERIES_URL || pathname.startsWith(`${SERIES_URL}/`);
-  const inCatalog = !inSeries && (pathname === PRODUCTS_URL || pathname.startsWith(`${PRODUCTS_URL}/`));
+  const activeTo = items
+    .map((it) => it.to)
+    .filter((p) => matches(pathname, p))
+    .sort((a, b) => b.length - a.length)[0];
   const pick = (e) => {
     setClosed(true);
     e.currentTarget.blur();
   };
-  const items = [
-    { to: PRODUCTS_URL, title: t("nav.productsAll"), hint: t("nav.productsAllHint"), active: inCatalog },
-    { to: SERIES_URL, title: t("nav.productSeries"), hint: t("nav.productSeriesHint"), active: inSeries },
-  ];
   return (
     <div className={`nav-drop${closed ? " is-closed" : ""}`} onPointerLeave={() => setClosed(false)}>
       <NavLink
-        to={PRODUCTS_URL}
+        to={to}
         className={({ isActive }) => `site-header__link nav-drop__trigger${isActive ? " is-active" : ""}`}
         aria-haspopup="true"
         onClick={pick}
@@ -72,12 +88,12 @@ function ProductsDropdown({ label, t }) {
             <li key={it.to}>
               <Link
                 to={it.to}
-                className={`nav-drop__item${it.active ? " is-active" : ""}`}
-                aria-current={it.active ? "page" : undefined}
+                className={`nav-drop__item${it.to === activeTo ? " is-active" : ""}`}
+                aria-current={it.to === activeTo ? "page" : undefined}
                 onClick={pick}
               >
                 <span className="nav-drop__title">{it.title}</span>
-                <span className="nav-drop__hint">{it.hint}</span>
+                {it.hint && <span className="nav-drop__hint">{it.hint}</span>}
               </Link>
             </li>
           ))}
@@ -135,8 +151,13 @@ export default function Header() {
 
         <nav className="site-header__nav site-header__nav--desktop" aria-label="Main" {...prefetchProps}>
           {navItems.map((item) =>
-            item.url === PRODUCTS_URL ? (
-              <ProductsDropdown key={item.id} label={lang === "en" ? item.label_en : item.label_th} t={t} />
+            dropdownItems(item.url, t) ? (
+              <NavDropdown
+                key={item.id}
+                to={item.url}
+                label={lang === "en" ? item.label_en : item.label_th}
+                items={dropdownItems(item.url, t)}
+              />
             ) : (
               <MenuLink
                 key={item.id}
@@ -196,21 +217,22 @@ export default function Header() {
           >
             {lang === "en" ? item.label_en : item.label_th}
           </MenuLink>
-        )).flatMap((link, i) =>
-          navItems[i].url === PRODUCTS_URL
-            ? [
-                link,
-                <NavLink
-                  key="products-series"
-                  to={SERIES_URL}
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) => `site-header__mobile-sublink${isActive ? " is-active" : ""}`}
-                >
-                  {t("nav.productSeries")}
-                </NavLink>,
-              ]
-            : [link]
-        )}
+        )).flatMap((link, i) => [
+          link,
+          // the dropdown's own items, minus the one the parent link already is
+          ...(dropdownItems(navItems[i].url, t) || [])
+            .filter((it) => it.to !== navItems[i].url)
+            .map((it) => (
+              <NavLink
+                key={it.to}
+                to={it.to}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) => `site-header__mobile-sublink${isActive ? " is-active" : ""}`}
+              >
+                {it.title}
+              </NavLink>
+            )),
+        ])}
 
         <button
           type="button"
