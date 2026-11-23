@@ -51,7 +51,12 @@ function dropdownItems(url, t) {
   if (url === SOLUTIONS_URL)
     return [
       { to: SOLUTIONS_URL, title: t("automationSolution.heroTitle") },
-      ...t("automationSolution.solutions").map((s) => ({ to: `${SOLUTIONS_URL}/${s.slug}`, title: s.name })),
+      ...t("automationSolution.solutions").map((s) => {
+        const to = `${SOLUTIONS_URL}/${s.slug}`;
+        // "Our services" of that solution page, each jumping to its own unit
+        const services = t("automationSolution.details")?.[s.slug]?.services || [];
+        return { to, title: s.name, children: services.map((svc, i) => ({ to: `${to}#svc-${i}`, title: svc.title })) };
+      }),
     ];
   return null;
 }
@@ -84,19 +89,41 @@ function NavDropdown({ label, to, items }) {
       </NavLink>
       <div className="nav-drop__panel">
         <ul className="nav-drop__list">
-          {items.map((it) => (
-            <li key={it.to}>
-              <Link
-                to={it.to}
-                className={`nav-drop__item${it.to === activeTo ? " is-active" : ""}`}
-                aria-current={it.to === activeTo ? "page" : undefined}
-                onClick={pick}
-              >
-                <span className="nav-drop__title">{it.title}</span>
-                {it.hint && <span className="nav-drop__hint">{it.hint}</span>}
-              </Link>
-            </li>
-          ))}
+          {items.map((it) => {
+            const sub = it.children?.length > 0;
+            return (
+              <li key={it.to} className={sub ? "nav-drop__has-sub" : undefined}>
+                <Link
+                  to={it.to}
+                  className={`nav-drop__item${it.to === activeTo ? " is-active" : ""}`}
+                  aria-current={it.to === activeTo ? "page" : undefined}
+                  aria-haspopup={sub ? "true" : undefined}
+                  onClick={pick}
+                >
+                  <span className="nav-drop__title">{it.title}</span>
+                  {it.hint && <span className="nav-drop__hint">{it.hint}</span>}
+                  {sub && (
+                    <svg className="nav-drop__sub-chevron" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M4.5 3 7.5 6 4.5 9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </Link>
+                {sub && (
+                  <div className="nav-drop__sub">
+                    <ul className="nav-drop__list">
+                      {it.children.map((c) => (
+                        <li key={c.to}>
+                          <Link to={c.to} className="nav-drop__item" onClick={pick}>
+                            <span className="nav-drop__title nav-drop__title--sub">{c.title}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>

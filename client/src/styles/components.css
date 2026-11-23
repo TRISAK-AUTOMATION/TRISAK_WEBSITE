@@ -3215,8 +3215,19 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  /* middle logo sits on the page's centre line (under the buttons); the side
+     logos hug it, so the gap between logos is the same on both sides */
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr auto 1fr;
+}
+.partner-logos > li {
+  min-width: 0;
+}
+.partner-logos > li:first-child {
+  justify-self: end;
+}
+.partner-logos > li:last-child {
+  justify-self: start;
 }
 
 .partner-logos__cell {
@@ -3236,7 +3247,7 @@
    three read at about the same size */
 .partner-logos__img {
   display: block;
-  max-width: min(180px, 100%);
+  max-width: 180px; /* fixed, not %, so each cell is as wide as its logo looks */
   max-height: 56px;
   width: auto;
   height: auto;
@@ -3342,6 +3353,9 @@
   .partner-logos__cell {
     height: 96px;
     padding: 16px;
+  }
+  .partner-logos__img {
+    max-width: 84px; /* 3 × (84 + 32 padding) fits a 360px phone */
   }
 }
 
@@ -7908,6 +7922,7 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
 }
 
 .sol-unit {
+  scroll-margin-top: calc(var(--header-height) + 24px); /* header menu jumps here */
   display: grid;
   grid-template-columns: minmax(250px, 5fr) 8fr;
   background: #ffffff;

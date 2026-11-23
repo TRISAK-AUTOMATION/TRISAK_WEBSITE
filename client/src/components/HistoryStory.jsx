@@ -27,7 +27,9 @@ const clamp01 = (n) => Math.min(1, Math.max(0, n));
  *      (odometer), its text fades in on the left, its photo as a card on
  *      the right. The page continues normally after the last chapter.
  */
-export default function HistoryStory({ photo, eyebrow, title, lede, entries, labels }) {
+// `flow` forces the plain vertical layout (Admin > History edits the text in
+// place, which the pinned scroll version can't hold still for).
+export default function HistoryStory({ photo, eyebrow, title, lede, entries, labels, flow = false }) {
   const outerRef = useRef(null);
   const stickyRef = useRef(null);
   const geo = useRef({ h: 0 });
@@ -49,7 +51,7 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
   }, []);
 
   useEffect(() => {
-    if (mode !== "pinned" || !count) return undefined;
+    if (flow || mode !== "pinned" || !count) return undefined;
     const outer = outerRef.current;
     const sticky = stickyRef.current;
     let frame = 0;
@@ -122,7 +124,7 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
       clearTimeout(settleTimer);
       outer.style.height = "";
     };
-  }, [mode, count]);
+  }, [flow, mode, count]);
 
   const goTo = (i) => {
     const sticky = stickyRef.current;
@@ -141,9 +143,9 @@ export default function HistoryStory({ photo, eyebrow, title, lede, entries, lab
   const waiting = ready ? "" : " is-waiting";
 
   // flow on small screens, and when the loaded timeline turns out empty
-  if (mode === "flow" || (ready && !count)) {
+  if (flow || mode === "flow" || (ready && !count)) {
     return (
-      <section className="story story--flow" aria-label={title} aria-busy={!ready}>
+      <section className="story story--flow" aria-label={typeof title === "string" ? title : undefined} aria-busy={!ready}>
         <div className={`story__flow-hero${waiting}`}>
           {photo && <img className="story__flow-photo" src={photo} alt="" fetchpriority="high" />}
         </div>

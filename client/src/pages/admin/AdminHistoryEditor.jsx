@@ -5,6 +5,7 @@ import {
   HistoryPageHeader,
   HISTORY_TIMELINE_PATH,
   HISTORY_STATS_PATH,
+  HISTORY_ORG_PATH,
 } from "../../components/HistoryAdmin.jsx";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import ImageListField from "../../components/ImageListField.jsx";
@@ -13,18 +14,19 @@ import SuccessModal from "../../components/SuccessModal.jsx";
 import SectionLabel from "../../components/SectionLabel.jsx";
 import { parseIconList } from "../../components/WhyTrisak.jsx";
 import HistoryWhyEditor, { builtInWhyList } from "./HistoryWhyEditor.jsx";
-import { PartnerBrands, ExperienceBanner, BrandLanesTimeline, INTRO_IMAGE_DEFAULT, statIcon } from "../History.jsx";
-import IconPicker from "../../components/IconPicker.jsx";
-import { Icon } from "../../components/WhyTrisak.jsx";
+import { PartnerBrands, OrgChart, INTRO_IMAGE_DEFAULT, foundedYear, storyEntries, unitSep } from "../History.jsx";
+import HistoryStory from "../../components/HistoryStory.jsx";
+import { TodaySection, WorkSection, ClosingSection } from "../../components/HistorySections.jsx";
 import { translations } from "../../i18n/translations.js";
 
 /**
- * Admin > ประวัติบริษัท (History) > Content — laid out exactly like the
- * public History page (pages/History.jsx), the same way Admin > Home mirrors
- * the Home page. The Hero and Introduction text is edited in place; empty
- * fields fall back to the built-in translation (shown as a faded
- * placeholder), the same rule the public page uses. Timeline, Statistics and
- * Organization show the live data as a preview with a link to their tab.
+ * Admin > ประวัติบริษัท (History) > Content — built from the same sections as
+ * the public History page (pages/History.jsx): opening story, Today, Why,
+ * Organization, Our work, Closing. Text is edited in place; empty fields fall
+ * back to the built-in translation (shown as a faded placeholder), the same
+ * rule the public page uses. The opening uses its plain (flow) layout so it
+ * holds still for editing. Timeline and Organization are previews with a link
+ * to their tab; statistics are edited in place.
  */
 
 const FIELD_SUFFIXES = [
@@ -90,7 +92,6 @@ export default function AdminHistoryEditor() {
   const [historyContent, setHistoryContent] = useState(null);
   const [statRows, setStatRows] = useState([]); // active history_stats rows, edited on the banner
   const [savedStats, setSavedStats] = useState("[]");
-  const [statPicker, setStatPicker] = useState(null); // id of the statistic whose icon picker is open
   const [lang, setLang] = useState("th"); // which language's fields are shown for editing
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -134,6 +135,7 @@ export default function AdminHistoryEditor() {
   };
 
   const t = translations[lang]?.history || translations.en.history;
+  const common = translations[lang]?.common || translations.en.common;
 
   const value = (base) => form[`${base}_${lang}`] || "";
   const update = (base, val) => {
@@ -209,74 +211,54 @@ export default function AdminHistoryEditor() {
     label: pick(s, "label"),
     icon: s.icon,
   }));
-  // a card's icon as a button that opens the shared icon picker
-  const renderStatIcon = (s, i) => {
-    const current = statIcon(s, i);
-    return (
-      <span className="exp-admin__icon-wrap">
-        <button
-          type="button"
-          className="exp-banner__stat-icon exp-admin__icon-btn"
-          data-icon-trigger=""
-          aria-label="เปลี่ยนไอคอน"
-          aria-expanded={statPicker === s.id}
-          title="คลิกเพื่อเปลี่ยนไอคอน"
-          onClick={() => setStatPicker(statPicker === s.id ? null : s.id)}
-        >
-          <Icon name={current} />
-          <span className="sol-admin__ring-edit" aria-hidden="true">✎</span>
-        </button>
-        {statPicker === s.id && (
-          <IconPicker
-            value={current}
-            align={i === 0 ? "start" : i === stats.length - 1 ? "end" : "center"}
-            onChange={(icon) => updateStat(s.id, { icon })}
-            onClose={() => setStatPicker(null)}
-          />
-        )}
-      </span>
-    );
-  };
   const otherLang = lang === "th" ? "en" : "th";
-  // one banner number as edit boxes: value + unit, and the label under it
+  // one statistic as edit boxes: the label (dt) over the value + unit (dd)
   const renderStat = (s) => {
     const row = statRows.find((r) => r.id === s.id);
-    // the card + icon come from ExperienceBanner; only number + label are swapped
     return (
       <>
-        <span className="exp-banner__num exp-admin__num">
+        <dt>
+          <InlineInput
+            value={row[`label_${lang}`] || ""}
+            aria-label="คำอธิบายตัวเลข"
+            placeholder={row[`label_${otherLang}`] || "คำอธิบาย"}
+            onChange={(e) => updateStat(s.id, { [`label_${lang}`]: e.target.value })}
+          />
+        </dt>
+        <dd className="history-admin__stat-num">
           <InlineInput
             value={row.value}
-            size={Math.max(2, String(row.value).length + 1)}
             aria-label="ตัวเลข"
             placeholder="0"
             onChange={(e) => updateStat(s.id, { value: e.target.value })}
           />
           <InlineInput
             value={row[`unit_${lang}`] || ""}
-            size={Math.max(1, (row[`unit_${lang}`] || row[`unit_${otherLang}`] || "").length + 1)}
             aria-label="หน่วย / เครื่องหมายต่อท้าย"
             placeholder={row[`unit_${otherLang}`] || "+"}
             onChange={(e) => updateStat(s.id, { [`unit_${lang}`]: e.target.value })}
           />
-        </span>
-        <span className="exp-banner__label">
-          <InlineInput
-            multiline
-            rows={2}
-            value={row[`label_${lang}`] || ""}
-            aria-label="คำอธิบายตัวเลข"
-            placeholder={row[`label_${otherLang}`] || "คำอธิบาย"}
-            onChange={(e) => updateStat(s.id, { [`label_${lang}`]: e.target.value })}
-          />
-        </span>
+        </dd>
       </>
     );
   };
+  const toNode = (n) => ({
+    id: n.id,
+    name: pick(n, "name"),
+    person: pick(n, "person"),
+    image: n.image_url,
+    children: (n.children || []).map(toNode),
+  });
+  const orgRoots = (historyContent?.org || []).map(toNode);
+  const founded = foundedYear(timeline);
   const previewLoading = !historyContent;
   const emptyNote = (text) => (
     <p className="empty-state history-admin__empty">{previewLoading ? "กำลังโหลด…" : text}</p>
   );
+  const setPhotos = (patch) => {
+    setSuccess(false);
+    setForm((f) => ({ ...f, ...patch }));
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -304,61 +286,71 @@ export default function AdminHistoryEditor() {
       {success && <SuccessModal onClose={() => setSuccess(false)} />}
 
       <div className="admin-edit-notice">
-        🔔 กำลังแก้ไขเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — หน้าด้านล่างแสดงเหมือนหน้าประวัติบริษัทจริง
+        🔔 กำลังแก้ไขเวอร์ชัน <strong>{lang === "th" ? "ภาษาไทย 🇹🇭" : "English 🇬🇧"}</strong> — หน้าด้านล่างเรียงเหมือนหน้าประวัติบริษัทจริง
         คลิกที่ข้อความเพื่อพิมพ์แก้ได้ทันที ช่องที่เว้นว่างจะใช้ข้อความเริ่มต้น (ตัวจาง) ระบบจะบันทึกทั้งสองภาษาพร้อมกันตอนกด
-        “บันทึก” ส่วนไทม์ไลน์ / สถิติ / โครงสร้างองค์กรแก้ไขได้จากแท็บด้านบน
+        “บันทึก” ส่วนไทม์ไลน์ / โครงสร้างองค์กร แก้ไขได้จากแท็บด้านบน (ช่วงเปิดหน้าแสดงแบบเลื่อนลงธรรมดาเพื่อให้แก้ได้
+        ส่วนหน้าเว็บจริงบนจอใหญ่เป็นแบบเลื่อนดูทีละปี)
       </div>
 
       <div className="home-admin__page history-admin__page">
-        {/* HERO: Company Introduction */}
-        <section className="intro">
-          <img className="intro__bg" src={form.intro_image || INTRO_IMAGE_DEFAULT} alt="" />
-          <div className="container intro__text">
-            <h1>
-              <InlineInput {...bind("intro_title", t.introTitle, "หัวข้อ")} />
-            </h1>
-            <p className="intro__lede">
-              <InlineInput multiline rows={3} {...bind("intro_lede", t.introLede, "ข้อความเกริ่นนำ (Lede)")} />
-            </p>
-            <p className="intro__body">
-              <InlineInput multiline rows={4} {...bind("intro_body", t.introBody, "เนื้อหาย่อหน้าหลัก")} />
-            </p>
+        {/* 1. OPENING: photo, title, lede + the timeline as chapters */}
+        <div className="container history-admin__under">
+          <div className="panel home-admin__hero-bg">
+            <span className="admin-edit-sidebar__label">รูปเปิดหน้า (ใช้ร่วมกันทั้งสองภาษา · ว่าง = รูปเริ่มต้น)</span>
+            <ImageUploadField
+              accept="image/*"
+              maxSizeMB={10}
+              value={form.intro_image || ""}
+              onChange={(url) => setPhotos({ intro_image: url })}
+            />
           </div>
-        </section>
-
-        <div className="panel home-admin__hero-bg">
-          <span className="admin-edit-sidebar__label">
-            ภาพพื้นหลัง “แนะนำบริษัท” (ไม่บังคับ — ใช้ร่วมกันทั้งสองภาษา, ว่าง = รูปเริ่มต้น)
-          </span>
-          <ImageUploadField
-            accept="image/*"
-            maxSizeMB={10}
-            value={form.intro_image || ""}
-            onChange={(url) => {
-              setSuccess(false);
-              setForm((f) => ({ ...f, intro_image: url }));
-            }}
+        </div>
+        <HistoryStory
+          flow
+          photo={form.intro_image || INTRO_IMAGE_DEFAULT}
+          eyebrow={founded ? "TRISAK GROUP · " + t.factSince + " " + founded : "TRISAK GROUP"}
+          title={<InlineInput multiline rows={1} {...bind("intro_title", t.introTitle, "หัวข้อ")} />}
+          lede={<InlineInput multiline rows={2} {...bind("intro_lede", t.introLede, "ข้อความเกริ่นนำ (Lede)")} />}
+          entries={storyEntries(timeline, brands)}
+          labels={t.story}
+        />
+        <div className="container history-admin__under">
+          <ManagedBar
+            note={
+              timeline.length
+                ? "ปี / ข้อความ / รูปของแต่ละช่วง แก้ไขได้จากแท็บ “ไทม์ไลน์ (Timeline)”"
+                : previewLoading
+                  ? "กำลังโหลดไทม์ไลน์…"
+                  : "ยังไม่มีรายการไทม์ไลน์ที่เปิดใช้งาน"
+            }
+            to={HISTORY_TIMELINE_PATH}
+            linkLabel="แก้ไขไทม์ไลน์"
           />
         </div>
 
-        {/* TIMELINE */}
-        <section className="section history-admin__managed">
-          <div className="container">
-            <ManagedBar
-              note="ไทม์ไลน์แก้ไขได้จากแท็บ “ไทม์ไลน์ (Timeline)”"
-              to={HISTORY_TIMELINE_PATH}
-              linkLabel="แก้ไขไทม์ไลน์"
-            />
-            <SectionLabel title={t.timelineTitle} />
-            {timeline.length ? (
-              <BrandLanesTimeline items={timeline} brands={brands} />
-            ) : (
-              emptyNote("ยังไม่มีรายการไทม์ไลน์ที่เปิดใช้งาน")
-            )}
-          </div>
-        </section>
+        {/* 2. TODAY: years in automation, intro paragraph, statistics (edited in place) */}
+        <TodaySection
+          eyebrow={t.todayEyebrow}
+          years={founded ? new Date().getFullYear() - founded : null}
+          yearsLabel={t.factYears}
+          body={<InlineInput multiline rows={4} {...bind("intro_body", t.introBody, "เนื้อหาย่อหน้าหลัก")} />}
+          stats={stats}
+          unitSep={unitSep}
+          renderStat={renderStat}
+        />
+        <div className="container history-admin__under">
+          <ManagedBar
+            note={
+              stats.length
+                ? "แก้ตัวเลขและคำอธิบายได้ด้านบน — เพิ่ม / ลบ / สลับลำดับ / ซ่อน ทำที่แท็บ “สถิติ (Statistics)”"
+                : "ยังไม่มีสถิติที่เปิดใช้งาน"
+            }
+            to={HISTORY_STATS_PATH}
+            linkLabel="จัดการสถิติ"
+          />
+        </div>
 
-        {/* WHY TRISAK GROUP — edited in place */}
+        {/* 3. WHY TRISAK GROUP — edited in place */}
         <HistoryWhyEditor
           form={form}
           lang={lang}
@@ -368,54 +360,45 @@ export default function AdminHistoryEditor() {
           }}
         />
 
-        {/* EXPERIENCE + STATISTICS + PARTNERS — text, photo and numbers edited in place */}
-        <section className="section history-admin__managed exp-admin">
+        {/* 4. ORGANIZATION — preview, edited in its tab */}
+        <section className="section history-section history-org history-admin__managed">
           <div className="container">
-            <ManagedBar
-              note="แก้ข้อความ ตัวเลข และรูปได้ในส่วนนี้ — เพิ่ม/ลบ/สลับลำดับ/ซ่อนตัวเลขสถิติ ทำที่แท็บ “สถิติ (Statistics)” · โลโก้ OMRON / YASKAWA / NITTO ดึงจากเมนู แบรนด์ (Brands)"
-              to={HISTORY_STATS_PATH}
-              linkLabel="จัดการสถิติ"
-            />
-            {!stats.length && emptyNote("ยังไม่มีสถิติที่เปิดใช้งาน")}
-          </div>
-          <ExperienceBanner
-            eyebrow={<InlineInput {...bind("exp_eyebrow", t.experienceEyebrow, "ข้อความเล็กเหนือหัวข้อ")} />}
-            title={<InlineInput multiline rows={1} {...bind("exp_title", t.experienceTitle, "หัวข้อประสบการณ์")} />}
-            lede={<InlineInput multiline rows={2} {...bind("exp_lede", t.experienceLede, "คำอธิบายใต้หัวข้อ")} />}
-            stats={stats}
-            renderStat={renderStat}
-            renderIcon={renderStatIcon}
-            photos={form.exp_images.length ? form.exp_images : EXP_PHOTOS_DEFAULT}
-            galleryLabels={t.expGallery}
-          >
-            <div className="section-head exp-admin__partners-head">
-              <span className="eyebrow">
-                <InlineInput {...bind("partners_eyebrow", t.partnersEyebrow, "ข้อความเล็กเหนือหัวข้อพันธมิตร")} />
-              </span>
-              <h2>
-                <InlineInput multiline rows={1} {...bind("partners_title", t.partnersTitle, "หัวข้อพันธมิตรและแบรนด์")} />
-              </h2>
-            </div>
-            <PartnerBrands brands={brands} />
-          </ExperienceBanner>
-          <div className="panel home-admin__hero-bg exp-admin__photo-panel">
-            <span className="admin-edit-sidebar__label">
-              ภาพผลงานด้านขวา (ใช้ร่วมกันทั้งสองภาษา · สูงสุด 12 รูป)
-            </span>
-            <ImageListField
-              max={12}
-              value={form.exp_images}
-              onChange={(urls) => {
-                setSuccess(false);
-                setForm((f) => ({ ...f, exp_images: urls }));
-              }}
-            />
-            <p className="contact-admin__hint">
-              หน้าเว็บแสดงเป็นสไลด์ในกรอบเดียว เลื่อนเองทุก ~5 วินาที (หยุดเมื่อเอาเมาส์ชี้) เริ่มจากรูปที่ 1 · ใช้ลูกศรสลับลำดับ ·
-              ว่าง = ใช้รูปเริ่มต้น · ภาพแนวนอนคมชัดจะดูดีที่สุด
-            </p>
+            <ManagedBar note="โครงสร้างองค์กรแก้ไขได้จากแท็บ “โครงสร้างองค์กร”" to={HISTORY_ORG_PATH} linkLabel="แก้ไขโครงสร้าง" />
+            <SectionLabel title={t.structureTitle} />
+            {orgRoots.length ? <OrgChart roots={orgRoots} /> : emptyNote("ยังไม่มีโครงสร้างองค์กร (หน้าเว็บจะซ่อนส่วนนี้)")}
           </div>
         </section>
+
+        {/* 5. OUR WORK: heading, lede and the photo slider */}
+        <WorkSection
+          eyebrow={<InlineInput {...bind("exp_eyebrow", t.experienceEyebrow, "ข้อความเล็กเหนือหัวข้อ")} />}
+          title={<InlineInput multiline rows={1} {...bind("exp_title", t.experienceTitle, "หัวข้อผลงาน")} />}
+          lede={<InlineInput multiline rows={2} {...bind("exp_lede", t.experienceLede, "คำอธิบายใต้หัวข้อ")} />}
+          photos={form.exp_images.length ? form.exp_images : EXP_PHOTOS_DEFAULT}
+          galleryLabels={t.expGallery}
+        />
+        <div className="container history-admin__under">
+          <div className="panel home-admin__hero-bg">
+            <span className="admin-edit-sidebar__label">รูปผลงาน (ใช้ร่วมกันทั้งสองภาษา · สูงสุด 12 รูป)</span>
+            <ImageListField max={12} value={form.exp_images} onChange={(urls) => setPhotos({ exp_images: urls })} />
+            <p className="contact-admin__hint">
+              แสดงเป็นสไลด์ เริ่มจากรูปที่ 1 · ใช้ลูกศรสลับลำดับ · ว่าง = ใช้รูปเริ่มต้น · ภาพแนวนอนคมชัดจะดูดีที่สุด
+            </p>
+          </div>
+        </div>
+
+        {/* 6. CLOSING: partners + call to action (logos come from Admin > Brands) */}
+        <ClosingSection
+          eyebrow={<InlineInput {...bind("partners_eyebrow", t.partnersEyebrow, "ข้อความเล็กเหนือหัวข้อพันธมิตร")} />}
+          title={t.ctaTitle}
+          sub={t.ctaSub}
+          logos={<PartnerBrands brands={brands} />}
+          contactLabel={common.contactUs}
+          productsLabel={common.viewProducts}
+        />
+        <div className="container history-admin__under">
+          <ManagedBar note="โลโก้ดึงจากเมนูแบรนด์ (Brands)" />
+        </div>
       </div>
 
       <div className="admin-form__submit-row">

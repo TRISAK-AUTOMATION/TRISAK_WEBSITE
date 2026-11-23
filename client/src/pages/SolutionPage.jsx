@@ -45,7 +45,7 @@ export default function SolutionPage() {
               {/* services as units in a control-cabinet rack; LEDs switch on in view */}
               <Reveal className="sol-rack">
                 {detail.services.map((svc, i) => (
-                  <article className="sol-unit" key={svc.title}>
+                  <article className="sol-unit" id={`svc-${i}`} key={svc.title}>
                     <div className="sol-unit__face">
                       <span className="sol-unit__led" style={{ "--i": i }} aria-hidden="true" />
                       <span className="sol-unit__icon">
