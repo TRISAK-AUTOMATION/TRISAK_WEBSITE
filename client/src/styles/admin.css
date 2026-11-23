@@ -2949,13 +2949,6 @@ a.admin-edit-tab {
 }
 
 /* ---------- Admin > ประวัติบริษัท (History) > Content: the real History page, edited in place ---------- */
-.history-admin__page .intro {
-  min-height: 560px;
-}
-.history-admin__page .intro .home-admin__input {
-  margin-left: 0;
-  width: 100%;
-}
 /* Sections previewed here but edited elsewhere: a soft frame and a bar with the link. */
 .history-admin__managed {
   position: relative;
@@ -3577,99 +3570,58 @@ a.admin-edit-tab {
   line-height: 1.5;
   color: var(--text-muted);
 }
-/* ---- Admin > History: "Our Experience" banner edited in place ---- */
-.exp-admin textarea.home-admin__input {
+/* ---- Admin > History: the public sections, text edited in place ---- */
+.history-admin__page textarea.home-admin__input {
   field-sizing: content;
   min-height: 1lh;
   resize: none;
 }
-.exp-admin .exp-banner__eyebrow .home-admin__input {
-  display: inline-block;
-  width: auto;
-  min-width: 220px;
+.history-admin__page .home-admin__input {
   margin-left: 0;
-  padding: 2px 6px;
 }
-.exp-admin .exp-banner__text p .home-admin__input,
-.exp-admin .exp-banner__text h2 .home-admin__input {
-  margin-left: 0;
-  padding: 2px 6px;
-}
-/* number + unit sit side by side and only as wide as their text */
-.exp-admin__num {
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: flex-start;
-  gap: 2px;
-}
-.exp-admin__num .home-admin__input {
-  display: inline-block;
-  width: auto;
-  margin-left: 0;
-  padding: 0 4px;
-  text-align: left;
-}
-.exp-admin .exp-banner__stat .exp-banner__label .home-admin__input {
-  margin-left: 0;
-  padding: 2px 4px;
-  text-align: left;
-}
-.exp-admin__partners-head .eyebrow .home-admin__input {
+/* small labels above headings: only as wide as their text */
+.history-admin__page .story__eyebrow .home-admin__input {
   display: inline-block;
   width: auto;
   min-width: 240px;
+  padding: 2px 6px;
 }
-.exp-admin__photo-panel {
-  max-width: 720px;
+/* statistic value + unit sit side by side, each as wide as its text */
+.history-admin__stat-num {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
 }
-.exp-admin__photo-panel .contact-admin__hint {
-  margin: 0;
-}
-.exp-admin__num input.home-admin__input {
+.history-admin__stat-num .home-admin__input {
+  display: inline-block;
+  width: auto;
   field-sizing: content;
   min-width: 1.4ch;
-  max-width: 6ch;
+  max-width: 7ch;
+  padding: 0 4px;
 }
-/* the label edit box fills the card width so it can wrap like the public label */
-.exp-admin .exp-banner__stat .exp-banner__label {
-  align-self: stretch;
-  max-width: none;
+/* edit panels / notes under a section */
+.history-admin__under {
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
-/* statistic card icon: a button that opens the shared icon picker */
-.exp-admin__icon-wrap {
-  position: relative;
+.history-admin__under .panel {
+  max-width: 720px;
+  margin: 0;
 }
-.exp-admin__icon-btn {
-  position: relative;
-  padding: 0;
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease;
+.history-admin__under .contact-admin__hint {
+  margin: 0;
 }
-.exp-admin__icon-btn:hover {
-  box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.16);
-}
-.exp-admin__icon-btn:focus-visible {
-  outline: 2px solid var(--accent-signal);
-  outline-offset: 4px;
-}
-.exp-admin__icon-wrap .sol-admin__picker {
-  top: 56px;
+/* preview links would leave the editor (and unsaved changes) */
+.history-admin__page .closing__actions,
+.history-admin__page .partner-logos a {
+  pointer-events: none;
 }
 .sol-admin__picker--center {
   left: 50%;
   transform: translateX(-50%);
-}
-.exp-admin .exp-banner__stat:has(.sol-admin__picker) {
-  z-index: 5;
-}
-/* let the icon picker hang below the banner instead of being clipped */
-.exp-admin .exp-banner {
-  overflow: visible;
-}
-.exp-admin .exp-banner__inner {
-  z-index: 2;
 }
 
 /* ---- Admin > การตั้งค่า > ผู้ใช้งาน / บัญชีของฉัน ---- */

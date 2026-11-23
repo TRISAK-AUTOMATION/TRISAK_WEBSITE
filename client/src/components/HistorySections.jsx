@@ -42,7 +42,8 @@ function CountUp({ to, duration = 1400 }) {
  * "Today": closes the scroll story — years in automation as one large
  * number, the intro paragraph, and the key statistics in a single row.
  */
-export function TodaySection({ eyebrow, years, yearsLabel, body, stats, unitSep }) {
+// `renderStat` lets Admin > History swap a statistic's label + number for edit boxes.
+export function TodaySection({ eyebrow, years, yearsLabel, body, stats, unitSep, renderStat }) {
   return (
     <section className="today">
       <Reveal className="container today__inner">
@@ -63,11 +64,17 @@ export function TodaySection({ eyebrow, years, yearsLabel, body, stats, unitSep 
             <dl className="today__stats" style={{ "--n": stats.length }}>
               {stats.map((s) => (
                 <div key={s.id}>
-                  <dt>{s.label}</dt>
-                  <dd>
-                    {s.num}
-                    {s.unit ? unitSep(s.unit) + s.unit : ""}
-                  </dd>
+                  {renderStat ? (
+                    renderStat(s)
+                  ) : (
+                    <>
+                      <dt>{s.label}</dt>
+                      <dd>
+                        {s.num}
+                        {s.unit ? unitSep(s.unit) + s.unit : ""}
+                      </dd>
+                    </>
+                  )}
                 </div>
               ))}
             </dl>

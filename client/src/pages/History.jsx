@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import SectionLabel from "../components/SectionLabel.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { cachedHistoryData, loadHistoryData } from "../api/historyData.js";
-import WhyTrisak, { Icon as StatIcon, localizeIconList } from "../components/WhyTrisak.jsx";
-import ExpGallery, { expPhotos } from "../components/ExpGallery.jsx";
+import WhyTrisak, { localizeIconList } from "../components/WhyTrisak.jsx";
+import { expPhotos } from "../components/ExpGallery.jsx";
 import HistoryStory from "../components/HistoryStory.jsx";
 import { TodaySection, WorkSection, ClosingSection } from "../components/HistorySections.jsx";
 
@@ -29,7 +29,7 @@ const brandRows = (brands) =>
       }
   );
 
-// Three equal cells, logos normalised to one optical height (see .partner-logos).
+// Logos evenly spaced, normalised to one optical height (see .partner-logos).
 export function PartnerBrands({ brands }) {
   return (
     <ul className="partner-logos">
@@ -61,71 +61,16 @@ const yearNum = (y) => {
   return Number.isNaN(n) ? Infinity : n;
 };
 
-function LaneEntry({ m, side }) {
-  return (
-    <li className={`lanes__item lanes__item--${side}`}>
-      <span className="lanes__year">{m.year}</span>
-      <div className="lanes__body">
-        {m.brand && <span className="lanes__brand">{m.brand}</span>}
-        <h3>{m.title}</h3>
-        {m.body && <p>{m.body}</p>}
-        {m.image && <img className="lanes__image" src={m.image} alt="" loading="lazy" />}
-      </div>
-    </li>
-  );
-}
-
-// Company timeline on one year spine: each group company sits in the lane of
-// the brand it distributes (OMRON left, YASKAWA right), companies tied to no
-// single brand sit on the spine. Falls back to one lane unless exactly two
-// brands appear.
-export function BrandLanesTimeline({ items, brands }) {
-  const entries = items
-    .map((m) => ({ ...m, brand: brandOf(m) }))
-    .sort((a, b) => yearNum(a.year) - yearNum(b.year));
-  const laneNames = BRANDS.filter((b) => entries.some((m) => m.brand === b));
-  const twoLanes = laneNames.length === 2;
-  const sideOf = (m) => (!m.brand ? "center" : m.brand === laneNames[0] ? "left" : "right");
-  const firstBranded = entries.findIndex((m) => m.brand);
-  const head = firstBranded === -1 ? entries : entries.slice(0, firstBranded);
-  const rest = firstBranded === -1 ? [] : entries.slice(firstBranded);
-  const logos = brandRows(brands);
-
-  return (
-    <div className={`lanes${twoLanes ? "" : " lanes--single"}`}>
-      {head.length > 0 && (
-        <ol className="lanes__list">
-          {head.map((m) => (
-            <LaneEntry key={m.id} m={m} side="center" />
-          ))}
-        </ol>
-      )}
-      {twoLanes && (
-        <div className="lanes__heads" aria-hidden="true">
-          {laneNames.map((name) => {
-            const b = logos.find((l) => l.name.trim().toUpperCase() === name);
-            return (
-              <span className="lanes__head" key={name}>
-                {b?.logo_url ? <img src={b.logo_url} alt="" /> : name}
-              </span>
-            );
-          })}
-        </div>
-      )}
-      {rest.length > 0 && (
-        <ol className="lanes__list">
-          {rest.map((m) => (
-            <LaneEntry key={m.id} m={m} side={twoLanes ? sideOf(m) : "center"} />
-          ))}
-        </ol>
-      )}
-    </div>
-  );
-}
+// Founding year = the earliest numeric year on the timeline (e.g. 1978), or
+// null when the timeline has none.
+export const foundedYear = (timeline) => {
+  const first = Math.min(...timeline.map((m) => yearNum(m.year)));
+  return Number.isFinite(first) && first > 1800 ? first : null;
+};
 
 // Timeline entries for the scroll story: oldest first, with the brand guessed
 // from the text and that brand's logo (shown as a white mark).
-const storyEntries = (items, brands) => {
+export const storyEntries = (items, brands) => {
   const logos = brandRows(brands);
   return items
     .map((m) => {
@@ -164,64 +109,6 @@ export function OrgChart({ roots }) {
         <OrgNode key={node.id} node={node} root />
       ))}
     </ul>
-  );
-}
-
-// Default icon per statistic card by position (customers, projects,
-// experience) when the statistic has none set in Admin > History.
-export const STAT_ICONS = ["gear", "handshake", "team"];
-export const statIcon = (s, i) => s.icon || STAT_ICONS[i % STAT_ICONS.length];
-
-/**
- * "Our Experience": heading + lede on the left with the statistics in one
- * panel underneath; the work photos as a mosaic on the right (click to view
- * them all). Children (Partners & Brands) get their own white band below.
- * `renderStat` / `renderIcon` let Admin > History swap a cell's number +
- * label and its icon for edit controls.
- */
-export function ExperienceBanner({ eyebrow, title, lede, stats, children, photos, galleryLabels, renderStat, renderIcon }) {
-  return (
-    <section className="exp-banner">
-      <div className="container exp-banner__inner">
-        <div className="exp-banner__text">
-          <span className="exp-banner__eyebrow">{eyebrow}</span>
-          <h2>{title}</h2>
-          {lede && <p className="exp-banner__lede">{lede}</p>}
-          {stats.length > 0 && (
-            <div className="exp-banner__stats" style={{ "--n": stats.length }}>
-              {stats.map((s, i) => (
-                <div className="exp-banner__stat" key={s.id}>
-                  {renderIcon ? (
-                    renderIcon(s, i)
-                  ) : (
-                    <span className="exp-banner__stat-icon" aria-hidden="true">
-                      <StatIcon name={statIcon(s, i)} />
-                    </span>
-                  )}
-                  {renderStat ? (
-                    renderStat(s)
-                  ) : (
-                    <>
-                      <span className="exp-banner__num">
-                        {s.num}
-                        {s.unit ? unitSep(s.unit) + s.unit : ""}
-                      </span>
-                      <span className="exp-banner__label">{s.label}</span>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <ExpGallery photos={photos} labels={galleryLabels} />
-      </div>
-      {children && (
-        <div className="exp-banner__after">
-          <div className="container exp-partners">{children}</div>
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -294,10 +181,8 @@ export default function History() {
     return value || fallback;
   };
 
-  // Founding year = the earliest numeric year on the timeline (e.g. 1978);
-  // the intro facts only show when the timeline actually has one.
-  const firstYear = Math.min(...timeline.map((m) => yearNum(m.year)));
-  const founded = Number.isFinite(firstYear) && firstYear > 1800 ? firstYear : null;
+  // the intro facts only show when the timeline actually has a founding year
+  const founded = foundedYear(timeline);
   const yearsActive = founded ? new Date().getFullYear() - founded : null;
 
   return (

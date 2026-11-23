@@ -234,6 +234,69 @@
   color: #5a6180;
 }
 
+/* second level: a solution's services fly out to the right */
+.nav-drop__has-sub {
+  position: relative;
+}
+
+.nav-drop__has-sub > .nav-drop__item {
+  position: relative;
+  padding-right: 32px;
+}
+
+.nav-drop__sub-chevron {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  color: #5a6180;
+}
+
+.nav-drop__sub {
+  position: absolute;
+  top: -6px;
+  left: 100%;
+  padding-left: 10px; /* hover bridge */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0s linear 0.15s;
+}
+
+.nav-drop__has-sub:hover > .nav-drop__sub,
+.nav-drop__has-sub:focus-within > .nav-drop__sub {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0s;
+}
+
+.nav-drop__has-sub:hover > .nav-drop__item {
+  background: rgba(13, 41, 151, 0.06);
+}
+
+.nav-drop__sub .nav-drop__list {
+  width: 300px;
+}
+
+.nav-drop__title--sub {
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.nav-drop.is-closed .nav-drop__sub {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .site-header__actions {
   display: flex;
   align-items: center;

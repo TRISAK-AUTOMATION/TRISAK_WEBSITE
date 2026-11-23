@@ -194,6 +194,29 @@
   display: none;
 }
 
+/* 3 brands or fewer (nothing to scroll): cells hug their logos so the gap
+   between logos is the same whatever each logo's width (NITTO is narrow) */
+.brand-logo-grid:not(:has(> :nth-child(4))) {
+  display: flex;
+  justify-content: center;
+  height: 140px;
+}
+.brand-logo-grid:not(:has(> :nth-child(4))) > .brand-logo-cell {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.brand-logo-grid:not(:has(> :nth-child(4))) .brand-logo-cell__image {
+  max-width: 300px; /* fixed, not %, so each cell is as wide as its logo looks */
+}
+@media (max-width: 600px) {
+  .brand-logo-grid:not(:has(> :nth-child(4))) > .brand-logo-cell {
+    padding: 12px;
+  }
+  .brand-logo-grid:not(:has(> :nth-child(4))) .brand-logo-cell__image {
+    max-width: 84px;
+  }
+}
+
 .brand-logo-cell {
   scroll-snap-align: start;
   display: flex;
@@ -263,6 +286,10 @@
     grid-template-rows: 110px;
     grid-auto-columns: calc((100% - 32px) / 3);
     gap: 16px;
+  }
+
+  .brand-logo-grid:not(:has(> :nth-child(4))) {
+    height: 110px;
   }
 
   .brand-logo-scroll__arrow--left {

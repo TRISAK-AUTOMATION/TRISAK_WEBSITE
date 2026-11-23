@@ -66,12 +66,22 @@ function AdminAboutRedirect() {
 }
 
 function ScrollToTop() {
-  const { pathname, state, key } = useLocation();
+  const { pathname, hash, state, key } = useLocation();
   const keepScroll = Boolean(state?.keepScroll);
   const last = useRef(null);
   useEffect(() => {
     const prev = last.current;
     last.current = { pathname, keepScroll };
+    // a link to a section (/automation-solution/x#svc-1) lands on that section
+    const target = hash && document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (target) {
+      // layout position (offsetTop), not getBoundingClientRect: a scroll-reveal
+      // section is still translated down when the page opens
+      let y = 0;
+      for (let n = target; n; n = n.offsetParent) y += n.offsetTop;
+      window.scrollTo(0, y - (parseFloat(getComputedStyle(target).scrollMarginTop) || 0));
+      return;
+    }
     if (prev) {
       // query-only change (e.g. ?page=2, ?category=…): same page, keep the scroll position
       if (prev.pathname === pathname) return;
@@ -81,7 +91,7 @@ function ScrollToTop() {
       if (keepScroll || prev.keepScroll) return;
     }
     window.scrollTo(0, 0);
-  }, [pathname, keepScroll, key]);
+  }, [pathname, hash, keepScroll, key]);
   return null;
 }
 
