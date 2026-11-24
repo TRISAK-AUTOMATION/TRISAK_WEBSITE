@@ -7880,205 +7880,260 @@ html:not(.glass-buttons) .hero--has-bg .contact-hero__ghost:hover {
 }
 
 /* ---------- Solution page (/automation-solution/:slug) ----------
-   Services are drawn as units mounted in a control-cabinet rack: steel side
-   rails, a navy faceplate per unit, and a status LED that switches on, unit
-   by unit, when the rack scrolls into view. */
-.sol-rack-section {
-  background: #e8ebf2;
+   Services: a dark status panel (one lamp per service, lit for the one being
+   read; click to jump) beside the scope of work. The panel is the page's one
+   loud element; everything else stays quiet. */
+.sol-nav--static {
+  position: static;
 }
 
-.sol-rack-section .section-head h2,
-.sol-gains .section-head h2 {
-  color: #0b1b3f;
-}
-
-.sol-rack {
-  --rail: 16px;
-  position: relative;
+.sol-scope__grid {
   display: grid;
-  gap: 10px;
-  padding: 0 calc(var(--rail) + 12px);
-}
-
-/* the two rack rails, with a column of mounting holes */
-.sol-rack::before,
-.sol-rack::after {
-  content: "";
-  position: absolute;
-  top: -14px;
-  bottom: -14px;
-  width: var(--rail);
-  border-radius: 3px;
-  background:
-    radial-gradient(circle, #7d869c 0 3px, transparent 3.5px) center 6px / var(--rail) 26px repeat-y,
-    linear-gradient(90deg, #d5dae5, #bcc3d2);
-  box-shadow: inset 0 0 0 1px rgba(11, 27, 63, 0.08);
-}
-.sol-rack::before {
-  left: 0;
-}
-.sol-rack::after {
-  right: 0;
-}
-
-.sol-unit {
-  scroll-margin-top: calc(var(--header-height) + 24px); /* header menu jumps here */
-  display: grid;
-  grid-template-columns: minmax(250px, 5fr) 8fr;
-  background: #ffffff;
-  border: 1px solid #c9cfdc;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 1px 0 #b6bdcd;
-}
-
-.sol-unit__face {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: minmax(260px, 4fr) 8fr;
+  gap: clamp(32px, 5vw, 72px);
   align-items: start;
-  gap: 14px;
-  padding: 24px 40px 24px 24px;
-  background: var(--accent-signal);
-  color: var(--on-accent);
 }
 
-.sol-unit__icon {
+.sol-panel {
+  position: sticky;
+  top: calc(var(--header-height) + 24px);
+  padding: 22px 18px 18px;
+  background: #0b1640;
+  border-radius: calc(var(--radius) * 1.5);
+  color: #c9d1ee;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.sol-panel__title {
+  margin: 0 6px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #8f9bc8;
+}
+
+.sol-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.sol-panel__row {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: var(--radius);
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sol-panel__row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.sol-panel__row:focus-visible {
+  outline: 2px solid #8fb0ff;
+  outline-offset: 0;
+}
+
+.sol-panel__row.is-on {
+  color: #ffffff;
+}
+
+/* indicator lamp: dim navy when off, green with a glow when on */
+.sol-panel__lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2a3768;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.sol-panel__row.is-on .sol-panel__lamp {
+  background: #34d27b;
+  box-shadow: 0 0 0 3px rgba(52, 210, 123, 0.18), 0 0 12px rgba(52, 210, 123, 0.8);
+}
+
+.sol-panel__cta {
+  width: 100%;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+/* scope of work */
+.sol-svc {
+  scroll-margin-top: calc(var(--header-height) + 24px); /* header menu and panel jump here */
+  padding: 0 0 clamp(32px, 4vw, 44px);
+}
+
+.sol-svc + .sol-svc {
+  padding-top: clamp(32px, 4vw, 44px);
+  border-top: 1px solid rgba(13, 41, 151, 0.12);
+}
+
+.sol-svc__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sol-svc__icon {
+  flex: none;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.12);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  background: var(--accent-signal-dim);
+  color: var(--accent-signal);
 }
-.sol-unit__icon .why__icon {
+
+.sol-svc__icon .why__icon {
   width: 24px;
   height: 24px;
 }
 
-.sol-unit__face h3 {
+.sol-svc__head h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: clamp(20px, 2vw, 24px);
   font-weight: 600;
-  line-height: 1.4;
-  color: inherit;
+  line-height: 1.3;
+  color: #0b1b3f;
   text-transform: none; /* keep names like "Robotic Cell" as written */
 }
 
-/* status LED: off until the rack is in view, then on in turn */
-.sol-unit__led {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #34d27b;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 0 10px #34d27b;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .sol-rack.reveal .sol-unit__led {
-    background: #26357a;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
-    transition:
-      background 0.2s ease,
-      box-shadow 0.2s ease;
-  }
-  .sol-rack.reveal.is-visible .sol-unit__led {
-    background: #34d27b;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 0 10px #34d27b;
-    transition-delay: calc(0.5s + var(--i, 0) * 0.18s);
-  }
-}
-
-.sol-unit__list {
+.sol-svc__list {
   list-style: none;
   margin: 0;
-  padding: 24px 28px;
+  padding: 0 0 0 64px; /* under the title, past the icon */
   column-gap: 32px;
-  align-self: center;
 }
+
 /* short lists (3 or fewer) stay in one column instead of splitting 2 + 1 */
-.sol-unit__list--2col {
+.sol-svc__list--2col {
   columns: 2;
 }
 
-.sol-unit__list li {
+.sol-svc__list li {
   display: flex;
   gap: 10px;
   break-inside: avoid;
-  padding: 5px 0;
-  font-size: 15px;
-  line-height: 1.5;
-  color: #0b1b3f;
+  padding: 6px 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: #2c3557;
 }
 
-/* benefits: deliberately quiet — heading left, a plain list right */
-.sol-gains__inner {
+.sol-svc__tick {
+  flex: none;
   display: grid;
-  grid-template-columns: 4fr 7fr;
-  gap: 48px;
-  align-items: start;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--accent-signal);
+  color: var(--on-accent);
+}
+
+/* benefits: a quiet row of outcomes on mist */
+.sol-gains {
+  background: #eef1f6;
+}
+
+.sol-gains .section-head h2 {
+  color: #0b1b3f;
 }
 
 .sol-gains__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--line-strong);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0;
 }
 
 .sol-gains__list li {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line-strong);
-  font-size: 17px;
-  font-weight: 500;
-  line-height: 1.5;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 4px 24px 8px;
+  border-left: 1px solid rgba(13, 41, 151, 0.14);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
   color: #0b1b3f;
+}
+
+.sol-gains__list li:first-child {
+  border-left: 0;
+  padding-left: 0;
 }
 
 .sol-gains__text {
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
+
 .sol-gains__text small {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 400;
   color: var(--text-muted);
 }
 
 .sol-gains__list .why__icon {
-  flex: none;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   color: var(--accent-signal);
 }
 
-@media (max-width: 860px) {
-  .sol-unit {
+@media (max-width: 960px) {
+  .sol-scope__grid {
     grid-template-columns: 1fr;
   }
-  .sol-unit__list,
-  .sol-unit__list--2col {
-    columns: 1;
-    padding: 18px 22px;
+  /* on narrow screens the panel is a plain index above the services */
+  .sol-panel {
+    position: static;
   }
-  .sol-gains__inner {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .sol-gains__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 28px;
+  }
+  .sol-gains__list li,
+  .sol-gains__list li:first-child {
+    border-left: 0;
+    padding: 0;
   }
 }
 
-@media (max-width: 560px) {
-  .sol-rack {
-    --rail: 8px;
-    padding: 0 calc(var(--rail) + 6px);
+@media (max-width: 600px) {
+  .sol-svc__list {
+    padding-left: 0;
   }
-  .sol-rack::before,
-  .sol-rack::after {
-    background: linear-gradient(90deg, #d5dae5, #bcc3d2);
+  .sol-svc__list--2col {
+    columns: 1;
+  }
+  .sol-gains__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sol-panel__row,
+  .sol-panel__lamp {
+    transition: none;
   }
 }
