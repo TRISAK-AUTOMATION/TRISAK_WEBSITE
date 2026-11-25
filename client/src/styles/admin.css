@@ -3961,3 +3961,35 @@ a.admin-edit-tab {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Admin > Automation Solution > one solution (AdminSolutionPage) */
+.sol-admin__icon-slot {
+  position: relative;
+  display: inline-flex;
+  justify-self: start;
+}
+.sol-admin__icon-btn {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px dashed transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.sol-admin__icon-btn:hover,
+.sol-admin__icon-btn[aria-expanded="true"] {
+  border-color: var(--line);
+}
+.sol-admin__icon-slot .sol-admin__picker {
+  top: calc(100% + 6px);
+}
+.sol-admin__row-tools {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+}
+.sol-svc__head h3 {
+  flex: 1;
+}

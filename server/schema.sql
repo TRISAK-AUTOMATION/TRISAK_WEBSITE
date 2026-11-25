@@ -170,6 +170,8 @@ CREATE TABLE solutions (
   related_label      VARCHAR(150),
   related_label_th   VARCHAR(150),
   brochure_url       VARCHAR(500),
+  -- Content of the solution's own page (migration 058), NULL = built-in text.
+  detail             JSONB,
   sort_order         INTEGER NOT NULL DEFAULT 0
 );
 

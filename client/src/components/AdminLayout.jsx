@@ -1,6 +1,7 @@
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { api } from "../api/client.js";
+import { SOLUTION_ADMIN_PATH, SOLUTIONS_CHANGED_EVENT } from "../pages/admin/AdminAutomationSolution.jsx";
 
 const NAV_SECTIONS = [
   {
@@ -19,12 +20,18 @@ const NAV_SECTIONS = [
       { label: "ประวัติบริษัท (History)", to: "/admin/history" },
       { label: "สินค้า (Products)", to: "/admin/products-page" },
       { label: "ติดต่อเรา (Contact Us)", to: "/admin/contact" },
-      { label: "โซลูชันระบบอัตโนมัติ (Automation Solution)", to: "/admin/automation-solution" },
       { label: "ลูกค้าของเรา (Our Customers)", to: "/admin/customers" },
       { label: "สไลด์อุตสาหกรรม (Industries Slider)", to: "/admin/industries" },
       { label: "Footer", to: "/admin/footer" },
       { label: "ป๊อปอัพ (Pop-up)", to: "/admin/popups" },
     ],
+  },
+  {
+    key: "automation-solution",
+    label: "โซลูชันระบบอัตโนมัติ (Automation Solution)",
+    icon: "🤖",
+    // one link per solution is appended at runtime (see solutionLinks)
+    children: [{ label: "ภาพรวมทั้งหมด (Overview)", to: SOLUTION_ADMIN_PATH, end: true }],
   },
   {
     key: "menu",
@@ -78,17 +85,41 @@ export default function AdminLayout() {
   // the signed-in account (name in the top bar, superadmin-only menu items)
   const [me, setMe] = useState(null);
 
+  // each solution gets its own sidebar link to its edit page
+  const [solutionLinks, setSolutionLinks] = useState([]);
+
   useEffect(() => {
     api.adminMe().then(setMe).catch(() => setMe(null));
+  }, []);
+
+  // reloaded whenever the editor saves, deletes or reorders a solution
+  useEffect(() => {
+    const load = () =>
+      api
+        .adminGetSolutions()
+        .then((rows) =>
+          setSolutionLinks(
+            (rows || []).map((r) => ({
+              label: r.name_th || r.name || `Solution #${r.id}`,
+              to: `${SOLUTION_ADMIN_PATH}/${r.id}`,
+            }))
+          )
+        )
+        .catch(() => setSolutionLinks([]));
+    load();
+    window.addEventListener(SOLUTIONS_CHANGED_EVENT, load);
+    return () => window.removeEventListener(SOLUTIONS_CHANGED_EVENT, load);
   }, []);
 
   // close the user menu when navigating
   useEffect(() => setUserMenuOpen(false), [location.pathname]);
 
   const isSuperadmin = me?.role === "superadmin";
-  const sections = NAV_SECTIONS.map((s) =>
-    s.children ? { ...s, children: s.children.filter((c) => !c.superadminOnly || isSuperadmin) } : s
-  );
+  const sections = NAV_SECTIONS.map((s) => {
+    if (!s.children) return s;
+    const children = s.children.filter((c) => !c.superadminOnly || isSuperadmin);
+    return { ...s, children: s.key === "automation-solution" ? [...children, ...solutionLinks] : children };
+  });
   const displayName = me ? me.display_name || me.username : "…";
 
   const isSectionActive = (section) =>
