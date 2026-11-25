@@ -7,6 +7,8 @@ import SectionLabel from "../components/SectionLabel.jsx";
 import ContactIcon from "../components/contactIcons.jsx";
 import { Icon } from "../components/WhyTrisak.jsx";
 import { discussHref } from "./AutomationSolution.jsx";
+import { api } from "../api/client.js";
+import { builtInSolutionDetail, localizeSolutionDetail } from "../utils/solutionDetail.js";
 
 const SOLUTIONS_URL = "/automation-solution";
 
@@ -44,15 +46,30 @@ function useServiceInView(count, slug) {
 }
 
 // One automation solution's own page (/automation-solution/:slug).
-// shortcut: names and content come from the built-in translations
-// (automationSolution.solutions / .details), not the admin DB; a solution
-// without details shows the hero only. Move to the DB when admins need to edit it.
+// Solutions and their page content come from the admin DB (solutions.detail);
+// until it loads, or where a solution has no saved page, the built-in text
+// (translations.js) is used. A solution with neither shows the hero only.
 export default function SolutionPage() {
   const { slug } = useParams();
-  const { t } = useLanguage();
-  const solutions = t("automationSolution.solutions");
+  const { t, lang } = useLanguage();
+  // undefined = still loading, null = none / failed (use the built-in list)
+  const [dbSolutions, setDbSolutions] = useState(undefined);
+  useEffect(() => {
+    api
+      .getSolutions()
+      .then((rows) => setDbSolutions(rows && rows.length ? rows : null))
+      .catch(() => setDbSolutions(null));
+  }, []);
+  const solutions = dbSolutions
+    ? dbSolutions.map((r) => ({
+        slug: r.slug,
+        name: (lang === "th" && r.name_th) || r.name,
+        summary: (lang === "th" && r.summary_th) || r.summary,
+        detail: r.detail,
+      }))
+    : t("automationSolution.solutions");
   const solution = solutions.find((s) => s.slug === slug);
-  const detail = solution ? t("automationSolution.details")?.[slug] : null;
+  const detail = solution ? localizeSolutionDetail(solution.detail || builtInSolutionDetail(slug), lang) : null;
   const services = detail?.services || [];
   const active = useServiceInView(services.length, slug);
   // on phones the tab row scrolls sideways: bring this solution's tab into view
@@ -61,8 +78,9 @@ export default function SolutionPage() {
     const row = tabsRef.current;
     const tab = row?.querySelector(".is-active");
     if (tab) row.scrollLeft = tab.offsetLeft - (row.clientWidth - tab.offsetWidth) / 2;
-  }, [slug]);
-  if (!solution) return <Navigate to={SOLUTIONS_URL} replace />;
+  }, [slug, dbSolutions]);
+  // a slug only the DB knows is not in the built-in list: wait for the DB
+  if (!solution) return dbSolutions === undefined ? null : <Navigate to={SOLUTIONS_URL} replace />;
 
   return (
     <>
@@ -108,7 +126,7 @@ export default function SolutionPage() {
                 <p className="sol-panel__title">{t("automationSolution.detailServices")}</p>
                 <ol className="sol-panel__list">
                   {services.map((svc, i) => (
-                    <li key={svc.title}>
+                    <li key={i}>
                       <Link
                         to={`#svc-${i}`}
                         className={`sol-panel__row${i === active ? " is-on" : ""}`}
@@ -127,7 +145,7 @@ export default function SolutionPage() {
 
               <div className="sol-scope__body">
                 {services.map((svc, i) => (
-                  <article className="sol-svc" id={`svc-${i}`} key={svc.title}>
+                  <article className="sol-svc" id={`svc-${i}`} key={i}>
                     <header className="sol-svc__head">
                       <span className="sol-svc__icon">
                         <Icon name={svc.icon} />
@@ -135,8 +153,8 @@ export default function SolutionPage() {
                       <h3>{svc.title}</h3>
                     </header>
                     <ul className={`sol-svc__list${svc.items.length > 3 ? " sol-svc__list--2col" : ""}`}>
-                      {svc.items.map((item) => (
-                        <li key={item}>
+                      {svc.items.map((item, n) => (
+                        <li key={n}>
                           <span className="sol-svc__tick" aria-hidden="true">
                             <ContactIcon name="check" size={14} />
                           </span>
@@ -154,8 +172,8 @@ export default function SolutionPage() {
             <div className="container">
               <SectionLabel title={t("automationSolution.detailBenefits")} />
               <ul className="sol-gains__list">
-                {detail.benefits.map((b) => (
-                  <li key={b.text}>
+                {detail.benefits.map((b, i) => (
+                  <li key={i}>
                     <Icon name={b.icon} />
                     <span className="sol-gains__text">
                       {b.text}

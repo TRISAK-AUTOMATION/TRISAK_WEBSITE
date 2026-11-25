@@ -40,6 +40,7 @@ import AdminCareerJobs from "./pages/admin/AdminCareerJobs.jsx";
 import AdminCareerApplications from "./pages/admin/AdminCareerApplications.jsx";
 import AdminFooterEditor from "./pages/admin/AdminFooterEditor.jsx";
 import AdminAutomationSolution from "./pages/admin/AdminAutomationSolution.jsx";
+import AdminSolutionPage from "./pages/admin/AdminSolutionPage.jsx";
 import AdminCustomers from "./pages/admin/AdminCustomers.jsx";
 import AdminIndustries from "./pages/admin/AdminIndustries.jsx";
 import AdminIndustryForm from "./pages/admin/AdminIndustryForm.jsx";
@@ -217,6 +218,7 @@ export default function App() {
           <Route path="career/applications" element={<AdminCareerApplications />} />
           <Route path="footer" element={<AdminFooterEditor />} />
           <Route path="automation-solution" element={<AdminAutomationSolution />} />
+          <Route path="automation-solution/:id" element={<AdminSolutionPage />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="industries" element={<AdminIndustries />} />
           <Route path="industries/new" element={<AdminIndustryForm />} />

@@ -1260,6 +1260,84 @@ export async function updateSolution(req, res) {
   }
 }
 
+// ---- a solution's own page (solutions.detail, migration 058) ----
+// Rebuilt field by field so only the known shape, bounded strings and safe
+// URLs are stored; returns { error } on anything else.
+const DETAIL_MAX_ROWS = 20;
+const DETAIL_MAX_ITEMS = 30;
+
+function sanitizeSolutionDetail(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { error: "detail must be an object" };
+  const text = (v, max, label) => {
+    if (v === undefined || v === null) return "";
+    if (typeof v !== "string") throw new Error(`${label} must be a string`);
+    const s = v.trim();
+    if (s.length > max) throw new Error(`${label} must be at most ${max} characters`);
+    return s;
+  };
+  const url = (v, label) => {
+    const s = text(v, 500, label);
+    if (s && !isSafeLinkUrl(s)) throw new Error(`${label} must be a path starting with "/" or an http(s) URL`);
+    return s;
+  };
+  // a built-in icon name, or an uploaded icon's URL
+  const icon = (v, label) => {
+    const s = text(v, 500, label);
+    if (s && !/^[a-z0-9-]{1,40}$/.test(s) && !isSafeLinkUrl(s)) throw new Error(`${label} is not a valid icon`);
+    return s || "check";
+  };
+  const list = (v, max, label) => {
+    if (v === undefined || v === null) return [];
+    if (!Array.isArray(v)) throw new Error(`${label} must be a list`);
+    if (v.length > max) throw new Error(`${label} can have at most ${max} entries`);
+    return v;
+  };
+  const strings = (v, label) => list(v, DETAIL_MAX_ITEMS, label).map((s, i) => text(s, 300, `${label} #${i + 1}`)).filter(Boolean);
+  try {
+    return {
+      detail: {
+        image: url(raw.image, "image"),
+        tagline_en: text(raw.tagline_en, 300, "tagline"),
+        tagline_th: text(raw.tagline_th, 300, "tagline (Thai)"),
+        services: list(raw.services, DETAIL_MAX_ROWS, "services").map((s, i) => ({
+          icon: icon(s?.icon, `service #${i + 1} icon`),
+          title_en: text(s?.title_en, 150, `service #${i + 1} title`),
+          title_th: text(s?.title_th, 150, `service #${i + 1} title (Thai)`),
+          items_en: strings(s?.items_en, `service #${i + 1} items`),
+          items_th: strings(s?.items_th, `service #${i + 1} items (Thai)`),
+        })),
+        benefits: list(raw.benefits, DETAIL_MAX_ROWS, "benefits").map((b, i) => ({
+          icon: icon(b?.icon, `benefit #${i + 1} icon`),
+          text_en: text(b?.text_en, 200, `benefit #${i + 1}`),
+          text_th: text(b?.text_th, 200, `benefit #${i + 1} (Thai)`),
+          desc_en: text(b?.desc_en, 400, `benefit #${i + 1} description`),
+          desc_th: text(b?.desc_th, 400, `benefit #${i + 1} description (Thai)`),
+        })),
+      },
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+export async function updateSolutionDetail(req, res) {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: "Invalid id" });
+  const parsed = sanitizeSolutionDetail(req.body?.detail);
+  if (parsed.error) return res.status(400).json({ error: parsed.error });
+  try {
+    const { rows } = await pool.query("UPDATE solutions SET detail = $1 WHERE id = $2 RETURNING *", [
+      JSON.stringify(parsed.detail),
+      req.params.id,
+    ]);
+    if (!rows.length) return res.status(404).json({ error: "Solution not found" });
+    logActivity("solution_edited", `แก้ไขหน้า Solution "${rows[0].name}"`);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to save solution page" });
+  }
+}
+
 export async function deleteSolution(req, res) {
   const { id } = req.params;
   try {

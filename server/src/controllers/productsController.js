@@ -416,7 +416,7 @@ export async function getProductBySlug(req, res) {
 export async function listSolutions(req, res) {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name, name_th, slug, summary, summary_th, services, services_th, benefits, benefits_th, image_url, image_position_x, image_position_y, related_url, related_label, related_label_th, brochure_url FROM solutions ORDER BY sort_order, id"
+      "SELECT id, name, name_th, slug, summary, summary_th, services, services_th, benefits, benefits_th, image_url, image_position_x, image_position_y, related_url, related_label, related_label_th, brochure_url, detail FROM solutions ORDER BY sort_order, id"
     );
     res.json(rows);
   } catch (err) {

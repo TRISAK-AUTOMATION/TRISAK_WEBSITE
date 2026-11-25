@@ -20,6 +20,8 @@ import { STEP_ICONS, parseProcessSteps } from "../AutomationSolution.jsx";
  * (pages/AutomationSolution.jsx), the same way Admin > Contact / History /
  * Home mirror theirs. Hero text and every Solution Block are edited in
  * place; one Save button stores the hero and every changed block.
+ * Each solution's own page (/automation-solution/:slug) is edited in
+ * AdminSolutionPage (/admin/automation-solution/:id).
  * The engineering process, industries and closing CTA are preview only.
  */
 
@@ -59,7 +61,7 @@ function emptyBlockForm() {
   };
 }
 
-function rowToBlockForm(row) {
+export function rowToBlockForm(row) {
   return {
     name: row.name || "", nameTh: row.name_th || "", summary: row.summary || "", summaryTh: row.summary_th || "",
     services: row.services || [], servicesTh: row.services_th || [],
@@ -72,7 +74,7 @@ function rowToBlockForm(row) {
 
 const cleanList = (list) => list.map((x) => x.trim()).filter(Boolean);
 
-function toPayload(f) {
+export function toPayload(f) {
   return {
     name: f.name.trim(), nameTh: f.nameTh.trim() || null, summary: f.summary.trim() || null, summaryTh: f.summaryTh.trim() || null,
     services: cleanList(f.services), servicesTh: cleanList(f.servicesTh),
@@ -89,10 +91,14 @@ const makeBlock = (row) => {
   const form = row ? rowToBlockForm(row) : emptyBlockForm();
   return { key: `b${nextKey++}`, id: row ? row.id : null, form, saved: row ? JSON.stringify(form) : "" };
 };
+export const SOLUTION_ADMIN_PATH = "/admin/automation-solution";
+// the admin sidebar lists one link per solution; tell it to reload after a change
+export const SOLUTIONS_CHANGED_EVENT = "admin-solutions-changed";
+export const notifySolutionsChanged = () => window.dispatchEvent(new Event(SOLUTIONS_CHANGED_EVENT));
 const isDirty = (b) => JSON.stringify(b.form) !== b.saved;
 
 /** Text box that takes the look of the element it sits in (font, colour, size). */
-function InlineInput({ multiline = false, rows = 2, ...props }) {
+export function InlineInput({ multiline = false, rows = 2, ...props }) {
   return multiline ? (
     <textarea className="home-admin__input" rows={rows} {...props} />
   ) : (
@@ -101,7 +107,7 @@ function InlineInput({ multiline = false, rows = 2, ...props }) {
 }
 
 /** Bar above a part of the page that is preview only or edited elsewhere. */
-function ManagedNote({ children }) {
+export function ManagedNote({ children }) {
   return <div className="home-admin__managed-note contact-admin__note">🔒 {children}</div>;
 }
 
@@ -152,7 +158,7 @@ function PdfUploadButton({ value, onChange }) {
  * the English items on the public page — those are shown faded, with a
  * one-click copy to start translating from.
  */
-function ListEditor({ items, fallback, onChange, renderBullet, addLabel, ulClassName }) {
+export function ListEditor({ items, fallback, onChange, renderBullet, addLabel, ulClassName }) {
   const usingFallback = !items.length && fallback.length > 0;
   return (
     <>
@@ -299,6 +305,7 @@ export default function AdminAutomationSolution() {
         [next[index], next[other]] = [next[other], next[index]];
         return next;
       });
+      notifySolutionsChanged();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -319,6 +326,7 @@ export default function AdminAutomationSolution() {
       await api.adminDeleteSolution(deleteTarget.id);
       setBlocks((list) => list.filter((b) => b.key !== deleteTarget.key));
       setDeleteTarget(null);
+      notifySolutionsChanged();
     } catch (err) {
       setDeleteError(err.message);
     } finally {
@@ -355,6 +363,7 @@ export default function AdminAutomationSolution() {
           : await api.adminCreateSolution(toPayload(b.form));
         const form = rowToBlockForm(row);
         setBlocks((list) => list.map((x) => (x.key === b.key ? { ...x, id: row.id, form, saved: JSON.stringify(form) } : x)));
+        notifySolutionsChanged();
       }
       setSuccess(true);
     } catch (err) {
@@ -480,6 +489,11 @@ export default function AdminAutomationSolution() {
                     {!b.id && <span className="career-admin__badge career-admin__badge--new">ใหม่ · ยังไม่บันทึก</span>}
                     {b.id && dirty && <span className="career-admin__badge career-admin__badge--dirty">มีการแก้ไข</span>}
                     <span className="sol-admin__bar-spacer" />
+                    {b.id && (
+                      <Link className="btn contact-admin__small-btn" to={`${SOLUTION_ADMIN_PATH}/${b.id}`}>
+                        ✎ แก้ไขหน้า Solution นี้
+                      </Link>
+                    )}
                     <button
                       type="button"
                       className="btn contact-admin__small-btn"
