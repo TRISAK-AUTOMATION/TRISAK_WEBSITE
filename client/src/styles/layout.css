@@ -306,6 +306,7 @@
 
 .site-header__cta {
   flex-shrink: 0;
+  border-radius: 999px; /* pill, like the home hero buttons */
 }
 
 .lang-toggle {
