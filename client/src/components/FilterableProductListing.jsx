@@ -57,7 +57,8 @@ export default function FilterableProductListing({
     Promise.all([api.getProducts({ sort: "newest" }), api.getCategoryTree(), api.getBrands()])
       .then(([products, rows, brandRows]) => {
         if (cancelled) return;
-        const prods = Array.isArray(products) ? products : [];
+        // product listings show only products with their own page; the rest live in the /products finder table
+        const prods = Array.isArray(products) ? products.filter((p) => p.has_page) : [];
         const tree = buildTree(Array.isArray(rows) ? rows : [], prods);
         const allBrands = Array.isArray(brandRows) ? brandRows : [];
         setData({

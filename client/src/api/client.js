@@ -335,6 +335,8 @@ export const api = {
   adminUpdateProduct: (id, payload) =>
     authRequest(`/admin/products/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   adminDeleteProduct: (id) => authRequest(`/admin/products/${id}`, { method: "DELETE" }),
+  adminSetProductHasPage: (id, hasPage) =>
+    authRequest(`/admin/products/${id}/page`, { method: "PUT", body: JSON.stringify({ hasPage }) }),
 
   // ---- product PDF documents ----
   getProductDocuments: (productId) => request(`/products/${productId}/documents`),

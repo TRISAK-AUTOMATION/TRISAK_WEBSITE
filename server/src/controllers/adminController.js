@@ -623,7 +623,7 @@ export async function uploadImage(req, res) {
 export async function listProductsAdmin(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.image_url, p.is_new, p.sort_order, p.updated_at,
+      `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.image_url, p.is_new, p.has_page, p.sort_order, p.updated_at,
               p.availability_status, p.status_updated_at,
               p.brand_id, p.category_id, p.replacement_product_id,
               b.name AS brand, c.name AS category, s.name AS series,
@@ -633,7 +633,7 @@ export async function listProductsAdmin(req, res) {
               ) AS has_datasheet
        FROM products p
        JOIN brands b ON b.id = p.brand_id
-       JOIN categories c ON c.id = p.category_id
+       LEFT JOIN categories c ON c.id = p.category_id
        LEFT JOIN series s ON s.id = p.series_id
        ORDER BY p.sort_order`
     );
@@ -879,8 +879,8 @@ export async function createProduct(req, res) {
     const { rows } = await client.query(
       `INSERT INTO products
         (name, slug, brand_id, category_id, series_id, model, short_description, description, features, image_url, is_new, sort_order,
-         item_status, status_note, replacement_product_id, status_updated_at, item_no)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now(),$16)
+         item_status, status_note, replacement_product_id, status_updated_at, item_no, has_page)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now(),$16,$17)
        RETURNING id`,
       [
         body.name,
@@ -899,6 +899,7 @@ export async function createProduct(req, res) {
         avail.provided ? avail.note : null,
         avail.provided ? avail.replacementId : null,
         identity.itemNo,
+        Boolean(body.hasPage),
       ]
     );
     const productId = rows[0].id;
@@ -957,7 +958,8 @@ export async function updateProduct(req, res) {
         image_url = $10, is_new = $11, sort_order = $12, updated_at = now(),
         item_status = $14, status_note = $15, replacement_product_id = $16,
         status_updated_at = CASE WHEN $17 THEN now() ELSE status_updated_at END,
-        item_no = $18
+        item_no = $18,
+        has_page = COALESCE($19, has_page)
        WHERE id = $13`,
       [
         body.name,
@@ -978,6 +980,7 @@ export async function updateProduct(req, res) {
         nextReplacement,
         statusChanged,
         identity.itemNo,
+        typeof body.hasPage === "boolean" ? body.hasPage : null, // not sent → keep
       ]
     );
     if (result.rowCount === 0) {
@@ -1004,6 +1007,26 @@ export async function updateProduct(req, res) {
     res.status(err.status || 400).json({ error: err.message });
   } finally {
     if (client) client.release();
+  }
+}
+
+// Give a product its own page, or take it away (it stays a finder-table row).
+export async function setProductHasPage(req, res) {
+  const { id } = req.params;
+  const hasPage = req.body?.hasPage;
+  if (!/^\d+$/.test(id)) return res.status(400).json({ error: "Invalid product id" });
+  if (typeof hasPage !== "boolean") return res.status(400).json({ error: "hasPage must be true or false" });
+  try {
+    const { rows } = await pool.query(
+      "UPDATE products SET has_page = $1, updated_at = now() WHERE id = $2 RETURNING name",
+      [hasPage, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Product not found" });
+    logActivity("product_edited", `${hasPage ? "เปิด" : "ปิด"}หน้าสินค้า "${rows[0].name}"`);
+    res.json({ id: Number(id), hasPage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update product" });
   }
 }
 

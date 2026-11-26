@@ -236,7 +236,8 @@ export default function App() {
           <Route path="series/new" element={<AdminSeriesForm />} />
           <Route path="series/:id/edit" element={<AdminSeriesForm />} />
 
-          <Route path="products" element={<AdminProducts />} />
+          <Route path="products" element={<AdminProducts key="catalog" />} />
+          <Route path="product-pages" element={<AdminProducts key="pages" pagesOnly />} />
           <Route path="products/new" element={<AdminProductForm />} />
           <Route path="products/import" element={<AdminProductImport />} />
           <Route path="products/:id/edit" element={<AdminProductForm />} />

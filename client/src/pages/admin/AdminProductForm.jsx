@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { api } from "../../api/client.js";
 import ImageUploadField from "../../components/ImageUploadField.jsx";
 import AdminBreadcrumb from "../../components/AdminBreadcrumb.jsx";
@@ -19,6 +19,7 @@ const emptyForm = {
   description: "",
   imageUrl: "",
   isNew: false,
+  hasPage: false, // own product page; false = /products finder-table row only
   features: [],
   images: [],
   specs: [],
@@ -54,7 +55,9 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
 
-  const [form, setForm] = useState(emptyForm);
+  const [searchParams] = useSearchParams();
+  // "+ เพิ่ม" on the product-pages list opens /admin/products/new?page=1
+  const [form, setForm] = useState(() => ({ ...emptyForm, hasPage: searchParams.get("page") === "1" }));
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [seriesList, setSeriesList] = useState([]);
@@ -91,6 +94,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
           description: p.description || "",
           imageUrl: p.image_url || "",
           isNew: p.is_new || false,
+          hasPage: Boolean(p.has_page),
           features: p.features || [],
           images: p.images?.map((i) => ({ imageUrl: i.image_url, sortOrder: i.sort_order })) || [],
           specs: p.specs?.map((s) => ({ label: s.label, value: s.value, sortOrder: s.sort_order })) || [],
@@ -208,7 +212,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
       if (embedded) {
         onSaved?.();
       } else {
-        navigate("/admin/products");
+        navigate(form.hasPage ? "/admin/product-pages" : "/admin/products");
       }
     } catch (err) {
       setError(saveErrorMessage(err));
@@ -364,6 +368,14 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
                 onChange={(e) => updateField("isNew", e.target.checked)}
               />
               <span>Mark as "NEW"</span>
+            </label>
+            <label className="admin-form__checkbox">
+              <input
+                type="checkbox"
+                checked={form.hasPage}
+                onChange={(e) => updateField("hasPage", e.target.checked)}
+              />
+              <span>มีหน้าสินค้าของตัวเอง (ไม่ติ๊ก = แสดงในตารางค้นหาสินค้าเท่านั้น)</span>
             </label>
           </div>
         </div>
@@ -599,7 +611,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
     <>
       <AdminBreadcrumb
         items={[
-          { label: "รายการ", to: "/admin/products" },
+          { label: "ตารางสินค้า", to: "/admin/products" },
           { label: isEdit ? "แก้ไข" : "เพิ่ม" },
         ]}
       />

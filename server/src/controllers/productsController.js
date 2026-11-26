@@ -224,14 +224,14 @@ export async function getSeries(req, res) {
 }
 
 const PRODUCT_LIST_SELECT = `
-  SELECT p.id, p.name, p.slug, p.item_no, p.model, p.short_description, p.image_url, p.is_new,
+  SELECT p.id, p.name, p.slug, p.item_no, p.model, p.short_description, p.image_url, p.is_new, p.has_page,
          p.availability_status,
          b.name AS brand, b.slug AS brand_slug,
          c.id AS category_id, c.name AS category, c.slug AS category_slug,
          s.name AS series, s.slug AS series_slug
   FROM products p
   JOIN brands b ON b.id = p.brand_id
-  JOIN categories c ON c.id = p.category_id
+  LEFT JOIN categories c ON c.id = p.category_id
   LEFT JOIN series s ON s.id = p.series_id
 `;
 
@@ -245,7 +245,7 @@ const CATEGORY_SUBTREE_IDS = (where) => `
   SELECT id FROM subtree`;
 
 export async function listProducts(req, res) {
-  const { brand, category, categoryId, series, q, sort, limit } = req.query;
+  const { brand, category, categoryId, series, q, sort, limit, isNew } = req.query;
   const conditions = ["b.is_active = true", "c.is_active = true", "(s.id IS NULL OR s.is_active = true)"];
   const values = [];
   let query = PRODUCT_LIST_SELECT;
@@ -267,6 +267,8 @@ export async function listProducts(req, res) {
     values.push(category);
     conditions.push(`c.id IN (${CATEGORY_SUBTREE_IDS(`slug = $${values.length}`)})`);
   }
+  // isNew=1 → only new products that have their own page (the "latest products" carousel)
+  if (isNew === "1") conditions.push("p.is_new = true AND p.has_page = true");
   if (series) {
     values.push(series);
     conditions.push(`s.slug = $${values.length}`);
@@ -327,7 +329,7 @@ export async function getProductBySlug(req, res) {
               s.name AS series, s.slug AS series_slug
        FROM products p
        JOIN brands b ON b.id = p.brand_id
-       JOIN categories c ON c.id = p.category_id
+       LEFT JOIN categories c ON c.id = p.category_id
        LEFT JOIN series s ON s.id = p.series_id
        WHERE p.slug = $1`,
       [slug]
@@ -340,7 +342,7 @@ export async function getProductBySlug(req, res) {
          FROM product_slug_history h
          JOIN products p ON p.id = h.product_id
          JOIN brands b ON b.id = p.brand_id
-         JOIN categories c ON c.id = p.category_id
+         LEFT JOIN categories c ON c.id = p.category_id
          LEFT JOIN series s ON s.id = p.series_id
          WHERE h.old_slug = $1`,
         [slug]
@@ -361,7 +363,7 @@ export async function getProductBySlug(req, res) {
          FROM products p
          LEFT JOIN series s ON s.id = p.series_id
          JOIN brands b ON b.id = p.brand_id
-         JOIN categories c ON c.id = p.category_id
+         LEFT JOIN categories c ON c.id = p.category_id
          WHERE p.id = $1`,
         [product.replacement_product_id]
       );
@@ -390,7 +392,7 @@ export async function getProductBySlug(req, res) {
          JOIN products p ON p.id = rp.related_product_id
          LEFT JOIN series s ON s.id = p.series_id
          JOIN brands b ON b.id = p.brand_id
-         JOIN categories c ON c.id = p.category_id
+         LEFT JOIN categories c ON c.id = p.category_id
          WHERE rp.product_id = $1`,
         [product.id]
       ),

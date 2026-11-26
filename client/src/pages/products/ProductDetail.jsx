@@ -21,6 +21,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [movedTo, setMovedTo] = useState(null); // product URL changed (ITEM NO edited): follow the redirect
+  const [tableHref, setTableHref] = useState(null); // no own page: show it in the /products finder table
 
   // productSlug may be undefined when the route has no series segment —
   // App.jsx registers both patterns and passes whichever slug is present.
@@ -30,6 +31,7 @@ export default function ProductDetail() {
     setLoading(true);
     setNotFound(false);
     setMovedTo(null);
+    setTableHref(null);
     setActiveTab("overview");
     setActiveImage(0);
     api
@@ -37,6 +39,10 @@ export default function ProductDetail() {
       .then(async (p) => {
         if (p.redirectTo) {
           setMovedTo(p.redirectTo);
+          return;
+        }
+        if (p.has_page === false) {
+          setTableHref(`/products?q=${encodeURIComponent(p.item_no || p.name)}#products-finder`);
           return;
         }
         const crumb = await api.getCategoryBreadcrumb(p.category_id);
@@ -48,6 +54,7 @@ export default function ProductDetail() {
   }, [slug]);
 
   if (movedTo) return <Navigate to={productHref(movedTo)} replace />;
+  if (tableHref) return <Navigate to={tableHref} replace />;
   if (notFound) return <Navigate to={`/products/${brandSlug}/${categorySlug}`} replace />;
   if (loading || !product) {
     return (

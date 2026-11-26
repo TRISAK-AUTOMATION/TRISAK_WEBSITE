@@ -6,14 +6,13 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 // ============================================================
 // Product Management — Excel Import/Export.
 //
-// Excel only ever carries the product's *data* fields (name, slug,
-// taxonomy, description, features, specs) — never images. Images stay
-// on the individual product's Edit page, managed one product at a
-// time (see adminController.js products section), which also keeps
-// the door open for a future bulk-image workflow keyed by
-// Slug/Model without touching this format.
+// The import fills the catalog table (/products finder): it reads only
+// Item No., Item Description (the product name), Brand and Item Status, plus an
+// optional Category (left empty when blank). Every other product field
+// (series, model, descriptions, features, specs, images, documents) is
+// managed on the product's Edit page and never touched by an import.
 //
-// ITEM NO is the import's key. The first column (header "Slug", or "ITEM NO")
+// ITEM NO is the import's key. The "Item No." column (or "Slug")
 // holds the product's ITEM NO, kept exactly as written in products.item_no
 // (spaces and letter case preserved). The product URL slug is generated from
 // it: trimmed, whitespace runs -> one hyphen ("CIMR JT2A0010BAA" ->
@@ -36,10 +35,8 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 //   4. otherwise                                            -> new product
 // In the file itself, duplicate ITEM NOs and different ITEM NOs that generate
 // the same slug are both reported (only the first row proceeds).
-// Only the columns below are ever written — image_url, product_images,
-// product_documents, related_products, is_new, and sort_order are
-// left exactly as they were on update, and default to empty/false/
-// next-in-line on create.
+// On update only name, brand, ITEM NO, Item Status and (when given) category
+// are written; on create the rest default to empty.
 //
 // STATUS: the required "Item Status" column is the only status value read from
 // Excel. It is stored in products.item_status and exported unchanged; the
@@ -54,28 +51,25 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 // import never sets, changes or clears them.
 // ============================================================
 
-// Single source of truth for the column ORDER of the Excel export, the
-// downloadable import template and the import preview. Import never relies on
-// it: values are mapped by column header, so files with any column order (or
-// "ITEM NO" in place of "Slug") still import.
-export const PRODUCT_EXCEL_COLUMNS = [
-  "Slug", // = ITEM NO
-  "Name",
-  "Brand",
-  "Category",
-  "Series",
-  "Model",
-  "Short Description",
-  "Description",
-  "Features",
-  "Specifications",
-  "Item Status", // Active | Discontinued
-];
-
-// Every column must be present on import ("Item Status" may be spelled as any
-// of ITEM_STATUS_ALIASES).
-export const IMPORT_COLUMNS = PRODUCT_EXCEL_COLUMNS;
-const ITEM_STATUS_ALIASES = ["item status", "itemstatus", "item_status"];
+// Internal field key -> Excel header used by the export / template, in column
+// order. Import maps values by header (any order), accepting COLUMN_ALIASES.
+const EXCEL_HEADERS = {
+  Slug: "Item No.", // = ITEM NO
+  Name: "Item Description",
+  Brand: "Brand",
+  Category: "Category",
+  "Item Status": "Item Status", // Active | Discontinued
+};
+export const PRODUCT_EXCEL_COLUMNS = Object.values(EXCEL_HEADERS);
+// normalized header names, first match wins
+const COLUMN_ALIASES = {
+  Slug: ["item no.", "item no", "itemno", "item_no", "item-no", "slug"],
+  Name: ["item description", "name"],
+  Brand: ["brand"],
+  Category: ["category"],
+  "Item Status": ["item status", "itemstatus", "item_status"],
+};
+const REQUIRED_COLUMNS = ["Slug", "Name", "Brand", "Item Status"]; // Category is optional
 
 const ITEM_STATUSES = ["Active", "Discontinued"];
 
@@ -84,14 +78,6 @@ function websiteStatus(itemStatus, hasReplacement) {
   if (itemStatus !== "Discontinued") return "available";
   return hasReplacement ? "replacement_available" : "discontinued";
 }
-
-// Multiple Features / Specifications entries live in one cell,
-// separated by " | " — easier to type and read in a spreadsheet cell
-// than embedded line breaks. Each Specifications entry is "Label: Value".
-const LIST_SEPARATOR = " | ";
-// Header aliases (matched case-insensitively, whitespace collapsed) that map to the
-// internal Slug field. ITEM NO is preferred over a plain "Slug" column.
-const ITEM_NO_ALIASES = ["item no", "item no.", "itemno", "item_no", "item-no"];
 
 function normalizeHeader(s) {
   return (s || "").toString().trim().toLowerCase();
@@ -109,35 +95,6 @@ function cellText(value) {
     return "";
   }
   return String(value).trim();
-}
-
-function parseListField(raw) {
-  return (raw || "")
-    .toString()
-    .split("|")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function parseSpecsField(raw) {
-  return parseListField(raw)
-    .map((pair) => {
-      const idx = pair.indexOf(":");
-      if (idx === -1) return null;
-      const label = pair.slice(0, idx).trim();
-      const value = pair.slice(idx + 1).trim();
-      if (!label || !value) return null;
-      return { label, value };
-    })
-    .filter(Boolean);
-}
-
-function formatListField(arr) {
-  return (arr || []).join(LIST_SEPARATOR);
-}
-
-function formatSpecsField(specs) {
-  return (specs || []).map((s) => `${s.label}: ${s.value}`).join(LIST_SEPARATOR);
 }
 
 /**
@@ -167,10 +124,9 @@ function registerProduct(lookups, p) {
 }
 
 async function loadLookups() {
-  const [brandsRes, categoriesRes, seriesRes, productsRes, historyRes] = await Promise.all([
+  const [brandsRes, categoriesRes, productsRes, historyRes] = await Promise.all([
     pool.query("SELECT id, name FROM brands"),
     pool.query("SELECT id, name FROM categories"),
-    pool.query("SELECT id, name, brand_id, category_id FROM series"),
     pool.query("SELECT id, slug, item_no, availability_status, replacement_product_id FROM products"),
     pool.query(
       `SELECT h.old_slug, p.slug AS current_slug, p.item_no
@@ -180,9 +136,6 @@ async function loadLookups() {
   const lookups = {
     brandsByName: new Map(brandsRes.rows.map((b) => [normalizeHeader(b.name), b.id])),
     categoriesByName: new Map(categoriesRes.rows.map((c) => [normalizeHeader(c.name), c.id])),
-    seriesByKey: new Map(
-      seriesRes.rows.map((s) => [`${s.brand_id}::${s.category_id}::${normalizeHeader(s.name)}`, s.id])
-    ),
     byItemNoKey: new Map(), // lower-cased item_no -> { id, slug, item_no }
     bySlug: new Map(), // exact slug -> { id, slug, item_no }
     bySlugKey: new Map(), // lower-cased slug -> same entry (case-only collisions)
@@ -237,14 +190,8 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
   const slugKey = generatedSlug.toLowerCase();
   const brandName = (raw.Brand || "").toString().trim();
   const categoryName = (raw.Category || "").toString().trim();
-  const seriesName = (raw.Series || "").toString().trim();
-  const model = (raw.Model || "").toString().trim();
-  const shortDescription = (raw["Short Description"] || "").toString().trim();
-  const description = (raw.Description || "").toString().trim();
-  const features = parseListField(raw.Features);
-  const specs = parseSpecsField(raw.Specifications);
 
-  if (!name) errors.push("Name is required");
+  if (!name) errors.push("Item Description is required");
 
   // ---- ITEM NO / slug ----
   let target = null; // existing product this row updates
@@ -324,9 +271,6 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
       }
     }
   }
-  if (raw._slugColumn && raw._slugColumn !== itemNo) {
-    warnings.push(`The file has both ITEM NO and Slug columns — ITEM NO "${itemNo}" is used, Slug "${raw._slugColumn}" is ignored`);
-  }
   // An updated product keeps its own slug (URL); a new one gets the generated slug.
   const slug = target ? target.slug : generatedSlug;
 
@@ -337,21 +281,12 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
     if (!brandId) errors.push(`Brand "${brandName}" was not found`);
   }
 
+  // optional: blank (or unknown) leaves the category empty on a new product and
+  // unchanged on an existing one
   let categoryId = null;
-  if (!categoryName) errors.push("Category is required");
-  else {
+  if (categoryName) {
     categoryId = lookups.categoriesByName.get(normalizeHeader(categoryName)) || null;
-    if (!categoryId) errors.push(`Category "${categoryName}" was not found`);
-  }
-
-  let seriesId = null;
-  if (seriesName) {
-    if (brandId && categoryId) {
-      seriesId = lookups.seriesByKey.get(`${brandId}::${categoryId}::${normalizeHeader(seriesName)}`) || null;
-      if (!seriesId) warnings.push(`Series "${seriesName}" was not found for this Brand/Category — left blank`);
-    } else {
-      warnings.push(`Series "${seriesName}" could not be checked because Brand/Category is invalid`);
-    }
+    if (!categoryId) warnings.push(`Category "${categoryName}" was not found — left blank`);
   }
 
   const exists = Boolean(target);
@@ -376,18 +311,11 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
   return {
     rowNumber,
     raw: {
-      // same order as the Excel columns (PRODUCT_EXCEL_COLUMNS)
+      // same order as the Excel columns (EXCEL_HEADERS)
       Slug: itemNo,
-      ...(raw._slugColumn ? { _slugColumn: raw._slugColumn } : {}),
       Name: name,
       Brand: brandName,
       Category: categoryName,
-      Series: seriesName,
-      Model: model,
-      "Short Description": shortDescription,
-      Description: description,
-      Features: (raw.Features || "").toString(),
-      Specifications: (raw.Specifications || "").toString(),
       "Item Status": (raw["Item Status"] ?? "").toString().trim(),
     },
     resolved: {
@@ -397,12 +325,6 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
       existingId: target ? target.id : null,
       brandId,
       categoryId,
-      seriesId,
-      model,
-      shortDescription,
-      description,
-      features,
-      specs,
     },
     availability,
     action,
@@ -415,26 +337,22 @@ async function readWorkbookRows(buffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
   const sheet = workbook.worksheets[0];
-  if (!sheet) return { missingColumns: IMPORT_COLUMNS, rows: [], slugSource: "Slug" };
+  if (!sheet) return { missingColumns: REQUIRED_COLUMNS.map((k) => EXCEL_HEADERS[k]), rows: [] };
 
   const headerMap = {}; // normalized header -> column index
   sheet.getRow(1).eachCell({ includeEmpty: false }, (cell, colNumber) => {
     headerMap[normalizeHeader(cellText(cell.value)).replace(/\s+/g, " ")] = colNumber;
   });
 
-  // ITEM NO (preferred) or Slug supplies the internal Slug field.
-  const itemNoKey = ITEM_NO_ALIASES.find((a) => a in headerMap);
-  const slugColIdx = itemNoKey ? headerMap[itemNoKey] : headerMap.slug;
-  const otherSlugColIdx = itemNoKey && "slug" in headerMap ? headerMap.slug : null;
-  const slugSource = itemNoKey ? "ITEM NO" : "Slug";
+  // field key -> column index; other columns in the file are ignored
+  const columns = {};
+  for (const [key, aliases] of Object.entries(COLUMN_ALIASES)) {
+    const alias = aliases.find((a) => a in headerMap);
+    if (alias) columns[key] = headerMap[alias];
+  }
+  const slugSource = "slug" in headerMap && columns.Slug === headerMap.slug ? "Slug" : "ITEM NO";
 
-  const itemStatusKey = ITEM_STATUS_ALIASES.find((a) => a in headerMap);
-  const columnIndex = (col) =>
-    col === "Slug" ? slugColIdx : col === "Item Status" ? headerMap[itemStatusKey] : headerMap[normalizeHeader(col)];
-
-  const missingColumns = IMPORT_COLUMNS.filter((col) => columnIndex(col) === undefined).map((col) =>
-    col === "Slug" ? "Slug (or ITEM NO)" : col
-  );
+  const missingColumns = REQUIRED_COLUMNS.filter((key) => columns[key] === undefined).map((key) => EXCEL_HEADERS[key]);
   if (missingColumns.length) return { missingColumns, rows: [] };
 
   const rows = [];
@@ -442,15 +360,12 @@ async function readWorkbookRows(buffer) {
     if (rowNumber === 1) return; // header row
     const raw = {};
     let hasAny = false;
-    for (const col of IMPORT_COLUMNS) {
-      const val = cellText(row.getCell(columnIndex(col)).value);
-      raw[col] = val;
+    for (const [key, colNumber] of Object.entries(columns)) {
+      const val = cellText(row.getCell(colNumber).value);
+      raw[key] = val;
       if (val) hasAny = true;
     }
-    if (hasAny) {
-      if (otherSlugColIdx) raw._slugColumn = cellText(row.getCell(otherSlugColIdx).value);
-      rows.push({ rowNumber, raw });
-    }
+    if (hasAny) rows.push({ rowNumber, raw });
   });
 
   return { missingColumns: [], rows, slugSource };
@@ -460,16 +375,10 @@ async function readWorkbookRows(buffer) {
 
 function columnWidth(header) {
   const widths = {
-    Name: 28,
-    Slug: 24,
+    "Item No.": 24,
+    "Item Description": 40,
     Brand: 16,
     Category: 18,
-    Series: 18,
-    Model: 18,
-    "Short Description": 32,
-    Description: 44,
-    Features: 44,
-    Specifications: 44,
     "Item Status": 14,
   };
   return widths[header] || 20;
@@ -477,25 +386,13 @@ function columnWidth(header) {
 
 export async function exportProductsExcel(req, res) {
   try {
-    const [productsRes, specsRes] = await Promise.all([
-      pool.query(
-        `SELECT p.id, p.name, p.slug, p.item_no, p.model, p.short_description, p.description, p.features,
-                p.item_status,
-                b.name AS brand, c.name AS category, s.name AS series
-         FROM products p
-         JOIN brands b ON b.id = p.brand_id
-         JOIN categories c ON c.id = p.category_id
-         LEFT JOIN series s ON s.id = p.series_id
-         ORDER BY p.sort_order`
-      ),
-      pool.query("SELECT product_id, label, value FROM product_specs ORDER BY product_id, sort_order"),
-    ]);
-
-    const specsByProduct = new Map();
-    for (const s of specsRes.rows) {
-      if (!specsByProduct.has(s.product_id)) specsByProduct.set(s.product_id, []);
-      specsByProduct.get(s.product_id).push({ label: s.label, value: s.value });
-    }
+    const productsRes = await pool.query(
+      `SELECT p.name, p.slug, p.item_no, p.item_status, b.name AS brand, c.name AS category
+       FROM products p
+       JOIN brands b ON b.id = p.brand_id
+       LEFT JOIN categories c ON c.id = p.category_id
+       ORDER BY p.sort_order`
+    );
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "TRISAK GROUP Admin";
@@ -506,7 +403,7 @@ export async function exportProductsExcel(req, res) {
       key: header,
       width: columnWidth(header),
       // ITEM NO is text: keeps leading zeros when the file is edited and re-imported
-      ...(header === "Slug" ? { style: { numFmt: "@" } } : {}),
+      ...(header === EXCEL_HEADERS.Slug ? { style: { numFmt: "@" } } : {}),
     }));
     sheet.getRow(1).font = { bold: true };
     sheet.views = [{ state: "frozen", ySplit: 1 }];
@@ -515,16 +412,10 @@ export async function exportProductsExcel(req, res) {
       sheet.addRow({
         // the original ITEM NO; legacy products without one fall back to their slug,
         // so the file still re-imports onto the same product
-        Slug: p.item_no || p.slug,
-        Name: p.name,
+        [EXCEL_HEADERS.Slug]: p.item_no || p.slug,
+        [EXCEL_HEADERS.Name]: p.name,
         Brand: p.brand,
-        Category: p.category,
-        Series: p.series || "",
-        Model: p.model || "",
-        "Short Description": p.short_description || "",
-        Description: p.description || "",
-        Features: formatListField(p.features),
-        Specifications: formatSpecsField(specsByProduct.get(p.id) || []),
+        Category: p.category || "",
         "Item Status": p.item_status, // stored as-is: Active | Discontinued
       });
     }
@@ -557,7 +448,7 @@ export async function downloadProductImportTemplate(req, res) {
       header,
       key: header,
       width: columnWidth(header),
-      ...(header === "Slug" ? { style: { numFmt: "@" } } : {}), // text: keep leading zeros
+      ...(header === EXCEL_HEADERS.Slug ? { style: { numFmt: "@" } } : {}), // text: keep leading zeros
     }));
     sheet.getRow(1).font = { bold: true };
     sheet.views = [{ state: "frozen", ySplit: 1 }];
@@ -577,13 +468,11 @@ export async function downloadProductImportTemplate(req, res) {
     const help = workbook.addWorksheet("Instructions");
     help.columns = [{ width: 24 }, { width: 100 }];
     const notes = [
-      ["Slug", "Required. The product's ITEM NO, stored exactly as written (a column named ITEM NO is also accepted). It may contain letters, numbers, spaces and hyphens only. The product's URL slug is generated from it: spaces become hyphens (CIMR JT2A0010BAA -> CIMR-JT2A0010BAA). Must be unique in the file, and so must the generated slug. A product with the same ITEM NO is updated; a new ITEM NO creates a product. Different ITEM NOs are never merged."],
-      ["Name", "Required."],
-      ["Brand / Category", "Required. Must match an existing brand / category name."],
-      ["Series / Model", "Optional. Series must exist for that Brand/Category, otherwise it is left blank."],
-      ["Short Description / Description", "Optional text."],
-      ["Features", 'Separate entries with " | ".'],
-      ["Specifications", 'Separate entries with " | "; each entry is "Label: Value".'],
+      ["Item No.", "Required. The product's ITEM NO, stored exactly as written. It may contain letters, numbers, spaces and hyphens only. The product's URL slug is generated from it: spaces become hyphens (CIMR JT2A0010BAA -> CIMR-JT2A0010BAA). Must be unique in the file, and so must the generated slug. A product with the same ITEM NO is updated; a new ITEM NO creates a product. Different ITEM NOs are never merged."],
+      ["Item Description", "Required. The product name."],
+      ["Brand", "Required. Must match an existing brand name."],
+      ["Category", "Optional. Must match an existing category name; blank (or not found) leaves it empty on a new product and unchanged on an existing one."],
+      ["Other columns", "Ignored. Series, model, descriptions, features, specifications, images and documents are edited on the product's page in admin."],
       ["Item Status", "Required: Active or Discontinued. It sets the product status on the website: Active → Available; Discontinued → Discontinued, or Replacement Available when an admin has linked a replacement product. A new product without a valid Item Status is not imported; an existing one keeps its current status and is flagged for review. Replacement products are managed by admins and are never changed by an import."],
       ["Column order", "Columns are matched by header name, so their order in your file does not matter."],
     ];
@@ -713,29 +602,20 @@ export async function commitProductImport(req, res) {
 
         let productId;
         if (existingId) {
-          // Only the Excel-managed fields are touched — image_url,
-          // product_images, product_documents, related_products,
-          // is_new, and sort_order are left exactly as they were.
+          // Only the Excel-managed fields are touched; a blank Category keeps the stored one.
           await client.query(
             `UPDATE products SET
-               name = $1, brand_id = $2, category_id = $3, series_id = $4,
-               model = $5, short_description = $6, description = $7, features = $8,
-               item_no = $9, updated_at = now()
-             WHERE id = $10`,
+               name = $1, brand_id = $2, category_id = COALESCE($3, category_id),
+               item_no = $4, updated_at = now()
+             WHERE id = $5`,
             [
               r.name,
               r.brandId,
               r.categoryId,
-              r.seriesId,
-              r.model || null,
-              r.shortDescription || null,
-              r.description || null,
-              r.features,
               r.itemNo, // same value on a normal update; recorded once on a legacy product
               existingId,
             ]
           );
-          await client.query("DELETE FROM product_specs WHERE product_id = $1", [existingId]);
           productId = existingId;
         } else {
           const { rows: maxRows } = await client.query(
@@ -743,21 +623,9 @@ export async function commitProductImport(req, res) {
           );
           const insertRes = await client.query(
             `INSERT INTO products
-               (name, slug, brand_id, category_id, series_id, model, short_description, description, features, sort_order, item_no)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-            [
-              r.name,
-              r.slug,
-              r.brandId,
-              r.categoryId,
-              r.seriesId,
-              r.model || null,
-              r.shortDescription || null,
-              r.description || null,
-              r.features,
-              maxRows[0].n,
-              r.itemNo,
-            ]
+               (name, slug, brand_id, category_id, sort_order, item_no)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+            [r.name, r.slug, r.brandId, r.categoryId, maxRows[0].n, r.itemNo]
           );
           productId = insertRes.rows[0].id;
         }
@@ -772,13 +640,6 @@ export async function commitProductImport(req, res) {
                status_updated_at = CASE WHEN $2 THEN now() ELSE status_updated_at END
              WHERE id = $3`,
             [availability.itemStatus, availability.changed, productId]
-          );
-        }
-
-        for (const [i, spec] of r.specs.entries()) {
-          await client.query(
-            "INSERT INTO product_specs (product_id, label, value, sort_order) VALUES ($1,$2,$3,$4)",
-            [productId, spec.label, spec.value, i]
           );
         }
 

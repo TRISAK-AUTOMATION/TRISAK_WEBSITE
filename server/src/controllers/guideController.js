@@ -178,7 +178,7 @@ export async function resolveGuidePath(req, res) {
         (
           await pool.query(
             `SELECT p.series_id, c.slug AS category_slug FROM products p
-             JOIN categories c ON c.id = p.category_id
+             LEFT JOIN categories c ON c.id = p.category_id
              WHERE ${where} LIMIT 1`,
             [third]
           )
