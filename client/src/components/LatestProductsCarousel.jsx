@@ -65,7 +65,7 @@ export default function LatestProductsCarousel() {
     let cancelled = false;
     setStatus("loading");
     api
-      .getProducts({ sort: "newest", limit: FETCH_LIMIT })
+      .getProducts({ sort: "newest", limit: FETCH_LIMIT, isNew: 1 })
       .then((rows) => {
         if (cancelled) return;
         setProducts(Array.isArray(rows) ? rows : []);

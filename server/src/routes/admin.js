@@ -40,6 +40,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  setProductHasPage,
   listSolutionsAdmin,
   getSolutionAdmin,
   createSolution,
@@ -256,6 +257,7 @@ router.post("/admin/products/import/commit", commitProductImport);
 router.get("/admin/products/:id", getProductAdmin);
 router.post("/admin/products", createProduct);
 router.put("/admin/products/:id", updateProduct);
+router.put("/admin/products/:id/page", setProductHasPage);
 router.delete("/admin/products/:id", deleteProduct);
 router.post(
   "/admin/products/:productId/documents",

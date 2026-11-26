@@ -62,7 +62,8 @@ const NAV_SECTIONS = [
       { label: "แบรนด์", to: "/admin/brands" },
       { label: "หมวดหมู่", to: "/admin/categories" },
       { label: "ซีรีย์", to: "/admin/series" },
-      { label: "รายการ", to: "/admin/products" },
+      { label: "ตารางสินค้า (Catalog)", to: "/admin/products" },
+      { label: "หน้าสินค้าใหม่", to: "/admin/product-pages" },
     ],
   },
   {

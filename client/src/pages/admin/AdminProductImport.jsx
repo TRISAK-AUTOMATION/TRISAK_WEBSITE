@@ -12,16 +12,10 @@ const ACTION_LABELS = {
 
 // Preview columns, in the same order as the Excel export / import template.
 const PREVIEW_COLUMNS = [
-  { key: "Slug" },
-  { key: "Name" },
+  { key: "Slug", label: "Item No." },
+  { key: "Name", label: "Item Description" },
   { key: "Brand" },
   { key: "Category" },
-  { key: "Series" },
-  { key: "Model" },
-  { key: "Short Description", long: true },
-  { key: "Description", long: true },
-  { key: "Features", long: true },
-  { key: "Specifications", long: true },
   { key: "Item Status" },
 ];
 
@@ -103,12 +97,12 @@ export default function AdminProductImport() {
   return (
     <>
       <AdminBreadcrumb
-        items={[{ label: "รายการ", to: "/admin/products" }, { label: "นำเข้าจาก Excel" }]}
+        items={[{ label: "ตารางสินค้า", to: "/admin/products" }, { label: "นำเข้าจาก Excel" }]}
       />
 
       <div className="admin-edit-notice" style={{ marginBottom: 20 }}>
         📄 อัปโหลดไฟล์ Excel (.xlsx) เพื่อเพิ่ม/อัปเดตสินค้าหลายรายการพร้อมกัน — ระบบจะตรวจสอบข้อมูลและแสดงตัวอย่างก่อนบันทึกจริง
-        คอลัมน์ Slug (= ITEM NO) ใช้ ITEM NO เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือค่าใหม่เพื่อสร้างสินค้าใหม่ — ระบบเก็บ ITEM NO ตามที่ระบุในไฟล์ทุกตัวอักษร (ตัวอักษร ตัวเลข เว้นวรรค และเครื่องหมาย - เท่านั้น) และสร้าง URL Slug จาก ITEM NO โดยเปลี่ยนช่องว่างเป็น - (เช่น CIMR JT2A0010BAA → CIMR-JT2A0010BAA) ไม่สร้างจากชื่อสินค้า สินค้าที่มีอยู่แล้วจะไม่ถูกเปลี่ยน URL และ ITEM NO ที่ต่างกันจะไม่ถูกรวมเป็นสินค้าเดียวกัน
+        คอลัมน์ Item No. ใช้ ITEM NO เดิมเพื่ออัปเดตสินค้าที่มีอยู่ หรือค่าใหม่เพื่อสร้างสินค้าใหม่ — ระบบเก็บ ITEM NO ตามที่ระบุในไฟล์ทุกตัวอักษร (ตัวอักษร ตัวเลข เว้นวรรค และเครื่องหมาย - เท่านั้น) และสร้าง URL Slug จาก ITEM NO โดยเปลี่ยนช่องว่างเป็น - (เช่น CIMR JT2A0010BAA → CIMR-JT2A0010BAA) ไม่สร้างจากชื่อสินค้า สินค้าที่มีอยู่แล้วจะไม่ถูกเปลี่ยน URL และ ITEM NO ที่ต่างกันจะไม่ถูกรวมเป็นสินค้าเดียวกัน
         <br />
         <strong>รูปภาพสินค้าไม่ได้จัดการผ่านไฟล์นี้</strong> — เพิ่ม/แก้ไขรูปภาพได้จากหน้าแก้ไขสินค้าแต่ละรายการหลังนำเข้าแล้ว
         <br />
@@ -121,9 +115,8 @@ export default function AdminProductImport() {
         <div className="admin-form__section panel">
           <h3>1. เลือกไฟล์ Excel</h3>
           <p className="admin-list-table__submeta" style={{ marginBottom: 16 }}>
-            ลำดับคอลัมน์: Slug (= ITEM NO), Name, Brand, Category, Series, Model, Short Description, Description,
-            Features, Specifications, Item Status (ระบบอ่านข้อมูลตามชื่อหัวคอลัมน์ ไม่ขึ้นกับตำแหน่งคอลัมน์) — แนะนำให้เริ่มจากไฟล์ที่ Export ออกมา หรือดาวน์โหลดเทมเพลตด้านล่างแล้วแก้ไขต่อ
-            (Features/Specifications แต่ละรายการคั่นด้วย " | ", Specifications แต่ละช่องใช้รูปแบบ "ป้ายชื่อ: ค่า")
+            ระบบอ่านเฉพาะคอลัมน์ Item No., Item Description, Brand, Item Status (บังคับ) และ Category (ไม่บังคับ — ว่างไว้ได้)
+            ตามชื่อหัวคอลัมน์ ไม่ขึ้นกับตำแหน่ง คอลัมน์อื่นในไฟล์จะถูกข้าม — แนะนำให้ดาวน์โหลดเทมเพลตด้านล่างแล้วแก้ไขต่อ
           </p>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <label className={`btn btn-primary ${uploading ? "is-uploading" : ""}`}>
@@ -229,7 +222,7 @@ export default function AdminProductImport() {
                     <th>แถว</th>
                     <th>สถานะ</th>
                     {PREVIEW_COLUMNS.map((c) => (
-                      <th key={c.key}>{c.key}</th>
+                      <th key={c.key}>{c.label || c.key}</th>
                     ))}
                     <th>สถานะสินค้า</th>
                     <th>รายละเอียด</th>

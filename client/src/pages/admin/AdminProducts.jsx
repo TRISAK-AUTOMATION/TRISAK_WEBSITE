@@ -20,7 +20,11 @@ const ISSUE_LABELS = {
   "missing-datasheet": "แสดงเฉพาะสินค้าที่ยังไม่มี Datasheet",
 };
 
-export default function AdminProducts() {
+// Two lists over the same products:
+//   /admin/products       ตารางสินค้า (Catalog): every product, Excel import / export,
+//                          "สร้างหน้า" gives a row its own page
+//   /admin/product-pages  หน้าสินค้าใหม่: only products with their own page (pagesOnly)
+export default function AdminProducts({ pagesOnly = false }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,6 +41,7 @@ export default function AdminProducts() {
   const [editingId, setEditingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [pageBusyId, setPageBusyId] = useState(null);
   const [deleteError, setDeleteError] = useState("");
   const { toast, showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -70,6 +75,7 @@ export default function AdminProducts() {
   const filterChips = describeFilters(filters, brands, categories);
 
   const filtered = products
+    .filter((p) => !pagesOnly || p.has_page)
     .filter((p) =>
       [p.name, p.item_no, p.slug, p.model]
         .filter(Boolean)
@@ -132,9 +138,29 @@ export default function AdminProducts() {
     }
   };
 
+  // give a row its own page, or take it away (it stays in the catalog table)
+  const togglePage = async (product) => {
+    setPageBusyId(product.id);
+    setError("");
+    try {
+      await api.adminSetProductHasPage(product.id, !product.has_page);
+      showToast(product.has_page ? "ปิดหน้าสินค้าแล้ว" : "สร้างหน้าสินค้าแล้ว — แก้รูป สเปก และเอกสารได้ที่เมนูหน้าสินค้าใหม่");
+      await load({ silent: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPageBusyId(null);
+    }
+  };
+
   return (
     <>
-      <AdminBreadcrumb items={[{ label: "รายการ" }]} />
+      <AdminBreadcrumb items={[{ label: pagesOnly ? "หน้าสินค้าใหม่" : "ตารางสินค้า" }]} />
+      <p className="admin-list-table__muted" style={{ margin: "0 0 16px" }}>
+        {pagesOnly
+          ? "สินค้าที่มีหน้าของตัวเอง (สินค้าใหม่): แก้รูป สเปก เอกสาร และป้าย NEW — ป้าย NEW แสดงใน Section สินค้าล่าสุด"
+          : "สินค้าทั้งหมดในตารางค้นหาสินค้า (/products) — เพิ่มทีละมากด้วย Import Excel; กด “สร้างหน้า” เพื่อให้สินค้ามีหน้าของตัวเอง"}
+      </p>
 
       {issue && ISSUE_LABELS[issue] && (
         <div className="admin-edit-notice" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -178,13 +204,17 @@ export default function AdminProducts() {
           />
         </div>
         <div className="admin-list-toolbar__actions">
-          <button type="button" className="btn" onClick={handleExport} disabled={exporting}>
-            {exporting ? "กำลัง Export…" : "⬇ Export Excel"}
-          </button>
-          <Link to="/admin/products/import" className="btn">
-            ⬆ Import Excel
-          </Link>
-          <Link to="/admin/products/new" className="btn btn-primary">
+          {!pagesOnly && (
+            <>
+              <button type="button" className="btn" onClick={handleExport} disabled={exporting}>
+                {exporting ? "กำลัง Export…" : "⬇ Export Excel"}
+              </button>
+              <Link to="/admin/products/import" className="btn">
+                ⬆ Import Excel
+              </Link>
+            </>
+          )}
+          <Link to={pagesOnly ? "/admin/products/new?page=1" : "/admin/products/new"} className="btn btn-primary">
             + เพิ่ม
           </Link>
         </div>
@@ -257,6 +287,7 @@ export default function AdminProducts() {
                   </td>
                   <td>
                     {p.name} {p.is_new && <span className="admin-badge-new">NEW</span>}
+                    {!pagesOnly && p.has_page && <span className="admin-badge-new"> มีหน้า</span>}
                     <div className="admin-list-table__submeta">{p.model}</div>
                     <div className="admin-list-table__submeta">
                       ITEM NO: {p.item_no || <em>not set</em>} · URL slug: {p.slug}
@@ -279,6 +310,15 @@ export default function AdminProducts() {
                   </td>
                   <td>
                     <div className="admin-row-actions">
+                      <button
+                        type="button"
+                        className="btn contact-admin__small-btn"
+                        onClick={() => togglePage(p)}
+                        disabled={pageBusyId === p.id}
+                        title={p.has_page ? "ให้สินค้านี้แสดงในตารางค้นหาเท่านั้น" : "ให้สินค้านี้มีหน้าของตัวเอง"}
+                      >
+                        {p.has_page ? "ปิดหน้า" : "+ สร้างหน้า"}
+                      </button>
                       <button
                         type="button"
                         className="admin-icon-btn admin-icon-btn--edit"

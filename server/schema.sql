@@ -92,7 +92,7 @@ CREATE TABLE products (
   name               VARCHAR(150) NOT NULL,
   slug               VARCHAR(150) NOT NULL UNIQUE,
   brand_id           INTEGER NOT NULL REFERENCES brands(id),
-  category_id        INTEGER NOT NULL REFERENCES categories(id),
+  category_id        INTEGER REFERENCES categories(id), -- optional: catalog rows imported without one
   series_id          INTEGER REFERENCES series(id),
   model              VARCHAR(100),
   short_description  VARCHAR(255),
@@ -100,6 +100,7 @@ CREATE TABLE products (
   features           TEXT[],
   image_url          VARCHAR(255),
   is_new             BOOLEAN NOT NULL DEFAULT false,
+  has_page           BOOLEAN NOT NULL DEFAULT false, -- own product page (false = finder table only)
   sort_order         INTEGER NOT NULL DEFAULT 0,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()

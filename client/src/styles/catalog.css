@@ -2199,3 +2199,151 @@
     text-align: center;
   }
 }
+
+/* =========================================================
+   Products overview: product finder (/products#products-finder)
+   Labelled filters in one row, then a "+" list; a row opens to the details.
+   ========================================================= */
+.products-finder {
+  scroll-margin-top: var(--header-height);
+}
+
+/* one row: the search box and selects shrink rather than wrap */
+.products-finder__filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.products-finder__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 1 200px;
+  min-width: 0;
+}
+
+.products-finder__field--search {
+  flex: 2 1 320px;
+}
+
+.products-finder__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.products-finder__field select,
+.products-finder__field input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+/* .catalog-search__field has flex-basis 240px; in this column layout that became its height */
+.products-finder__field .catalog-search__field {
+  flex: none;
+}
+
+.products-finder__field .catalog-search__field input {
+  padding-left: 42px;
+}
+
+.products-finder__field select:focus,
+.products-finder__field input:focus {
+  outline: none;
+  border-color: var(--accent-tech);
+  box-shadow: 0 0 0 3px var(--accent-tech-dim);
+}
+
+.products-finder__reset {
+  flex-shrink: 0;
+  height: 42px;
+  border-radius: 999px;
+}
+
+/* the table: header row, then rows split by thin lines (no boxes) */
+.products-finder__scroll {
+  overflow-x: auto; /* phones: scroll sideways instead of squeezing columns */
+  transition: opacity 0.2s ease;
+}
+
+.products-finder__scroll.is-loading {
+  opacity: 0.55;
+}
+
+.products-finder__table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.products-finder__table th,
+.products-finder__table td {
+  text-align: left;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.products-finder__table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom-color: var(--line-strong);
+}
+
+.products-finder__table td {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.products-finder__table th:first-child,
+.products-finder__table td:first-child {
+  padding-left: 4px;
+  width: 45%;
+}
+
+.products-finder__name {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+  transition: color 0.2s ease;
+}
+
+a.products-finder__name:hover {
+  color: var(--accent-tech);
+}
+
+.products-finder__table small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.products-finder__table .availability-badge {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+/* phones: filters stack */
+@media (max-width: 720px) {
+  .products-finder__filters {
+    flex-wrap: wrap;
+  }
+  .products-finder__field,
+  .products-finder__field--search {
+    flex: 1 1 100%;
+  }
+}
