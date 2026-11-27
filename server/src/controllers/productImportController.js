@@ -8,8 +8,8 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 //
 // The import fills the catalog table (/products finder): it reads only
 // Item No., Item Description (the product name), Brand and Item Status, plus an
-// optional Category (left empty when blank). Every other product field
-// (series, model, descriptions, features, specs, images, documents) is
+// optional Category (left empty when blank) and Series (created when new). Every other product field
+// (model, descriptions, features, specs, images, documents) is
 // managed on the product's Edit page and never touched by an import.
 //
 // ITEM NO is the import's key. The "Item No." column (or "Slug")
@@ -35,7 +35,7 @@ import { generateSlugFromItemNo, normalizeItemNo, validateItemNo } from "../util
 //   4. otherwise                                            -> new product
 // In the file itself, duplicate ITEM NOs and different ITEM NOs that generate
 // the same slug are both reported (only the first row proceeds).
-// On update only name, brand, ITEM NO, Item Status and (when given) category
+// On update only name, brand, ITEM NO, Item Status and (when given) category / series
 // are written; on create the rest default to empty.
 //
 // STATUS: the required "Item Status" column is the only status value read from
@@ -58,6 +58,7 @@ const EXCEL_HEADERS = {
   Name: "Item Description",
   Brand: "Brand",
   Category: "Category",
+  Series: "Series",
   "Item Status": "Item Status", // Active | Discontinued
 };
 export const PRODUCT_EXCEL_COLUMNS = Object.values(EXCEL_HEADERS);
@@ -67,9 +68,10 @@ const COLUMN_ALIASES = {
   Name: ["item description", "name"],
   Brand: ["brand"],
   Category: ["category"],
+  Series: ["series"],
   "Item Status": ["item status", "itemstatus", "item_status"],
 };
-const REQUIRED_COLUMNS = ["Slug", "Name", "Brand", "Item Status"]; // Category is optional
+const REQUIRED_COLUMNS = ["Slug", "Name", "Brand", "Item Status"]; // Category and Series are optional
 
 const ITEM_STATUSES = ["Active", "Discontinued"];
 
@@ -116,18 +118,39 @@ export function parseItemStatus(raw) {
 // Keeps every product-lookup map in step. Used when loading and again after a
 // row of the current batch inserts a product, so later rows see it.
 function registerProduct(lookups, p) {
-  const entry = { id: p.id, slug: p.slug, item_no: p.item_no ?? null, hasReplacement: p.replacement_product_id != null };
+  const entry = { id: p.id, slug: p.slug, item_no: p.item_no ?? null, categoryId: p.category_id ?? null,categoryId: p.category_id ?? null, hasReplacement: p.replacement_product_id != null };
   lookups.bySlug.set(p.slug, entry);
   lookups.bySlugKey.set(p.slug.toLowerCase(), entry);
   if (entry.item_no) lookups.byItemNoKey.set(entry.item_no.toLowerCase(), entry);
   lookups.statusBySlug.set(p.slug, p.availability_status);
 }
 
+// Same slug rule as the admin series form (slugify in AdminSeriesForm.jsx).
+const seriesSlug = (name) =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+const seriesKey = (brandId, categoryId, part) => `${brandId}::${categoryId}::${part}`;
+
+// A series is found by name or by slug within its brand + category (slug is unique there).
+function registerSeries(lookups, s) {
+  lookups.seriesByKey.set(seriesKey(s.brand_id, s.category_id, `name:${normalizeHeader(s.name)}`), s.id);
+  lookups.seriesByKey.set(seriesKey(s.brand_id, s.category_id, `slug:${s.slug}`), s.id);
+}
+
+const findSeries = (lookups, s) =>
+  lookups.seriesByKey.get(seriesKey(s.brandId, s.categoryId, `name:${normalizeHeader(s.name)}`)) ||
+  lookups.seriesByKey.get(seriesKey(s.brandId, s.categoryId, `slug:${s.slug}`)) ||
+  null;
+
 async function loadLookups() {
-  const [brandsRes, categoriesRes, productsRes, historyRes] = await Promise.all([
+  const [brandsRes, categoriesRes, seriesRes, productsRes, historyRes] = await Promise.all([
     pool.query("SELECT id, name FROM brands"),
     pool.query("SELECT id, name FROM categories"),
-    pool.query("SELECT id, slug, item_no, availability_status, replacement_product_id FROM products"),
+    pool.query("SELECT id, name, slug, brand_id, category_id FROM series"),
+    pool.query("SELECT id, slug, item_no, category_id, availability_status, replacement_product_id FROM products"),
     pool.query(
       `SELECT h.old_slug, p.slug AS current_slug, p.item_no
        FROM product_slug_history h JOIN products p ON p.id = h.product_id`
@@ -136,6 +159,7 @@ async function loadLookups() {
   const lookups = {
     brandsByName: new Map(brandsRes.rows.map((b) => [normalizeHeader(b.name), b.id])),
     categoriesByName: new Map(categoriesRes.rows.map((c) => [normalizeHeader(c.name), c.id])),
+    seriesByKey: new Map(), // "brandId::categoryId::name|slug" -> series id (see registerSeries)
     byItemNoKey: new Map(), // lower-cased item_no -> { id, slug, item_no }
     bySlug: new Map(), // exact slug -> { id, slug, item_no }
     bySlugKey: new Map(), // lower-cased slug -> same entry (case-only collisions)
@@ -143,6 +167,7 @@ async function loadLookups() {
     // retired slugs that still redirect to a product
     historyBySlugKey: new Map(historyRes.rows.map((h) => [h.old_slug.toLowerCase(), h])),
   };
+  seriesRes.rows.forEach((s) => registerSeries(lookups, s));
   productsRes.rows.forEach((p) => registerProduct(lookups, p));
   return lookups;
 }
@@ -289,6 +314,24 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
     if (!categoryId) warnings.push(`Category "${categoryName}" was not found — left blank`);
   }
 
+  // optional: an existing series of this brand + category is linked; an unknown one is
+  // created on import. Blank keeps an existing product's series.
+  const seriesName = (raw.Series || "").toString().trim();
+  const seriesCategoryId = categoryId || target?.categoryId || null;
+  let series = null; // { name, slug, brandId, categoryId, id (null = will be created) }
+  if (seriesName && brandId) {
+    const slugValue = seriesSlug(seriesName);
+    if (!seriesCategoryId) {
+      warnings.push(`Series "${seriesName}" needs a Category — left blank`);
+    } else if (!slugValue) {
+      warnings.push(`Series "${seriesName}" has no English letters or numbers for its URL — left blank`);
+    } else {
+      series = { name: seriesName.slice(0, 150), slug: slugValue.slice(0, 150), brandId, categoryId: seriesCategoryId };
+      series.id = findSeries(lookups, series);
+      if (!series.id) warnings.push(`New series "${seriesName}" will be created`);
+    }
+  }
+
   const exists = Boolean(target);
 
   // ---- status: from Item Status only ----
@@ -316,6 +359,7 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
       Name: name,
       Brand: brandName,
       Category: categoryName,
+      Series: seriesName,
       "Item Status": (raw["Item Status"] ?? "").toString().trim(),
     },
     resolved: {
@@ -325,6 +369,7 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
       existingId: target ? target.id : null,
       brandId,
       categoryId,
+      series,
     },
     availability,
     action,
@@ -379,6 +424,7 @@ function columnWidth(header) {
     "Item Description": 40,
     Brand: 16,
     Category: 18,
+    Series: 18,
     "Item Status": 14,
   };
   return widths[header] || 20;
@@ -387,10 +433,11 @@ function columnWidth(header) {
 export async function exportProductsExcel(req, res) {
   try {
     const productsRes = await pool.query(
-      `SELECT p.name, p.slug, p.item_no, p.item_status, b.name AS brand, c.name AS category
+      `SELECT p.name, p.slug, p.item_no, p.item_status, b.name AS brand, c.name AS category, s.name AS series
        FROM products p
        JOIN brands b ON b.id = p.brand_id
        LEFT JOIN categories c ON c.id = p.category_id
+       LEFT JOIN series s ON s.id = p.series_id
        ORDER BY p.sort_order`
     );
 
@@ -416,6 +463,7 @@ export async function exportProductsExcel(req, res) {
         [EXCEL_HEADERS.Name]: p.name,
         Brand: p.brand,
         Category: p.category || "",
+        Series: p.series || "",
         "Item Status": p.item_status, // stored as-is: Active | Discontinued
       });
     }
@@ -472,7 +520,8 @@ export async function downloadProductImportTemplate(req, res) {
       ["Item Description", "Required. The product name."],
       ["Brand", "Required. Must match an existing brand name."],
       ["Category", "Optional. Must match an existing category name; blank (or not found) leaves it empty on a new product and unchanged on an existing one."],
-      ["Other columns", "Ignored. Series, model, descriptions, features, specifications, images and documents are edited on the product's page in admin."],
+      ["Series", "Optional. An existing series of this Brand + Category is linked; a new name creates the series (it needs a Category, from this row or already on the product). Blank keeps an existing product's series."],
+      ["Other columns", "Ignored. Model, descriptions, features, specifications, images and documents are edited on the product's page in admin."],
       ["Item Status", "Required: Active or Discontinued. It sets the product status on the website: Active → Available; Discontinued → Discontinued, or Replacement Available when an admin has linked a replacement product. A new product without a valid Item Status is not imported; an existing one keeps its current status and is flagged for review. Replacement products are managed by admins and are never changed by an import."],
       ["Column order", "Columns are matched by header name, so their order in your file does not matter."],
     ];
@@ -570,6 +619,7 @@ export async function commitProductImport(req, res) {
   let updated = 0;
   let skipped = 0;
   let statusUpdated = 0;
+  let seriesCreated = 0;
   const errors = [];
   const reviewed = []; // imported rows whose Item Status was invalid (status left unchanged)
 
@@ -600,18 +650,39 @@ export async function commitProductImport(req, res) {
         await client.query("BEGIN");
         const existingId = r.existingId; // matched by ITEM NO (see resolveRow)
 
+        // series named in the file: link it, creating it the first time it appears
+        // (an earlier row of this batch may already have created it)
+        let seriesId = null;
+        let createdSeries = false;
+        if (r.series) {
+          seriesId = findSeries(lookups, r.series);
+          if (!seriesId) {
+            const { rows: seriesRows } = await client.query(
+              `INSERT INTO series (name, slug, brand_id, category_id, sort_order)
+               VALUES ($1, $2, $3, $4,
+                 (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM series WHERE brand_id = $3 AND category_id = $4))
+               ON CONFLICT (brand_id, category_id, slug) DO UPDATE SET slug = EXCLUDED.slug
+               RETURNING id`,
+              [r.series.name, r.series.slug, r.series.brandId, r.series.categoryId]
+            );
+            seriesId = seriesRows[0].id;
+            createdSeries = true;
+          }
+        }
+
         let productId;
         if (existingId) {
-          // Only the Excel-managed fields are touched; a blank Category keeps the stored one.
+          // Only the Excel-managed fields are touched; a blank Category / Series keeps the stored one.
           await client.query(
             `UPDATE products SET
                name = $1, brand_id = $2, category_id = COALESCE($3, category_id),
-               item_no = $4, updated_at = now()
-             WHERE id = $5`,
+               series_id = COALESCE($4, series_id), item_no = $5, updated_at = now()
+             WHERE id = $6`,
             [
               r.name,
               r.brandId,
               r.categoryId,
+              seriesId,
               r.itemNo, // same value on a normal update; recorded once on a legacy product
               existingId,
             ]
@@ -623,9 +694,9 @@ export async function commitProductImport(req, res) {
           );
           const insertRes = await client.query(
             `INSERT INTO products
-               (name, slug, brand_id, category_id, sort_order, item_no)
-             VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-            [r.name, r.slug, r.brandId, r.categoryId, maxRows[0].n, r.itemNo]
+               (name, slug, brand_id, category_id, series_id, sort_order, item_no)
+             VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+            [r.name, r.slug, r.brandId, r.categoryId, seriesId, maxRows[0].n, r.itemNo]
           );
           productId = insertRes.rows[0].id;
         }
@@ -644,12 +715,17 @@ export async function commitProductImport(req, res) {
         }
 
         await client.query("COMMIT");
-        // keep lookups fresh within this batch (a later row can then see this product)
+        // keep lookups fresh within this batch (a later row can then see this product / series)
+        if (createdSeries) {
+          registerSeries(lookups, { id: seriesId, name: r.series.name, slug: r.series.slug, brand_id: r.series.brandId, category_id: r.series.categoryId });
+          seriesCreated += 1;
+        }
         const hadReplacement = Boolean(existingId && lookups.bySlug.get(r.slug)?.hasReplacement);
         registerProduct(lookups, {
           id: productId,
           slug: r.slug,
           item_no: r.itemNo,
+          category_id: r.categoryId ?? lookups.bySlug.get(r.slug)?.categoryId ?? null,
           availability_status: availability.next ?? availability.current,
           replacement_product_id: hadReplacement ? true : null, // only its presence is used
         });
@@ -666,10 +742,10 @@ export async function commitProductImport(req, res) {
 
     logActivity(
       "product_import",
-      `นำเข้าสินค้าจาก Excel: เพิ่ม ${added}, แก้ไข ${updated}, ข้าม ${skipped}, อัปเดตสถานะ ${statusUpdated}`
+      `นำเข้าสินค้าจาก Excel: เพิ่ม ${added}, แก้ไข ${updated}, ข้าม ${skipped}, อัปเดตสถานะ ${statusUpdated}, สร้าง series ใหม่ ${seriesCreated}`
     );
 
-    res.json({ added, updated, skipped, errors, statusUpdated, reviewed });
+    res.json({ added, updated, skipped, errors, statusUpdated, seriesCreated, reviewed });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Import failed" });

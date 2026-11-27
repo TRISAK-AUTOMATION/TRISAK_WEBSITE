@@ -21,6 +21,7 @@ import BrandCategoryChild from "./pages/products/BrandCategoryChild.jsx";
 import ProductDetail from "./pages/products/ProductDetail.jsx";
 import GuideOverview from "./pages/products/GuideOverview.jsx";
 import SeriesGuide from "./pages/products/SeriesGuide.jsx";
+import ProductLanding from "./pages/products/ProductLanding.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -162,6 +163,11 @@ export default function App() {
         <Route path="/products/series/:typeSlug" element={<GuideOverview />} />
         {/* a series, e.g. /products/series/plc-hmi/nx-series */}
         <Route path="/products/series/:typeSlug/:seriesSlug" element={<SeriesGuide />} />
+
+        {/* fixed sales pages (static paths win over the catalog's :brandSlug) */}
+        <Route path="/products/relay" element={<ProductLanding page="relay" key="relay" />} />
+        <Route path="/products/inverter" element={<ProductLanding page="inverter" key="inverter" />} />
+        <Route path="/products/servo" element={<ProductLanding page="servo" key="servo" />} />
 
         {/* 01 — products overview */}
         <Route path="/products" element={<ProductsOverview />} />

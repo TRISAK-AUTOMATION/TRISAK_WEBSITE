@@ -12,23 +12,24 @@ import pool from "../config/db.js";
  *   GET /api/guide/resolve?path=/products/...       where an old catalog URL lives now
  */
 
-// category id -> its top-level ancestor (the product type)
+// category id -> its top-level ancestor (the product type), and the category ids below
+// that type down to it (path), e.g. Photoelectric Sensors → General Purpose
 const ROOTS_CTE = `
   WITH RECURSIVE roots AS (
-    SELECT id, id AS root_id FROM categories WHERE parent_id IS NULL
+    SELECT id, id AS root_id, ARRAY[]::int[] AS path FROM categories WHERE parent_id IS NULL
     UNION ALL
-    SELECT c.id, r.root_id FROM categories c JOIN roots r ON c.parent_id = r.id
+    SELECT c.id, r.root_id, r.path || c.id FROM categories c JOIN roots r ON c.parent_id = r.id
   )`;
 
 const CARD_COLUMNS = `
   s.id, s.name, s.slug, s.tagline, s.tagline_th, s.image_url, s.is_new, s.is_legacy,
-  s.key_specs, s.sort_order,
+  s.key_specs, s.sort_order, r.path AS category_path,
   b.name AS brand, b.slug AS brand_slug, b.logo_url AS brand_logo,
   t.id AS type_id, t.slug AS type_slug`;
 
 export async function getGuide(req, res) {
   try {
-    const [{ rows: series }, { rows: types }, { rows: brands }] = await Promise.all([
+    const [{ rows: series }, { rows: types }, { rows: brands }, { rows: subcategories }] = await Promise.all([
       pool.query(
         `${ROOTS_CTE}
          SELECT ${CARD_COLUMNS}
@@ -44,6 +45,10 @@ export async function getGuide(req, res) {
          FROM categories WHERE parent_id IS NULL AND is_active ORDER BY sort_order, name`
       ),
       pool.query("SELECT name, slug, logo_url FROM brands WHERE is_active ORDER BY sort_order"),
+      pool.query(
+        `SELECT id, name, name_th, slug, sort_order FROM categories
+         WHERE parent_id IS NOT NULL AND is_active ORDER BY sort_order, name`
+      ),
     ]);
     const byType = new Map(types.map((t) => [t.id, { ...t, series: [] }]));
     for (const s of series) {
@@ -53,6 +58,8 @@ export async function getGuide(req, res) {
     res.json({
       types: [...byType.values()].filter((t) => t.series.length),
       brands,
+      subcategories, // names for each series' category_path
+
     });
   } catch (err) {
     console.error(err);
@@ -81,7 +88,7 @@ export async function getGuideSeries(req, res) {
     const series = rows[0];
     if (!series) return res.status(404).json({ error: "Series not found" });
 
-    const [{ rows: related }, { rows: successor }] = await Promise.all([
+    const [{ rows: related }, { rows: successor }, { rows: models }] = await Promise.all([
       pool.query(
         `${ROOTS_CTE}
          SELECT ${CARD_COLUMNS}
@@ -105,9 +112,25 @@ export async function getGuideSeries(req, res) {
             [series.replaced_by_id]
           )
         : { rows: [] },
+      // the series' products ("Available Models"); has_page ones link to their own page
+      pool.query(
+        `SELECT p.id, p.name, p.item_no, p.slug, p.has_page, p.availability_status,
+                b.slug AS brand_slug, c.slug AS category_slug, s.slug AS series_slug,
+                (SELECT d.file_url FROM product_documents d
+                 WHERE d.product_id = p.id AND d.document_type = 'Datasheet'
+                 ORDER BY d.created_at LIMIT 1) AS datasheet_url
+         FROM products p
+         JOIN series s ON s.id = p.series_id
+         JOIN brands b ON b.id = p.brand_id
+         LEFT JOIN categories c ON c.id = p.category_id
+         WHERE p.series_id = $1
+         ORDER BY p.sort_order, p.name`,
+        [series.id]
+      ),
     ]);
     res.json({
       ...series,
+      models,
       related: related.map((s) => ({ ...s, key_specs: (s.key_specs || []).slice(0, 3) })),
       replaced_by: successor[0] || null,
     });

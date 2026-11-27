@@ -20,6 +20,8 @@ const MAX_ROWS = 60;
 
 const asList = (v) => (Array.isArray(v) ? v : []);
 const emptyKeySpec = () => ({ value: "", label_en: "", label_th: "" });
+const emptyApp = () => ({ image: "", title_en: "", title_th: "" });
+const MAX_APPS = 24;
 const emptyHighlight = () => ({ image: "", title_en: "", title_th: "", body_en: "", body_th: "" });
 const emptyRow = () => ({ label_en: "", label_th: "", value: "" });
 const emptyGroup = () => ({ title_en: "", title_th: "", rows: [emptyRow()] });
@@ -108,6 +110,7 @@ const TABS = [
   ["data", "ข้อมูล"],
   ["keyspecs", "ตัวเลขเด่น"],
   ["highlights", "จุดเด่น"],
+  ["apps", "การใช้งาน"],
   ["specs", "สเปค"],
   ["upload", "อัพโหลด"],
 ];
@@ -133,8 +136,7 @@ export default function AdminSeriesForm() {
   // products-guide content (migration 056); tagline/description above are English
   const [taglineTh, setTaglineTh] = useState("");
   const [descriptionTh, setDescriptionTh] = useState("");
-  const [applicationsEn, setApplicationsEn] = useState("");
-  const [applicationsTh, setApplicationsTh] = useState("");
+  const [apps, setApps] = useState([]);
   const [keySpecs, setKeySpecs] = useState([]);
   const [highlights, setHighlights] = useState([]);
   const [specGroups, setSpecGroups] = useState([]);
@@ -178,8 +180,7 @@ export default function AdminSeriesForm() {
         setSortOrder(s.sort_order ?? 0);
         setTaglineTh(s.tagline_th || "");
         setDescriptionTh(s.description_th || "");
-        setApplicationsEn(s.applications_en || "");
-        setApplicationsTh(s.applications_th || "");
+        setApps(asList(s.application_items).map((a) => ({ ...emptyApp(), ...a })));
         setModelPrefixes(s.model_prefixes || "");
         setSources(asList(s.sources).map((x) => ({ label: x.label || "", url: x.url || "" })));
         setKeySpecs(asList(s.key_specs).map((k) => ({ ...emptyKeySpec(), ...k })));
@@ -204,6 +205,7 @@ export default function AdminSeriesForm() {
   const setKeySpec = (i, key, value) => setKeySpecs((list) => list.map((k, j) => (j === i ? { ...k, [key]: value } : k)));
   const setHighlight = (i, key, value) =>
     setHighlights((list) => list.map((h, j) => (j === i ? { ...h, [key]: value } : h)));
+  const setApp = (i, key, value) => setApps((list) => list.map((a, j) => (j === i ? { ...a, [key]: value } : a)));
   const setGroup = (i, key, value) => setSpecGroups((list) => list.map((g, j) => (j === i ? { ...g, [key]: value } : g)));
   const setGroupRows = (i, update) =>
     setSpecGroups((list) => list.map((g, j) => (j === i ? { ...g, rows: update(g.rows) } : g)));
@@ -239,8 +241,7 @@ export default function AdminSeriesForm() {
         // guide content — always sent so the server stores exactly what's on screen
         taglineTh,
         descriptionTh,
-        applicationsEn,
-        applicationsTh,
+        applicationItems: apps,
         keySpecs,
         highlights,
         specGroups,
@@ -357,16 +358,6 @@ export default function AdminSeriesForm() {
                 <label className="contact-form__field">
                   <span>รายละเอียด — TH</span>
                   <textarea rows={5} value={descriptionTh} onChange={(e) => setDescriptionTh(e.target.value)} />
-                </label>
-              </div>
-              <div className="guide-edit__pair">
-                <label className="contact-form__field">
-                  <span>การใช้งานที่เหมาะ — EN (บรรทัดละ 1 รายการ)</span>
-                  <textarea rows={4} value={applicationsEn} onChange={(e) => setApplicationsEn(e.target.value)} />
-                </label>
-                <label className="contact-form__field">
-                  <span>การใช้งานที่เหมาะ — TH (บรรทัดละ 1 รายการ)</span>
-                  <textarea rows={4} value={applicationsTh} onChange={(e) => setApplicationsTh(e.target.value)} />
                 </label>
               </div>
               <label className="contact-form__field" style={{ marginTop: 20 }}>
@@ -489,6 +480,53 @@ export default function AdminSeriesForm() {
                 onClick={() => setHighlights((l) => [...l, emptyHighlight()])}
               >
                 + เพิ่มจุดเด่น
+              </button>
+            </>
+          )}
+
+          {tab === "apps" && (
+            <>
+              <div className="admin-edit-notice">
+                การใช้งานที่เหมาะสม แสดงเป็นการ์ดรูป + ชื่อ ใต้ตารางสเปค (สูงสุด {MAX_APPS} รายการ) — ไม่ใส่รูปก็ได้
+              </div>
+              {apps.length === 0 && <p className="guide-edit__empty">ยังไม่มีการใช้งาน</p>}
+              {apps.map((a, i) => (
+                <div className="guide-edit__item" key={i}>
+                  <div className="guide-edit__item-head">
+                    <strong>การใช้งาน #{i + 1}</strong>
+                    <RowTools
+                      index={i}
+                      count={apps.length}
+                      label="การใช้งาน"
+                      onMove={(x, step) => setApps((l) => move(l, x, step))}
+                      onRemove={(x) => setApps((l) => l.filter((_, j) => j !== x))}
+                    />
+                  </div>
+                  <div className="guide-edit__highlight">
+                    <div className="guide-edit__highlight-image">
+                      <span className="admin-edit-sidebar__label">รูปประกอบ</span>
+                      <ImageUploadField value={a.image} onChange={(url) => setApp(i, "image", url || "")} />
+                    </div>
+                    <div className="guide-edit__pair guide-edit__pair--tight">
+                      <label className="contact-form__field">
+                        <span>ชื่อ — EN</span>
+                        <input value={a.title_en} onChange={(e) => setApp(i, "title_en", e.target.value)} />
+                      </label>
+                      <label className="contact-form__field">
+                        <span>ชื่อ — TH</span>
+                        <input value={a.title_th} onChange={(e) => setApp(i, "title_th", e.target.value)} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="btn guide-edit__add"
+                disabled={apps.length >= MAX_APPS}
+                onClick={() => setApps((l) => [...l, emptyApp()])}
+              >
+                + เพิ่มการใช้งาน
               </button>
             </>
           )}

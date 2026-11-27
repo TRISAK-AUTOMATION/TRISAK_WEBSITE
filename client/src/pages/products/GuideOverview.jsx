@@ -93,22 +93,9 @@ export default function GuideOverview() {
         </div>
       </section>
 
-      {/* product types + brand filter, kept in view while scrolling the guide */}
+      {/* brand filter, kept in view while scrolling the guide (no type chips: too many types to fit) */}
       <nav className="guide-bar" aria-label={t("guide.jumpLabel")}>
         <div className="container guide-bar__inner">
-          <div className="guide-bar__types">
-            {allTypes.map((tp) =>
-              focus ? (
-                <Link key={tp.slug} to={`${typeHref(tp.slug)}${brand ? `?brand=${brand}` : ""}`} className={`guide-chip${tp.slug === focus.slug ? " is-active" : ""}`}>
-                  {typeName(tp, lang)}
-                </Link>
-              ) : (
-                <a key={tp.slug} href={`#type-${tp.slug}`} className="guide-chip">
-                  {typeName(tp, lang)}
-                </a>
-              )
-            )}
-          </div>
           {brands.length > 1 && (
             <div className="guide-bar__brands" role="group" aria-label={t("guide.allBrands")}>
               <button type="button" className={`guide-chip guide-chip--brand${!brand ? " is-active" : ""}`} onClick={() => setBrand("")} aria-pressed={!brand}>
@@ -176,11 +163,15 @@ export default function GuideOverview() {
                   </div>
                   <span className="guide-type__count">{fill(t("guide.seriesCount"), { n: tp.series.length })}</span>
                 </Reveal>
-                <div className="guide-type__grid">
-                  {tp.series.map((s) => (
-                    <SeriesCard series={s} key={s.id} />
-                  ))}
-                </div>
+                {focus ? (
+                  <SeriesByCategory series={tp.series} subcategories={guide.subcategories || []} lang={lang} />
+                ) : (
+                  <div className="guide-type__grid">
+                    {tp.series.map((s) => (
+                      <SeriesCard series={s} key={s.id} />
+                    ))}
+                  </div>
+                )}
               </section>
             ) : null
           )}
@@ -200,5 +191,62 @@ export default function GuideOverview() {
         </Reveal>
       </section>
     </>
+  );
+}
+
+/**
+ * One type's series split by its sub-categories (admin category tree):
+ * a heading per category right under the type (e.g. Photoelectric Sensors),
+ * then a label for anything deeper (e.g. General Purpose) above its cards.
+ * Series filed directly on the type come first, without a heading.
+ */
+function SeriesByCategory({ series, subcategories, lang }) {
+  const byId = new Map(subcategories.map((c, i) => [c.id, { ...c, order: i }]));
+  const name = (id) => {
+    const c = byId.get(id);
+    return c ? (lang === "th" && c.name_th ? c.name_th : c.name).trim() : "";
+  };
+  const order = (id) => byId.get(id)?.order ?? -1;
+
+  const groups = new Map();
+  for (const s of series) {
+    const [top = 0, ...rest] = (s.category_path || []).filter((id) => byId.has(id));
+    if (!groups.has(top)) groups.set(top, { id: top, subs: new Map() });
+    const subs = groups.get(top).subs;
+    const key = rest.join("/");
+    if (!subs.has(key)) subs.set(key, { key, first: rest[0] ?? 0, label: rest.map(name).join(" › "), series: [] });
+    subs.get(key).series.push(s);
+  }
+  const sorted = [...groups.values()].sort((a, b) => order(a.id) - order(b.id));
+
+  return (
+    <div className="guide-cats">
+      {sorted.length > 1 && (
+        <nav className="guide-cats__jump" aria-label={lang === "th" ? "หมวดหมู่ย่อย" : "Sub-categories"}>
+          {sorted.filter((g) => g.id).map((g) => (
+            <a key={g.id} href={`#cat-${byId.get(g.id).slug}`}>
+              {name(g.id)}
+            </a>
+          ))}
+        </nav>
+      )}
+      {sorted.map((g) => (
+        <div className="guide-cat" key={g.id} id={g.id ? `cat-${byId.get(g.id).slug}` : undefined}>
+          {g.id !== 0 && <h3 className="guide-cat__title">{name(g.id)}</h3>}
+          {[...g.subs.values()]
+            .sort((a, b) => order(a.first) - order(b.first))
+            .map((sub) => (
+              <div className="guide-cat__sub" key={sub.key}>
+                {sub.label && <p className="guide-cat__label">{sub.label}</p>}
+                <div className="guide-type__grid">
+                  {sub.series.map((s) => (
+                    <SeriesCard series={s} key={s.id} />
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
+      ))}
+    </div>
   );
 }

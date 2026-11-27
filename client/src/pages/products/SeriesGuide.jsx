@@ -5,7 +5,11 @@ import Breadcrumb from "../../components/Breadcrumb.jsx";
 import Reveal from "../../components/Reveal.jsx";
 import SeriesCard, { SeriesVisual } from "../../components/SeriesCard.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
-import { GUIDE_BASE, fill, lines, seriesHref, tk, tx, typeHref } from "../../utils/guide.js";
+import { GUIDE_BASE, fill, seriesHref, tk, tx, typeHref } from "../../utils/guide.js";
+import { productHref } from "../../utils/productAvailability.js";
+import Pagination from "../../components/Pagination.jsx";
+
+const MODELS_PER_PAGE = 10;
 
 /**
  * One series in the products guide: overview, key figures, highlights with
@@ -17,10 +21,12 @@ export default function SeriesGuide() {
   const { t, lang } = useLanguage();
   const [series, setSeries] = useState(null);
   const [status, setStatus] = useState("loading"); // loading | ready | missing
+  const [modelsPage, setModelsPage] = useState(1);
 
   useEffect(() => {
     let alive = true;
     setStatus("loading");
+    setModelsPage(1);
     api
       .getGuideSeries(typeSlug, seriesSlug)
       .then((s) => {
@@ -55,7 +61,7 @@ export default function SeriesGuide() {
   const s = series;
   const type = lang === "th" ? s.type_name_th || s.type_name : s.type_name;
   const description = tx(s, "description", lang);
-  const applications = lines(lang === "th" ? s.applications_th || s.applications_en : s.applications_en || s.applications_th);
+  const applications = s.application_items || [];
   const highlights = s.highlights || [];
   const pictured = highlights.filter((h) => h.image);
   const textOnly = highlights.filter((h) => !h.image);
@@ -127,26 +133,14 @@ export default function SeriesGuide() {
         </section>
       )}
 
-      {(description || applications.length > 0) && (
+      {description && (
         <section className="guide-about">
-          <div className="container guide-about__grid">
-            {description && (
-              <Reveal className="guide-about__text">
-                {description.split(/\n{2,}/).map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </Reveal>
-            )}
-            {applications.length > 0 && (
-              <Reveal className="guide-about__apps">
-                <h2>{t("guide.applications")}</h2>
-                <ul>
-                  {applications.map((a) => (
-                    <li key={a}>{a}</li>
-                  ))}
-                </ul>
-              </Reveal>
-            )}
+          <div className="container">
+            <Reveal className="guide-about__text">
+              {description.split(/\n{2,}/).map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </Reveal>
           </div>
         </section>
       )}
@@ -208,6 +202,68 @@ export default function SeriesGuide() {
               ))}
             </div>
             <p className="guide-specs__note">{t("guide.modelsNote")}</p>
+          </div>
+        </section>
+      )}
+
+      {applications.length > 0 && (
+        <section className="guide-apps" aria-labelledby="guide-apps-title">
+          <div className="container">
+            <h2 className="guide-section-title" id="guide-apps-title">
+              {t("guide.applications")}
+            </h2>
+            <ul className="guide-apps__list">
+              {applications.map((a, i) => (
+                <Reveal as="li" className="guide-apps__item" key={i} style={{ transitionDelay: `${i * 60}ms` }}>
+                  <div className="guide-apps__media">
+                    {a.image && <img src={a.image} alt="" loading="lazy" decoding="async" />}
+                  </div>
+                  <h3>{tk(a, "title", lang)}</h3>
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {s.models?.length > 0 && (
+        <section className="guide-models" aria-labelledby="guide-models-title">
+          <div className="container">
+            <h2 className="guide-section-title" id="guide-models-title">
+              {t("guide.models")}
+            </h2>
+            <ul className="guide-models__list">
+              {s.models.slice((modelsPage - 1) * MODELS_PER_PAGE, modelsPage * MODELS_PER_PAGE).map((m) => {
+                const label = m.name || m.item_no;
+                return (
+                  <li className="guide-models__item" key={m.id}>
+                    <div className="guide-models__name">
+                      {m.has_page ? <Link to={productHref(m)}>{label}</Link> : <strong>{label}</strong>}
+                    </div>
+                    {m.datasheet_url && (
+                      <a
+                        href={m.datasheet_url}
+                        className="guide-models__doc"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={fill(t("guide.datasheetFor"), { name: label })}
+                        title={t("guide.datasheet")}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <rect x="4" y="3" width="16" height="18" rx="3" />
+                          <path d="M8 9h8M8 13h8M8 17h5" />
+                        </svg>
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <Pagination
+              page={modelsPage}
+              totalPages={Math.ceil(s.models.length / MODELS_PER_PAGE)}
+              onChange={setModelsPage}
+            />
           </div>
         </section>
       )}
