@@ -48,10 +48,3 @@ export const seriesHref = (s) => `${GUIDE_BASE}/${s.type_slug}/${s.slug}`;
 /** "{n} series" style templates. */
 export const fill = (template, values) =>
   String(template || "").replace(/\{(\w+)\}/g, (_, k) => (values[k] ?? ""));
-
-/** Non-empty lines of a textarea field. */
-export const lines = (text) =>
-  String(text || "")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);

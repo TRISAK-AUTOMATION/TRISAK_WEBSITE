@@ -393,8 +393,15 @@ const GUIDE_FIELDS = {
           .filter((g) => g.rows.length)
       ),
   ],
-  applicationsEn: ["applications_en", (v) => str(v, 4000) || null],
-  applicationsTh: ["applications_th", (v) => str(v, 4000) || null],
+  applicationItems: [
+    "application_items",
+    (v) =>
+      JSON.stringify(
+        list(v, 24)
+          .map((a) => ({ image: str(a?.image, 255), title_en: str(a?.title_en, 160), title_th: str(a?.title_th, 160) }))
+          .filter((a) => a.title_en || a.title_th)
+      ),
+  ],
   catalogUrl: ["catalog_url", (v) => str(v, 255) || null],
   // where the content comes from, e.g. the maker's product page / datasheet;
   // only http(s) links are kept
@@ -421,7 +428,7 @@ const GUIDE_FIELDS = {
   isLegacy: ["is_legacy", (v) => Boolean(v)],
   replacedById: ["replaced_by_id", (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null)],
 };
-const JSON_COLUMNS = new Set(["key_specs", "highlights", "spec_groups", "sources"]);
+const JSON_COLUMNS = new Set(["key_specs", "highlights", "spec_groups", "application_items", "sources"]);
 
 /** [[column, value, sqlCast]] for the guide fields present in `body`. */
 function guideValues(body) {

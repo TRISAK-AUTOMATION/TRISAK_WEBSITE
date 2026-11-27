@@ -16,6 +16,7 @@ const PREVIEW_COLUMNS = [
   { key: "Name", label: "Item Description" },
   { key: "Brand" },
   { key: "Category" },
+  { key: "Series" },
   { key: "Item Status" },
 ];
 
@@ -115,7 +116,7 @@ export default function AdminProductImport() {
         <div className="admin-form__section panel">
           <h3>1. เลือกไฟล์ Excel</h3>
           <p className="admin-list-table__submeta" style={{ marginBottom: 16 }}>
-            ระบบอ่านเฉพาะคอลัมน์ Item No., Item Description, Brand, Item Status (บังคับ) และ Category (ไม่บังคับ — ว่างไว้ได้)
+            ระบบอ่านเฉพาะคอลัมน์ Item No., Item Description, Brand, Item Status (บังคับ) และ Category, Series (ไม่บังคับ — ว่างไว้ได้; Series ที่ยังไม่มีในระบบจะถูกสร้างให้อัตโนมัติ ต้องมี Category)
             ตามชื่อหัวคอลัมน์ ไม่ขึ้นกับตำแหน่ง คอลัมน์อื่นในไฟล์จะถูกข้าม — แนะนำให้ดาวน์โหลดเทมเพลตด้านล่างแล้วแก้ไขต่อ
           </p>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -328,6 +329,12 @@ export default function AdminProductImport() {
               <div className="admin-import-summary__stat">
                 <strong>{result.statusUpdated}</strong>
                 <span>อัปเดตสถานะสินค้า</span>
+              </div>
+            )}
+            {result.seriesCreated > 0 && (
+              <div className="admin-import-summary__stat">
+                <strong>{result.seriesCreated}</strong>
+                <span>Series ใหม่</span>
               </div>
             )}
           </div>

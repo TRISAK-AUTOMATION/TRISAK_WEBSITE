@@ -78,7 +78,8 @@ CREATE TABLE series (
   highlights      JSONB NOT NULL DEFAULT '[]'::jsonb,
   spec_groups     JSONB NOT NULL DEFAULT '[]'::jsonb,
   applications_en TEXT,
-  applications_th TEXT,
+  applications_th TEXT, -- legacy, replaced by application_items (migration 061)
+  application_items JSONB NOT NULL DEFAULT '[]'::jsonb,
   catalog_url     VARCHAR(255),
   is_legacy       BOOLEAN NOT NULL DEFAULT false,
   replaced_by_id  INTEGER REFERENCES series(id) ON DELETE SET NULL,
