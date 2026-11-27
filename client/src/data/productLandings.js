@@ -1,6 +1,6 @@
 /**
- * Fixed sales pages for three product types (pages/products/ProductLanding.jsx):
- *   /products/relay      OMRON relays, by category
+ * Sales page content (pages/products/ProductLanding.jsx):
+ *   /products/series/control-components   OMRON relays, by category (TYPE_LANDINGS)
  *   /products/inverter   OMRON + YASKAWA inverters, one block per brand
  *   /products/servo      OMRON + YASKAWA servo, one block per brand
  *
@@ -10,13 +10,15 @@
  * if staff need to edit these pages themselves.
  */
 
+import { MORE_TYPE_LANDINGS } from "./typeLandings.js";
+
 const MOTION_TABS = [
   { to: "/products/inverter", label: { en: "Inverter", th: "Inverter" } },
   { to: "/products/servo", label: { en: "Servo", th: "Servo" } },
 ];
 
 const RELAY = {
-  title: { en: "OMRON Relay", th: "OMRON Relay" },
+  title: { en: "Control Components", th: "Control Components" },
   meta: { en: "OMRON · Relay & Control Components", th: "OMRON · Relay & Control Components" },
   tagline: { en: "Relays for every industrial control system", th: "รีเลย์สำหรับทุกระบบควบคุมในงานอุตสาหกรรม" },
   intro: {
@@ -314,7 +316,10 @@ const SERVO = {
   },
 };
 
-export const PRODUCT_LANDINGS = { relay: RELAY, inverter: INVERTER, servo: SERVO };
+export const PRODUCT_LANDINGS = { inverter: INVERTER, servo: SERVO };
+
+/** Hand-written content for a product type's page /products/series/:typeSlug (by admin type slug). */
+export const TYPE_LANDINGS = { "control-components": RELAY, ...MORE_TYPE_LANDINGS };
 
 /** A { en, th } text in the page language (a plain string is the same in both). */
 export const lt = (v, lang) => (typeof v === "string" ? v : v?.[lang] || v?.en || "");

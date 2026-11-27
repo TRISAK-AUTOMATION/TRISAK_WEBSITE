@@ -825,3 +825,9 @@
     transform: none;
   }
 }
+
+/* long submenus (e.g. 16 product categories) scroll instead of running off the screen */
+.nav-drop__sub > .nav-drop__list {
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+}

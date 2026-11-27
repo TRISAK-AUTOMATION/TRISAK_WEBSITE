@@ -165,7 +165,9 @@ export default function App() {
         <Route path="/products/series/:typeSlug/:seriesSlug" element={<SeriesGuide />} />
 
         {/* fixed sales pages (static paths win over the catalog's :brandSlug) */}
-        <Route path="/products/relay" element={<ProductLanding page="relay" key="relay" />} />
+        <Route path="/products/relay" element={<Navigate to="/products/guide/control-components" replace />} />
+        {/* a type's "pick for the job" page, e.g. /products/guide/control-components */}
+        <Route path="/products/guide/:typeSlug" element={<GuideOverview landing />} />
         <Route path="/products/inverter" element={<ProductLanding page="inverter" key="inverter" />} />
         <Route path="/products/servo" element={<ProductLanding page="servo" key="servo" />} />
 

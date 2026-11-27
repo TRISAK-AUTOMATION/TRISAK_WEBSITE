@@ -27,10 +27,13 @@ const UI = {
 
 const quoteHref = (topic) => `/contacts?interest=products&topic=${encodeURIComponent(topic)}`;
 
-/** Fixed sales page for one product type: /products/relay | inverter | servo. */
-export default function ProductLanding({ page }) {
+/**
+ * Sales page for one product type: a fixed page (/products/inverter | servo, by `page`)
+ * or one built by the series guide for /products/series/:typeSlug (`data` + `crumbs`).
+ */
+export default function ProductLanding({ page, data, crumbs }) {
   const { t, lang } = useLanguage();
-  const p = PRODUCT_LANDINGS[page];
+  const p = data || PRODUCT_LANDINGS[page];
   const L = (v) => lt(v, lang);
   const [heroImages, setHeroImages] = useState([]);
 
@@ -70,7 +73,7 @@ export default function ProductLanding({ page }) {
           <span className="hero__meta">{L(p.meta)}</span>
           <h1>{title}</h1>
           <p className="hero__sub">{L(p.tagline)}</p>
-          <p className="landing-hero__intro">{L(p.intro)}</p>
+          {p.intro && <p className="landing-hero__intro">{L(p.intro)}</p>}
           <div className="hero__actions">
             <Link to={quoteHref(p.quoteTopic)} className="btn btn-primary">
               {L(UI.quote)} <span className="btn-arrow">→</span>
@@ -103,11 +106,13 @@ export default function ProductLanding({ page }) {
       <div className="landing">
         <div className="container">
           <Breadcrumb
-            items={[
-              { label: t("nav.home"), to: "/" },
-              { label: t("nav.products"), to: "/products" },
-              { label: title },
-            ]}
+            items={
+              crumbs || [
+                { label: t("nav.home"), to: "/" },
+                { label: t("nav.products"), to: "/products" },
+                { label: title },
+              ]
+            }
           />
 
           {p.categories && (
@@ -117,13 +122,16 @@ export default function ProductLanding({ page }) {
                 {p.categories.map((c, i) => (
                   <Reveal as="article" className="landing-cat" id={c.id} key={c.id} style={{ transitionDelay: `${(i % 3) * 60}ms` }}>
                     <span className="landing-cat__tag">{c.tag}</span>
-                    <h3>{L(c.title)}</h3>
-                    <p>{L(c.text)}</p>
-                    <ul className="landing-series" aria-label={L(UI.seriesLabel)}>
-                      {c.series.map((s) => (
-                        <li key={s}>{s}</li>
-                      ))}
-                    </ul>
+                    {c.title && <h3>{L(c.title)}</h3>}
+                    {c.text && <p>{L(c.text)}</p>}
+                    {c.series.length > 0 && (
+                      <ul className="landing-series" aria-label={L(UI.seriesLabel)}>
+                        {/* a series is a name, or { name, href } when it has its own page */}
+                        {c.series.map((s) => (
+                          <li key={s.name || s}>{s.href ? <Link to={s.href}>{s.name}</Link> : s}</li>
+                        ))}
+                      </ul>
+                    )}
                     <Link className="landing-cat__link" to={quoteHref(`${p.quoteTopic} ${c.tag}`)}>
                       {L(UI.askPrice)} →
                     </Link>
@@ -178,6 +186,7 @@ export default function ProductLanding({ page }) {
         </div>
       </div>
 
+      {p.apps?.length > 0 && (
       <section className="landing-apps" aria-labelledby="landing-apps-title">
         <div className="container">
           <div className="landing-head">
@@ -194,6 +203,7 @@ export default function ProductLanding({ page }) {
           </ul>
         </div>
       </section>
+      )}
 
       {p.pick && (
         <section className="landing-block landing-pick" aria-labelledby="landing-pick-title">
