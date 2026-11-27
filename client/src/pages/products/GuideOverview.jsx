@@ -6,15 +6,26 @@ import HeroSlideshow from "../../components/HeroSlideshow.jsx";
 import Reveal from "../../components/Reveal.jsx";
 import SeriesCard from "../../components/SeriesCard.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
-import { GUIDE_BASE, cachedGuide, fill, loadGuide, tx, typeHref, typeName } from "../../utils/guide.js";
+import { GUIDE_BASE, cachedGuide, fill, loadGuide, seriesHref, tx, typeHref, typeName } from "../../utils/guide.js";
+import { TYPE_LANDINGS, lt } from "../../data/productLandings.js";
+import ProductLanding from "./ProductLanding.jsx";
+
+// a type page built from the admin category tree: one card per sub-category with its series
+const CATEGORIES_HEAD = {
+  eyebrow: { en: "Categories", th: "หมวดหมู่สินค้า" },
+  title: { en: "Choose by category", th: "เลือกตามหมวดหมู่" },
+};
 
 /**
  * Products guide: the main series, grouped by product type.
  *   /products/series              every type, each with its series
- *   /products/series/:typeSlug    one type
+ *   /products/series/:typeSlug    one type: its series by sub-category, then a link to…
+ *   /products/guide/:typeSlug     …the type's "pick for the job" page (`landing`)
  *   ?brand=omron                  only that brand's series
  */
-export default function GuideOverview() {
+const landingHref = (slug) => `/products/guide/${slug}`;
+
+export default function GuideOverview({ landing = false }) {
   const { typeSlug } = useParams();
   const { t, lang } = useLanguage();
   const [guide, setGuide] = useState(cachedGuide);
@@ -54,9 +65,28 @@ export default function GuideOverview() {
 
   const allTypes = guide?.types || [];
   const focus = typeSlug ? allTypes.find((tp) => tp.slug === typeSlug) : null;
-  const types = (focus ? [focus] : allTypes)
+  const types = allTypes
     .map((tp) => ({ ...tp, series: tp.series.filter((s) => !brand || s.brand_slug === brand) }))
-    .filter((tp) => tp.series.length || focus);
+    .filter((tp) => !brand || tp.series.length); // every type shows on the overview, even before it has series
+
+  // a type's "pick for the job" page: sections like the product sales pages (hand-written content wins)
+  const landingData = focus && (TYPE_LANDINGS[focus.slug] || typeLanding(focus, guide.subcategories || [], t, lang));
+  if (focus && landing) {
+    return (
+      <ProductLanding
+        key={focus.slug}
+        data={landingData}
+        crumbs={[
+          { label: t("nav.home"), to: "/" },
+          { label: t("nav.products"), to: "/products" },
+          { label: t("nav.productSeries"), to: GUIDE_BASE },
+          { label: typeName(focus, lang), to: typeHref(focus.slug) },
+          { label: lt(landingData.categoriesHead.title, lang) },
+        ]}
+      />
+    );
+  }
+  const focusSeries = focus ? focus.series.filter((s) => !brand || s.brand_slug === brand) : [];
 
   const heroImages = Array.isArray(pageContent?.hero_bg_images) && pageContent.hero_bg_images.length
     ? pageContent.hero_bg_images
@@ -77,19 +107,9 @@ export default function GuideOverview() {
         )}
         <div className="hero__grid-overlay" aria-hidden="true" />
         <div className="container hero__content">
-          {focus ? (
-            <>
-              <span className="hero__meta">{t("guide.heroMeta")}</span>
-              <h1>{typeName(focus, lang)}</h1>
-              {tx(focus, "summary", lang, "summary_en") && <p className="hero__sub">{tx(focus, "summary", lang, "summary_en")}</p>}
-            </>
-          ) : (
-            <>
-              <span className="hero__meta">{t("guide.heroMeta")}</span>
-              <h1>{t("guide.heroTitle")}</h1>
-              <p className="hero__sub">{t("guide.heroSub")}</p>
-            </>
-          )}
+          <span className="hero__meta">{t("guide.heroMeta")}</span>
+          <h1>{focus ? typeName(focus, lang) : t("guide.heroTitle")}</h1>
+          <p className="hero__sub">{focus ? tx(focus, "summary", lang, "summary_en") : t("guide.heroSub")}</p>
         </div>
       </section>
 
@@ -114,6 +134,11 @@ export default function GuideOverview() {
               ))}
             </div>
           )}
+          {focus && (
+            <Link to={landingHref(focus.slug)} className="guide-bar__pick">
+              {lt(landingData.categoriesHead.title, lang)} <span aria-hidden="true">→</span>
+            </Link>
+          )}
         </div>
       </nav>
 
@@ -129,7 +154,6 @@ export default function GuideOverview() {
               ]}
             />
           )}
-
           {!guide && !failed && <p className="empty-state">{t("guide.loading")}</p>}
           {failed && !guide && (
             <p className="empty-state">
@@ -144,37 +168,30 @@ export default function GuideOverview() {
               {t("guide.notFound")} <Link to={GUIDE_BASE}>{t("guide.backToGuide")} →</Link>
             </p>
           )}
-          {guide && !notFound && types.every((tp) => !tp.series.length) && <p className="empty-state">{t("guide.empty")}</p>}
+          {guide && !notFound && !(focus ? focusSeries.length : types.length) && <p className="empty-state">{t("guide.empty")}</p>}
 
-          {types.map((tp, i) =>
-            tp.series.length ? (
-              <section className="guide-type" id={`type-${tp.slug}`} key={tp.slug} aria-labelledby={`type-${tp.slug}-title`}>
+          {/* a type's page: its series (the "pick for the job" page is linked from the bar above) */}
+          {focus && (
+            <>
+              <SeriesByCategory series={focusSeries} subcategories={guide.subcategories || []} lang={lang} />
+            </>
+          )}
+
+          {/* overview lists only the types; their series are on each type's page */}
+          {!focus && types.map((tp, i) => (
+              <section className="guide-type" id={`type-${tp.slug}`} key={tp.slug} aria-label={typeName(tp, lang)}>
                 <Reveal className="guide-type__head">
                   <span className="guide-type__index">{String(i + 1).padStart(2, "0")}</span>
                   <div>
                     <h2 id={`type-${tp.slug}-title`}>
-                      {focus ? (
-                        typeName(tp, lang)
-                      ) : (
-                        <Link to={`${typeHref(tp.slug)}${brand ? `?brand=${brand}` : ""}`}>{typeName(tp, lang)}</Link>
-                      )}
+                      <Link to={typeHref(tp.slug)}>{typeName(tp, lang)}</Link>
                     </h2>
                     {tx(tp, "summary", lang, "summary_en") && <p>{tx(tp, "summary", lang, "summary_en")}</p>}
                   </div>
-                  <span className="guide-type__count">{fill(t("guide.seriesCount"), { n: tp.series.length })}</span>
+                  {tp.series.length > 0 && <span className="guide-type__count">{fill(t("guide.seriesCount"), { n: tp.series.length })}</span>}
                 </Reveal>
-                {focus ? (
-                  <SeriesByCategory series={tp.series} subcategories={guide.subcategories || []} lang={lang} />
-                ) : (
-                  <div className="guide-type__grid">
-                    {tp.series.map((s) => (
-                      <SeriesCard series={s} key={s.id} />
-                    ))}
-                  </div>
-                )}
               </section>
-            ) : null
-          )}
+          ))}
         </div>
       </div>
 
@@ -192,6 +209,27 @@ export default function GuideOverview() {
       </section>
     </>
   );
+}
+
+/** Landing content for a type from the admin category tree; text per category is added later. */
+function typeLanding(type, subcategories, t, lang) {
+  const name = typeName(type, lang);
+  const catName = (c) => (lang === "th" && c.name_th ? c.name_th : c.name).trim();
+  const link = (s) => ({ name: s.name, href: seriesHref(s) });
+  const direct = type.series.filter((s) => !(s.category_path || []).length);
+  const categories = subcategories
+    .filter((c) => c.parent_id === type.id)
+    .map((c) => ({ id: c.slug, tag: catName(c), series: type.series.filter((s) => (s.category_path || []).includes(c.id)).map(link) }));
+  if (direct.length) categories.unshift({ id: `${type.slug}-series`, tag: name, series: direct.map(link) });
+  return {
+    title: name,
+    meta: t("guide.heroMeta"),
+    tagline: tx(type, "summary", lang, "summary_en"),
+    quoteTopic: name,
+    categoriesHead: CATEGORIES_HEAD,
+    categories,
+    cta: { title: t("guide.ctaTitle"), text: t("guide.ctaSub"), button: t("guide.askEngineer") },
+  };
 }
 
 /**
@@ -232,7 +270,7 @@ function SeriesByCategory({ series, subcategories, lang }) {
       )}
       {sorted.map((g) => (
         <div className="guide-cat" key={g.id} id={g.id ? `cat-${byId.get(g.id).slug}` : undefined}>
-          {g.id !== 0 && <h3 className="guide-cat__title">{name(g.id)}</h3>}
+          {g.id !== 0 && <h2 className="guide-cat__title">{name(g.id)}</h2>}
           {[...g.subs.values()]
             .sort((a, b) => order(a.first) - order(b.first))
             .map((sub) => (

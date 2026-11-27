@@ -877,8 +877,8 @@
 
 .guide-cat__title {
   margin-bottom: 4px;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+  font-weight: 800;
   text-transform: none;
   color: #2a3558;
 }
@@ -898,4 +898,44 @@
 
 .guide-cat__title + .guide-cat__sub:not(:has(.guide-cat__label)) {
   margin-top: 16px;
+}
+
+/* a type's page has no type heading, so close the gap under the breadcrumb */
+.guide-cats > .guide-cat:first-child,
+.guide-cats__jump + .guide-cat {
+  padding-top: 16px;
+}
+
+/* a type's page: link to its "pick for the job" page, at the right end of the bar */
+.guide-bar__pick {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--accent-signal);
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.guide-bar__pick:hover {
+  background: #0a2079;
+}
+
+.guide-bar__pick:focus-visible {
+  outline: 2px solid var(--accent-signal);
+  outline-offset: 3px;
+}
+
+@media (max-width: 860px) {
+  .guide-bar__pick {
+    margin-left: 0;
+    justify-content: center;
+  }
 }

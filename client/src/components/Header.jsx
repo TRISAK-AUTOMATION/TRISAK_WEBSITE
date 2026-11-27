@@ -5,6 +5,7 @@ import { useSiteSettings } from "../contexts/SiteSettingsContext.jsx";
 import { useMenu } from "../contexts/MenuContext.jsx";
 import MenuLink from "./MenuLink.jsx";
 import { prefetchHistory } from "../api/historyData.js";
+import { cachedGuide, loadGuide, typeHref, typeName } from "../utils/guide.js";
 
 // Pointer, keyboard focus or a touch reaching a menu link to /history starts
 // loading that page's data and opening photo before the click lands.
@@ -42,11 +43,17 @@ const PRODUCTS_URL = "/products";
 const SERIES_URL = "/products/series";
 const SOLUTIONS_URL = "/automation-solution";
 
-function dropdownItems(url, t) {
+// types: the products guide's main categories, listed beside "Product series"
+function dropdownItems(url, t, types = [], lang = "en") {
   if (url === PRODUCTS_URL)
     return [
       { to: PRODUCTS_URL, title: t("nav.productsAll"), hint: t("nav.productsAllHint") },
-      { to: SERIES_URL, title: t("nav.productSeries"), hint: t("nav.productSeriesHint") },
+      {
+        to: SERIES_URL,
+        title: t("nav.productSeries"),
+        hint: t("nav.productSeriesHint"),
+        children: types.map((tp) => ({ to: typeHref(tp.slug), title: typeName(tp, lang) })),
+      },
     ];
   if (url === SOLUTIONS_URL)
     return [
@@ -139,6 +146,18 @@ export default function Header() {
   const menu = useMenu();
   const navItems = menu?.header ?? FALLBACK_NAV_ITEMS;
   const headerRef = useRef(null);
+  const [guideTypes, setGuideTypes] = useState(() => cachedGuide()?.types || []);
+
+  // main product categories for the Products › Product series submenu
+  useEffect(() => {
+    let alive = true;
+    loadGuide()
+      .then((g) => alive && setGuideTypes(g.types || []))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Publish the header's real rendered height as --header-height so the page
   // offset and the Home hero (100vh − header) track it if it ever changes.
@@ -178,12 +197,12 @@ export default function Header() {
 
         <nav className="site-header__nav site-header__nav--desktop" aria-label="Main" {...prefetchProps}>
           {navItems.map((item) =>
-            dropdownItems(item.url, t) ? (
+            dropdownItems(item.url, t, guideTypes, lang) ? (
               <NavDropdown
                 key={item.id}
                 to={item.url}
                 label={lang === "en" ? item.label_en : item.label_th}
-                items={dropdownItems(item.url, t)}
+                items={dropdownItems(item.url, t, guideTypes, lang)}
               />
             ) : (
               <MenuLink
@@ -247,7 +266,7 @@ export default function Header() {
         )).flatMap((link, i) => [
           link,
           // the dropdown's own items, minus the one the parent link already is
-          ...(dropdownItems(navItems[i].url, t) || [])
+          ...(dropdownItems(navItems[i].url, t, guideTypes, lang) || [])
             .filter((it) => it.to !== navItems[i].url)
             .map((it) => (
               <NavLink

@@ -5,7 +5,7 @@ import pool from "../config/db.js";
  *
  * A product type is a top-level category; a series belongs to it when the
  * series' own category is that category or anything below it. Only active
- * series of active brands are shown; a type appears once it has a series.
+ * series of active brands are shown; every active type is listed, even with no series yet.
  *
  *   GET /api/guide                                  types → series cards, brands
  *   GET /api/guide/series/:typeSlug/:seriesSlug     one series in full + related
@@ -46,7 +46,7 @@ export async function getGuide(req, res) {
       ),
       pool.query("SELECT name, slug, logo_url FROM brands WHERE is_active ORDER BY sort_order"),
       pool.query(
-        `SELECT id, name, name_th, slug, sort_order FROM categories
+        `SELECT id, parent_id, name, name_th, slug, sort_order FROM categories
          WHERE parent_id IS NOT NULL AND is_active ORDER BY sort_order, name`
       ),
     ]);
@@ -56,7 +56,7 @@ export async function getGuide(req, res) {
       byType.get(s.type_id)?.series.push(card);
     }
     res.json({
-      types: [...byType.values()].filter((t) => t.series.length),
+      types: [...byType.values()], // every active top-level category, with or without series
       brands,
       subcategories, // names for each series' category_path
 
