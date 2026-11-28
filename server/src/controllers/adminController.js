@@ -177,7 +177,17 @@ export async function deleteBrand(req, res) {
 
 export async function listCategoriesAdmin(req, res) {
   try {
-    const { rows } = await pool.query("SELECT * FROM categories ORDER BY sort_order");
+    // path ("PLC › Accessories") tells apart subcategories that share a name
+    const { rows } = await pool.query(
+      `WITH RECURSIVE t AS (
+         SELECT id, name::text AS path FROM categories WHERE parent_id IS NULL
+         UNION ALL
+         SELECT c.id, t.path || ' › ' || c.name FROM categories c JOIN t ON c.parent_id = t.id
+       )
+       SELECT c.*, COALESCE(t.path, c.name) AS path
+       FROM categories c LEFT JOIN t ON t.id = c.id
+       ORDER BY c.sort_order`
+    );
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -216,6 +226,13 @@ async function getDescendantIds(categoryId) {
 // (e.g. "plc-hmi"). Empty / missing means "no icon chosen".
 const ICON_KEY_PATTERN = /^[a-z0-9-]{1,50}$/;
 
+const categoryWriteError = (err) =>
+  err.code !== "23505"
+    ? err.message
+    : err.constraint === "idx_categories_parent_name"
+      ? "มีหมวดหมู่ชื่อนี้อยู่ใต้หมวดหมู่แม่เดียวกันแล้ว"
+      : "Slug นี้ถูกใช้กับหมวดหมู่อื่นแล้ว";
+
 export async function createCategory(req, res) {
   const { name, slug, imageUrl, iconKey, parentId, isActive = true, sortOrder = 0 } = req.body || {};
   if (!name || !slug) return res.status(400).json({ error: "name and slug are required" });
@@ -230,7 +247,7 @@ export async function createCategory(req, res) {
     logActivity("category_added", `เพิ่มหมวดหมู่ "${name}"`);
     res.status(201).json(rows[0]);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: categoryWriteError(err) });
   }
 }
 
@@ -282,7 +299,7 @@ export async function updateCategory(req, res) {
     logActivity("category_edited", `แก้ไขหมวดหมู่ "${name}"`);
     res.json(rows[0]);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: categoryWriteError(err) });
   }
 }
 

@@ -148,7 +148,7 @@ const findSeries = (lookups, s) =>
 async function loadLookups() {
   const [brandsRes, categoriesRes, seriesRes, productsRes, historyRes] = await Promise.all([
     pool.query("SELECT id, name FROM brands"),
-    pool.query("SELECT id, name FROM categories"),
+    pool.query("SELECT id, name, slug FROM categories"),
     pool.query("SELECT id, name, slug, brand_id, category_id FROM series"),
     pool.query("SELECT id, slug, item_no, category_id, availability_status, replacement_product_id FROM products"),
     pool.query(
@@ -158,7 +158,8 @@ async function loadLookups() {
   ]);
   const lookups = {
     brandsByName: new Map(brandsRes.rows.map((b) => [normalizeHeader(b.name), b.id])),
-    categoriesByName: new Map(categoriesRes.rows.map((c) => [normalizeHeader(c.name), c.id])),
+    categoriesByName: new Map(), // normalized name -> [ids] (same name may sit under several parents)
+    categoriesBySlug: new Map(categoriesRes.rows.map((c) => [c.slug.toLowerCase(), c.id])),
     seriesByKey: new Map(), // "brandId::categoryId::name|slug" -> series id (see registerSeries)
     byItemNoKey: new Map(), // lower-cased item_no -> { id, slug, item_no }
     bySlug: new Map(), // exact slug -> { id, slug, item_no }
@@ -167,6 +168,10 @@ async function loadLookups() {
     // retired slugs that still redirect to a product
     historyBySlugKey: new Map(historyRes.rows.map((h) => [h.old_slug.toLowerCase(), h])),
   };
+  for (const c of categoriesRes.rows) {
+    const key = normalizeHeader(c.name);
+    lookups.categoriesByName.set(key, [...(lookups.categoriesByName.get(key) || []), c.id]);
+  }
   seriesRes.rows.forEach((s) => registerSeries(lookups, s));
   productsRes.rows.forEach((p) => registerProduct(lookups, p));
   return lookups;
@@ -310,8 +315,15 @@ function resolveRow(rowNumber, raw, lookups, seen, index = { byItemNo: new Map()
   // unchanged on an existing one
   let categoryId = null;
   if (categoryName) {
-    categoryId = lookups.categoriesByName.get(normalizeHeader(categoryName)) || null;
-    if (!categoryId) warnings.push(`Category "${categoryName}" was not found — left blank`);
+    const byName = lookups.categoriesByName.get(normalizeHeader(categoryName));
+    // a slug is unique; a name may sit under several parents (then the slug must be used)
+    categoryId = lookups.categoriesBySlug.get(categoryName.toLowerCase()) || (byName?.length === 1 ? byName[0] : null);
+    if (!categoryId)
+      warnings.push(
+        byName?.length > 1
+          ? `Category "${categoryName}" exists under several parent categories — use its slug instead; left blank`
+          : `Category "${categoryName}" was not found — left blank`
+      );
   }
 
   // optional: an existing series of this brand + category is linked; an unknown one is

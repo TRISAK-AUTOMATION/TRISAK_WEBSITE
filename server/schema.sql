@@ -44,7 +44,7 @@ CREATE TABLE brands (
 
 CREATE TABLE categories (
   id           SERIAL PRIMARY KEY,
-  name         VARCHAR(100) NOT NULL UNIQUE,
+  name         VARCHAR(100) NOT NULL,  -- unique among siblings (idx_categories_parent_name)
   slug         VARCHAR(100) NOT NULL UNIQUE,
   image_url    VARCHAR(255),
   icon_key     VARCHAR(50),
@@ -56,6 +56,8 @@ CREATE TABLE categories (
   sort_order   INTEGER NOT NULL DEFAULT 0,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- same subcategory name may sit under different parents; COALESCE covers top level
+CREATE UNIQUE INDEX idx_categories_parent_name ON categories (COALESCE(parent_id, 0), lower(name));
 
 -- A series belongs to one brand + one category (e.g. OMRON / PLC & HMI / "NX Series")
 CREATE TABLE series (

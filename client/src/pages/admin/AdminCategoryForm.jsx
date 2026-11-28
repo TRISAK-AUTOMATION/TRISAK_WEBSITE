@@ -82,6 +82,13 @@ export default function AdminCategoryForm() {
     api.adminGetCategories().then(setAllCategories).catch(() => {});
   }, []);
 
+  // slugs are globally unique, so a subcategory's gets its parent's in front
+  // ("plc-accessories" vs "inverter-accessories") while the names can match
+  const autoSlug = (n, pid) => {
+    const parentSlug = allCategories.find((c) => String(c.id) === String(pid))?.slug;
+    return slugify(parentSlug ? `${parentSlug}-${n}` : n);
+  };
+
   useEffect(() => {
     if (!isEdit) return;
     api
@@ -224,7 +231,7 @@ export default function AdminCategoryForm() {
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
-                    if (!slugTouched) setSlug(slugify(e.target.value));
+                    if (!slugTouched) setSlug(autoSlug(e.target.value, parentId));
                   }}
                 />
               </label>
@@ -313,7 +320,13 @@ export default function AdminCategoryForm() {
 
           <div className="panel admin-edit-sidebar__section">
             <span className="admin-edit-sidebar__label">หมวดหมู่แม่</span>
-            <select value={parentId} onChange={(e) => setParentId(e.target.value)}>
+            <select
+              value={parentId}
+              onChange={(e) => {
+                setParentId(e.target.value);
+                if (!slugTouched && name) setSlug(autoSlug(name, e.target.value));
+              }}
+            >
               <option value="">— ไม่มี (หมวดหมู่ใหญ่) —</option>
               {parentOptions.map((c) => (
                 <option key={c.id} value={c.id}>
