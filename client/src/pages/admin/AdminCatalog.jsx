@@ -513,7 +513,7 @@ function SeriesTab({ seriesList, brands, categories, onChanged, setError }) {
                       >
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.name}
+                            {c.path || c.name}
                           </option>
                         ))}
                       </select>
@@ -634,7 +634,7 @@ function SeriesTab({ seriesList, brands, categories, onChanged, setError }) {
               <option value="">Select category</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.path || c.name}
                 </option>
               ))}
             </select>

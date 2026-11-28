@@ -302,7 +302,7 @@ export default function AdminProductForm({ productId, onClose, onSaved } = {}) {
                 <option value="">Select category</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {c.path || c.name}
                   </option>
                 ))}
               </select>
